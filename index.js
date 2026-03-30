@@ -1,4 +1,4 @@
-
+  
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -458,7 +458,6 @@ async function handleIncoming(payload) {
 
   const normalized = normalizeText(body);
         console.log('[incoming]', { from, body, normalized });
-        const faqResponse = getFaqResponse(normalized);
 
         if (shouldSendGreeting(normalized)) {
         await replyToGuest(from, GREETING_RESPONSE, { alsoSendAudio: cameFromAudio });
@@ -523,14 +522,17 @@ async function handleIncoming(payload) {
           const aiReply = await getChatGptFallbackReply(body, from);
 
         if (aiReply) {
-           await replyToGuest(from, aiReply, { alsoSendAudio: cameFromAudio });
-        } else if (faqResponse) {
-          await replyToGuest(from, faqResponse, { alsoSendAudio: cameFromAudio });
+          await replyToGuest(from, aiReply, { alsoSendAudio: cameFromAudio });
         } else {
-          await replyToGuest(
-              from,
-              `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, é só digitar "menu".`,
-               { alsoSendAudio: cameFromAudio }
+          const faqResponse = getFaqResponse(normalized);
+
+          if (faqResponse) {
+            await replyToGuest(from, faqResponse, { alsoSendAudio: cameFromAudio });
+          } else {
+             await replyToGuest(
+               from,
+               `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, é só digitar "menu".`,
+              { alsoSendAudio: cameFromAudio }
             );
           }
         }
