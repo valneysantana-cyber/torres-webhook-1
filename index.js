@@ -41,7 +41,7 @@ Estou aqui para te ajudar com tudo da sua hospedagem. Escolha uma opção ou dig
 
 É só responder com o número ou escrever o assunto. Sempre que precisar, estou por aqui! 🌴`;
 
-const HUMAN_ESCALATION_RESPONSE = `Para qualquer outra dúvida, nosso concierge humano atende nos WhatsApps ${HUMAN_NUMBER_PRIMARY} e ${HUMAN_NUMBER_SECONDARY}. É só chamar que cuidamos de você 24/7. 😊`;
+const HUMAN_ESCALATION_RESPONSE = `Neste caso favor entrar em contato com a Sofia que atende no WhatsApp ${HUMAN_NUMBER_SECONDARY}. Cuidaremos para responder melhor suas duvidas. 😊`;
 
 const CONFIRMATION_PROMPT = `Claro! Me envia o código da sua reserva (ex.: IC09J) ou os dados completos para eu confirmar no sistema.`;
 
