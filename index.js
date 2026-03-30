@@ -843,23 +843,12 @@ Contexto confiável da operação:
 - Transfer aeroporto: sob demanda e com custo adicional.
 - Limpeza/governança: pela equipe do hotel, com aviso prévio.
 - Guarda de malas: pode ser organizada conforme disponibilidade.
-- Para situações operacionais específicas (pagamentos, alterações de reserva ou problemas reais), oriente contato humano com Sofia...
 - Chegadas de madrugada são possíveis, pois a recepção funciona 24 horas.
-- Se o hóspede for chegar muito tarde, apenas oriente que avise previamente para alinharmos a recepção.
-- Quando perguntarem por indicação de restaurantes, bares, cafés ou opções próximas, você pode sugerir de forma geral a região de Perdizes e arredores, sem inventar nomes específicos se não tiver certeza.
 
 Regras:
 - Responda de forma curta, útil, natural e acolhedora.
-- Sempre tente responder diretamente usando o contexto acima.
-- Perguntas sobre sugestões, experiências, dicas, comemorações, conforto, lazer ou preferências devem ser respondidas normalmente (NÃO encaminhar para humano).
-- Só encaminhe para atendimento humano quando:
-  - envolver pagamento
-  - alteração de reserva
-  - problemas técnicos reais
-  - ou quando explicitamente solicitado pelo hóspede
-- Nunca encaminhe para humano apenas por falta de certeza leve.
-- Não mencione política, sistema ou bastidores.
-- Se fizer sentido, termine com uma frase acolhedora.
+- Sempre tente responder diretamente.
+- Só encaminhe para humano quando for necessário.
 `.trim();
 
   const response = await fetch('https://api.openai.com/v1/responses', {
@@ -873,25 +862,46 @@ Regras:
       input: [
         {
           role: 'system',
-          content: [{ type: 'text', text: systemPrompt }]
+          content: [{ type: 'input_text', text: systemPrompt }]
         },
         {
           role: 'user',
-          content: [{ type: 'text', text: `Telefone: ${phone}\nMensagem: ${userMessage}` }]
+          content: [{ type: 'input_text', text: `Telefone: ${phone}\nMensagem: ${userMessage}` }]
         }
       ]
     }),
   });
 
+  const raw = await response.text();
+  console.log('[openai fallback raw]', raw);
+
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('OpenAI fallback failed', response.status, errorText);
+    console.error('OpenAI fallback failed', response.status, raw);
     return null;
   }
 
-  const data = await response.json();
-  return data.output_text?.trim() || null;
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (err) {
+    console.error('Failed to parse JSON', err);
+    return null;
+  }
+
+  if (data.output_text && data.output_text.trim()) {
+    return data.output_text.trim();
+  }
+
+  const text =
+    data.output
+      ?.flatMap(item => item.content || [])
+      ?.map(item => item.text || '')
+      ?.join(' ')
+      ?.trim() || null;
+
+  return text;
 }
+
 async function downloadWhatsAppMedia(mediaId) {
   if (!WHATSAPP_TOKEN) {
     throw new Error('Missing WhatsApp token');
