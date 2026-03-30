@@ -481,47 +481,52 @@ async function handleIncoming(payload) {
           continue;
         }
 
-        const confirmationHandled = await maybeHandleReservationConfirmation({ rawText: body, normalizedText: normalized, from });
+        const confirmationHandled = await maybeHandleReservationConfirmation({
+            rawText: body,
+            normalizedText: normalized,
+            from,
+            cameFromAudio
+        });
         if (confirmationHandled) {
           continue;
         }
 
         if (shouldSendWifi(normalized)) {
-          await sendWhatsAppText(from, WIFI_RESPONSE);
+          await replyToGuest(from, WIFI_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendBreakfast(normalized)) {
-          await sendWhatsAppText(from, BREAKFAST_RESPONSE);
+          await replyToGuest(from, BREAKFAST_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendPool(normalized)) {
-          await sendWhatsAppText(from, POOL_RESPONSE);
+          await replyToGuest(from, POOL_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendParking(normalized)) {
-          await sendWhatsAppText(from, PARKING_RESPONSE);
+          await replyToGuest(from, PARKING_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendSnacks(normalized)) {
-          await sendWhatsAppText(from, SNACKS_RESPONSE);
+          await replyToGuest(from, SNACKS_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendTowels(normalized)) {
-          await sendWhatsAppText(from, TOWELS_RESPONSE);
+          await replyToGuest(from, TOWELS_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendRestaurant(normalized)) {
-          await sendWhatsAppText(from, RESTAURANT_RESPONSE);
+          await replyToGuest(from, RESTAURANT_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendCheckin(normalized)) {
-          await sendWhatsAppText(from, CHECKIN_RESPONSE);
+          await replyToGuest(from, CHECKIN_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendSecurity(normalized)) {
-          await sendWhatsAppText(from, SECURITY_RESPONSE);
+          await replyToGuest(from, SECURITY_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendTransfer(normalized)) {
-          await sendWhatsAppText(from, TRANSFER_RESPONSE);
+          await replyToGuest(from, TRANSFER_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendLocation(normalized)) {
-          await sendWhatsAppText(from, LOCATION_RESPONSE);
+          await replyToGuest(from, LOCATION_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendLongStay(normalized)) {
-          await sendWhatsAppText(from, LONG_STAY_RESPONSE);
+          await replyToGuest(from, LONG_STAY_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendCleaning(normalized)) {
-          await sendWhatsAppText(from, CLEANING_RESPONSE);
+          await replyToGuest(from, CLEANING_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendInternet(normalized)) {
-          await sendWhatsAppText(from, INTERNET_RESPONSE);
+          await replyToGuest(from, INTERNET_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendLuggage(normalized)) {
-          await sendWhatsAppText(from, LUGGAGE_RESPONSE);
+          await replyToGuest(from, LUGGAGE_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (faqResponse) {
-          await sendWhatsAppText(from, faqResponse);
+          await replyToGuest(from, faqResponse, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendHuman(normalized)) {
-          await sendWhatsAppText(from, HUMAN_ESCALATION_RESPONSE);
+          await replyToGuest(from, HUMAN_ESCALATION_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else {
-          await sendWhatsAppText(from, `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, é só digitar "menu".`);
+          await replyToGuest(from, `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, é só digitar "menu".`);
         }
       }
     }
@@ -660,7 +665,7 @@ function extractReservationCode(rawText) {
   return null;
 }
 
-async function maybeHandleReservationConfirmation({ rawText, normalizedText, from }) {
+async function maybeHandleReservationConfirmation({ rawText, normalizedText, from, cameFromAudio = false }) {
   const expectingCode = isAwaitingCode(from);
   const wantsConfirmation = expectingCode || shouldHandleReservationConfirmation(normalizedText);
   if (!wantsConfirmation) {
@@ -670,17 +675,17 @@ async function maybeHandleReservationConfirmation({ rawText, normalizedText, fro
   const code = extractReservationCode(rawText);
   if (!code) {
     rememberPendingConfirmation(from);
-    await sendWhatsAppText(from, CONFIRMATION_PROMPT);
+    await replyToGuest(from, CONFIRMATION_PROMPT, { alsoSendAudio: cameFromAudio });
     return true;
   }
 
   const reservation = await fetchReservationByCode(code);
   if (reservation) {
     pendingConfirmations.delete(from);
-    await sendWhatsAppText(from, formatReservationMessage(reservation));
+    await replyToGuest(from, formatReservationMessage(reservation), { alsoSendAudio: cameFromAudio });
   } else {
     rememberPendingConfirmation(from);
-    await sendWhatsAppText(from, RESERVATION_NOT_FOUND(code));
+    await replyToGuest(from, RESERVATION_NOT_FOUND(code), { alsoSendAudio: cameFromAudio });
   }
   return true;
 }
@@ -871,6 +876,95 @@ async function replyToGuest(to, text, options = {}) {
   } catch (err) {
     console.error('Failed to send audio reply', err);
   }
+}
+
+async function synthesizeSpeechBuffer(text) {
+  if (!OPENAI_API_KEY) {
+    throw new Error('Missing OPENAI_API_KEY');
+  }
+
+  const response = await fetch('https://api.openai.com/v1/audio/speech', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: OPENAI_TTS_MODEL,
+      voice: OPENAI_TTS_VOICE,
+      input: text,
+      format: 'mp3',
+      instructions: 'Fale em português do Brasil, com tom acolhedor, educado e estilo concierge de hotel.'
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenAI speech failed: ${response.status} ${errorText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
+async function uploadWhatsAppAudio(buffer, filename = 'reply.mp3', mimeType = 'audio/mpeg') {
+  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
+    throw new Error('Missing WhatsApp credentials');
+  }
+
+  const form = new FormData();
+  form.append('messaging_product', 'whatsapp');
+  form.append('file', new Blob([buffer], { type: mimeType }), filename);
+
+  const response = await fetch(`https://graph.facebook.com/v25.0/${PHONE_NUMBER_ID}/media`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+    },
+    body: form,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`WhatsApp media upload failed: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  if (!data?.id) {
+    throw new Error('WhatsApp media upload returned no media id');
+  }
+
+  return data.id;
+}
+
+async function sendWhatsAppAudio(to, mediaId) {
+  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
+    throw new Error('Missing WhatsApp credentials');
+  }
+
+  const response = await fetch(`https://graph.facebook.com/v25.0/${PHONE_NUMBER_ID}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'audio',
+      audio: {
+        id: mediaId,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`WhatsApp send audio failed: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  console.log('WhatsApp audio reply sent', JSON.stringify(data));
 }
 
 async function sendWhatsAppText(to, body) {
