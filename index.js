@@ -414,61 +414,80 @@ async function handleIncoming(payload) {
 
   for (const entry of payload.entry) {
     const changes = entry.changes || [];
+
     for (const change of changes) {
       if (change.field !== 'messages') continue;
+
       const value = change.value || {};
       const messages = value.messages || [];
+
       for (const message of messages) {
-  const from = message.from;
-  if (!from) continue;
+        const from = message.from;
+        if (!from) continue;
 
-  let cameFromAudio = false;
-        
-  let body = '';
+        let cameFromAudio = false;
+        let body = '';
 
-  if (message.type === 'text') {
-    body = message.text?.body || '';
-  } else if (message.type === 'audio') {
-    cameFromAudio = true;
-    try {
-      const mediaId = message.audio?.id;
-      if (!mediaId) {
-        await replyToGuest(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎙️', { alsoSendAudio: cameFromAudio });
-        continue;
-      }
+        if (message.type === 'text') {
+          body = message.text?.body || '';
+        } else if (message.type === 'audio') {
+          cameFromAudio = true;
 
-      const audioBuffer = await downloadWhatsAppMedia(mediaId);
-      const transcript = await transcribeAudioBuffer(audioBuffer, message.audio?.mime_type || 'audio/ogg');
+          try {
+            const mediaId = message.audio?.id;
 
-      if (!transcript) {
-      await replyToGuest(from, 'Recebi seu áudio, mas não consegui entender bem. Pode me mandar novamente ou escrever por texto? 😊', { alsoSendAudio: cameFromAudio });
-      continue;
-      }
+            if (!mediaId) {
+              await replyToGuest(
+                from,
+                'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎙️',
+                { alsoSendAudio: cameFromAudio }
+              );
+              continue;
+            }
 
-      body = transcript;
-      console.log('[audio transcript]', { from, transcript });
-     } catch (err) {
-        console.error('Failed to process audio message', err);
-        await replyToGuest(from, 'Recebi seu áudio, mas tive uma falha para processar agora. Pode tentar novamente ou me escrever por texto? 😊', { alsoSendAudio: cameFromAudio });
-        continue;
-      }
-  } else {
-    continue;
-  }
+            const audioBuffer = await downloadWhatsAppMedia(mediaId);
+            const transcript = await transcribeAudioBuffer(
+              audioBuffer,
+              message.audio?.mime_type || 'audio/ogg'
+            );
 
-  const normalized = normalizeText(body);
+            if (!transcript) {
+              await replyToGuest(
+                from,
+                'Recebi seu áudio, mas não consegui entender bem. Pode me mandar novamente ou escrever por texto? 😊',
+                { alsoSendAudio: cameFromAudio }
+              );
+              continue;
+            }
+
+            body = transcript;
+            console.log('[audio transcript]', { from, transcript });
+          } catch (err) {
+            console.error('Failed to process audio message', err);
+            await replyToGuest(
+              from,
+              'Recebi seu áudio, mas tive uma falha para processar agora. Pode tentar novamente ou me escrever por texto? 😊',
+              { alsoSendAudio: cameFromAudio }
+            );
+            continue;
+          }
+        } else {
+          continue;
+        }
+
+        const normalized = normalizeText(body);
         console.log('[incoming]', { from, body, normalized });
 
         if (shouldSendGreeting(normalized)) {
-        await replyToGuest(from, GREETING_RESPONSE, { alsoSendAudio: cameFromAudio });
-        continue;
+          await replyToGuest(from, GREETING_RESPONSE, { alsoSendAudio: cameFromAudio });
+          continue;
         }
 
         if (shouldSendThanks(normalized)) {
-        await replyToGuest(from, THANKS_RESPONSE, { alsoSendAudio: cameFromAudio });
-        continue;
+          await replyToGuest(from, THANKS_RESPONSE, { alsoSendAudio: cameFromAudio });
+          continue;
         }
-      
+
         if (shouldSendMenu(normalized)) {
           console.log('[menu] sending menu response');
           await replyToGuest(from, MENU_RESPONSE, { alsoSendAudio: cameFromAudio });
@@ -477,11 +496,12 @@ async function handleIncoming(payload) {
         }
 
         const confirmationHandled = await maybeHandleReservationConfirmation({
-            rawText: body,
-            normalizedText: normalized,
-            from,
-            cameFromAudio
+          rawText: body,
+          normalizedText: normalized,
+          from,
+          cameFromAudio
         });
+
         if (confirmationHandled) {
           continue;
         }
@@ -521,19 +541,20 @@ async function handleIncoming(payload) {
         } else {
           const aiReply = await getChatGptFallbackReply(body, from);
 
-        if (aiReply) {
-          await replyToGuest(from, aiReply, { alsoSendAudio: cameFromAudio });
-        } else {
-          const faqResponse = getFaqResponse(normalized);
-
-          if (faqResponse) {
-            await replyToGuest(from, faqResponse, { alsoSendAudio: cameFromAudio });
+          if (aiReply) {
+            await replyToGuest(from, aiReply, { alsoSendAudio: cameFromAudio });
           } else {
-             await replyToGuest(
-               from,
-               `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, é só digitar "menu".`,
-              { alsoSendAudio: cameFromAudio }
-            );
+            const faqResponse = getFaqResponse(normalized);
+
+            if (faqResponse) {
+              await replyToGuest(from, faqResponse, { alsoSendAudio: cameFromAudio });
+            } else {
+              await replyToGuest(
+                from,
+                `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, é só digitar "menu".`,
+                { alsoSendAudio: cameFromAudio }
+              );
+            }
           }
         }
       }
