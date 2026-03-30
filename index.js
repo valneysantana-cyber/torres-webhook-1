@@ -45,49 +45,42 @@ const HUMAN_ESCALATION_RESPONSE = `Para qualquer outra dúvida, nosso concierge 
 
 const CONFIRMATION_PROMPT = `Claro! Me envia o código da sua reserva (ex.: IC09J) ou os dados completos para eu confirmar no sistema.`;
 
-const WIFI_RESPONSE = `Acesso ao Wi-Fi
-Conecte-se à rede do hotel e, ao abrir o portal Captiva, informe Nome + CPF (os mesmos do check-in).
+const WIFI_RESPONSE = `O Acesso ao Wi-Fi é através da rede do hotel. Ao abrir o portal Captiva, basta informar o Nome + CPF (os mesmos do check-in).
 Se tiver qualquer dificuldade, me chama aqui que eu ajudo. 🌴`;
 
-const BREAKFAST_RESPONSE = `☕ Café da Manhã
-Incluso na sua reserva, servido no restaurante do lobby (em frente à recepção).
+const BREAKFAST_RESPONSE = `☕ O Café da Manhã está incluso na sua reserva, servido no restaurante do lobby (em frente à recepção).
 🕒 Todos os dias, das 06h30 às 10h00.
 Aproveite para começar o dia muito bem! 🌴`;
 
-const POOL_RESPONSE = `🏊‍♀️ Piscina & Academia
-A infraestrutura do hotel fica disponível todos os dias, das 08h00 às 21h00.
+const POOL_RESPONSE = `🏊‍♀️ Piscina & Academia estão disponíveis dentro da infraestrutura do hotel acessível todos os dias, das 08h00 às 21h00.
 Aproveite a piscina para relaxar e a academia para manter a rotina! 🌴`;
 
-const PARKING_RESPONSE = `🚗 Estacionamento
-O estacionamento é dentro do prédio, com manobrista.
+const PARKING_RESPONSE = `🚗 O estacionamento incluso em sua reserva é dentro do prédio, com manobrista.
 Basta informar que está hospedado em flat do condomínio.
 ✔️ Sem custo adicional para hóspedes. Qualquer dúvida, me avisa! 🌴`;
 
-const SNACKS_RESPONSE = `🍫 Snacks e Conveniência
-Deixamos snacks no apartamento para sua comodidade.
+const SNACKS_RESPONSE = `🍫 Os Snacks e Conveniência
+Deixamos no apartamento para sua comodidade.
 💳 Pagamento via PIX 62.169.624/0001-94.
 📋 A tabela está na bancada; se preferir, te envio aqui.
 Curta com vontade! 🌴`;
 
-const TOWELS_RESPONSE = `🧺 Troca de Toalhas
-Para estadias acima de dois dias, fazemos a troca a cada 48h.
+const TOWELS_RESPONSE = `🧺 A Troca de Toalhas para estadias acima de dois dias, é feita a cada 48h.
 Se precisar antes, é só me avisar que agilizo com a governança. 🌴`;
 
-const RESTAURANT_RESPONSE = `🍽️ Restaurante do Hotel
-O restaurante no lobby oferece refeições à la carte ao longo do dia.
+const RESTAURANT_RESPONSE = `🍽️ O Restaurante do Hotel com acesso pelo lobby oferece refeições à la carte ao longo do dia.
 Perfeito para quem quer comer bem sem sair do prédio. Se quiser sugestões, me chama! 🌴`;
 
-const CHECKIN_RESPONSE = `🕐 Check-in & Check-out
+const CHECKIN_RESPONSE = `🕐 Check-in & Check-out possuem limites de horário, sobretudo o check-out, pois o time de governança do hotel pede uma hora para limpeza e higienização.
 Check-in: a partir das 14h
 Check-out: até 12h
 A recepção funciona 24h com equipe de segurança para te receber em qualquer horário. 🌴`;
 
-const SECURITY_RESPONSE = `🔐 Segurança & Recepção
-Contamos com recepção 24h, controle de acesso e equipe no local o tempo todo.
+const SECURITY_RESPONSE = `🔐 Contamos com Segurança & Recepção 24h, controle de acesso e equipe no local o tempo todo.
 Pode chegar tranquilo(a), estamos sempre por perto. 🌴`;
 
 const TRANSFER_RESPONSE = `✈️ Transfer Aeroporto
-Oferecemos apoio com transfer sob demanda.
+Oferecemos apoio com transfer sob demanda e com custo adicional.
 Me avise seu voo e horário que conecto você direto com nossa concierge no ${HUMAN_NUMBER_PRIMARY} ou ${HUMAN_NUMBER_SECONDARY} para finalizar os detalhes. 🌴`;
 
 const LOCATION_RESPONSE = `📍 Diferenciais TorresGuest
@@ -112,7 +105,8 @@ Se notar qualquer instabilidade, me chama que aciono o time técnico na hora. �
 
 const LUGGAGE_RESPONSE = `🧳 Guarda de malas
 Precisando deixar bagagem antes do check-in ou depois do check-out?
-Organizo com a recepção conforme disponibilidade. Me informe horários que já deixo alinhado. 🌴`;
+Temos um acordo com o Sr. Alberto (chefe do restaurante) para guardar as malas de nossos hospedes conforme disponibilidade. 
+Me informe horários que já deixo alinhado com ele. 🌴`;
 
 const GREETING_RESPONSE = `Olá! 😊 Que bom falar com você.
 
