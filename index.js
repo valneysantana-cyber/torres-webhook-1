@@ -437,7 +437,7 @@ async function handleIncoming(payload) {
     try {
       const mediaId = message.audio?.id;
       if (!mediaId) {
-        await replyToGuest(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎙️', { alsoSendAudio: cameFromAudio });
+        await replyToGuest(from, 'Recebi seu áudio, mas não consegui entender bem. Pode me mandar novamente ou escrever por texto? 😊', { alsoSendAudio: cameFromAudio });
         continue;
       }
 
@@ -445,7 +445,7 @@ async function handleIncoming(payload) {
       const transcript = await transcribeAudioBuffer(audioBuffer, message.audio?.mime_type || 'audio/ogg');
 
       if (!transcript) {
-        await replyToGuest(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎙️', { alsoSendAudio: cameFromAudio });
+        await replyToGuest(from, 'Recebi seu áudio, mas tive uma falha para processar agora. Pode tentar novamente ou me escrever por texto? 😊', { alsoSendAudio: cameFromAudio });
         continue;
       }
 
@@ -862,6 +862,16 @@ async function transcribeAudioBuffer(buffer, mimeType = 'audio/ogg') {
   return data?.text?.trim() || null;
 }
 
+function shortenForAudio(text) {
+  if (!text) return text;
+
+  return text
+    .replace(/\n+/g, ' ')
+    .replace('Se quiser voltar ao menu, é só digitar "menu".', '')
+    .replace('Qualquer coisa que precisar, estou por aqui para te ajudar. 🌴', 'Qualquer coisa, estou por aqui.')
+    .trim();
+}
+
 async function replyToGuest(to, text, options = {}) {
   const { alsoSendAudio = true } = options;
 
@@ -870,7 +880,8 @@ async function replyToGuest(to, text, options = {}) {
   if (!alsoSendAudio) return;
 
   try {
-    const audioBuffer = await synthesizeSpeechBuffer(text);
+    const shortAudioText = shortenForAudio(text);
+    const audioBuffer = await synthesizeSpeechBuffer(shortAudioText);
     const mediaId = await uploadWhatsAppAudio(audioBuffer, 'reply.mp3', 'audio/mpeg');
     await sendWhatsAppAudio(to, mediaId);
   } catch (err) {
@@ -894,7 +905,7 @@ async function synthesizeSpeechBuffer(text) {
       voice: OPENAI_TTS_VOICE,
       input: text,
       format: 'mp3',
-      instructions: 'Fale em português do Brasil, com tom acolhedor, educado e estilo concierge de hotel.'
+      instructions: 'Fale em português do Brasil de forma natural, simpática e acolhedora, como atendimento humano de concierge. Evite soar robótico ou formal demais.'
     }),
   });
 
