@@ -17,6 +17,9 @@ const HUMAN_NUMBER_SECONDARY = '+55 13 99615-5505';
 const CONFIRMATION_TTL_MS = 10 * 60 * 1000;
 const pendingConfirmations = new Map();
 
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe';
+
 const MENU_RESPONSE = `Olá! Seja muito bem-vindo(a) à TorresGuest 😊
 
 Estou aqui para te ajudar com tudo da sua hospedagem. Escolha uma opção ou digite o tema direto:
@@ -417,23 +420,52 @@ async function handleIncoming(payload) {
       const value = change.value || {};
       const messages = value.messages || [];
       for (const message of messages) {
-        if (message.type !== 'text') continue;
-        const body = message.text?.body || '';
-        const from = message.from;
-        if (!from) continue;
+  const from = message.from;
+  if (!from) continue;
 
-        const normalized = normalizeText(body);
+  let body = '';
+
+  if (message.type === 'text') {
+    body = message.text?.body || '';
+  } else if (message.type === 'audio') {
+    try {
+      const mediaId = message.audio?.id;
+      if (!mediaId) {
+        await sendWhatsAppText(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎙️');
+        continue;
+      }
+
+      const audioBuffer = await downloadWhatsAppMedia(mediaId);
+      const transcript = await transcribeAudioBuffer(audioBuffer, message.audio?.mime_type || 'audio/ogg');
+
+      if (!transcript) {
+        await sendWhatsAppText(from, 'Recebi seu áudio, mas não consegui entender bem. Pode me mandar novamente ou escrever por texto? 😊');
+        continue;
+      }
+
+      body = transcript;
+      console.log('[audio transcript]', { from, transcript });
+    } catch (err) {
+      console.error('Failed to process audio message', err);
+      await sendWhatsAppText(from, 'Recebi seu áudio, mas tive uma falha para processar agora. Pode tentar novamente ou me escrever por texto? 😊');
+      continue;
+    }
+  } else {
+    continue;
+  }
+
+  const normalized = normalizeText(body);
         console.log('[incoming]', { from, body, normalized });
         const faqResponse = getFaqResponse(normalized);
 
         if (shouldSendGreeting(normalized)) {
         await sendWhatsAppText(from, GREETING_RESPONSE);
-        return;
+        continue;
         }
 
         if (shouldSendThanks(normalized)) {
         await sendWhatsAppText(from, THANKS_RESPONSE);
-        return;
+        continue;
         }
       
         if (shouldSendMenu(normalized)) {
@@ -746,6 +778,77 @@ function formatDateBRT(dateStr) {
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return dateStr;
   return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+}
+
+async function downloadWhatsAppMedia(mediaId) {
+  if (!WHATSAPP_TOKEN) {
+    throw new Error('Missing WhatsApp token');
+  }
+
+  const metaRes = await fetch(`https://graph.facebook.com/v25.0/${mediaId}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+    },
+  });
+
+  if (!metaRes.ok) {
+    const errorText = await metaRes.text();
+    throw new Error(`Failed to fetch media metadata: ${metaRes.status} ${errorText}`);
+  }
+
+  const meta = await metaRes.json();
+  if (!meta?.url) {
+    throw new Error('Media URL not found');
+  }
+
+  const fileRes = await fetch(meta.url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+    },
+  });
+
+  if (!fileRes.ok) {
+    const errorText = await fileRes.text();
+    throw new Error(`Failed to download media: ${fileRes.status} ${errorText}`);
+  }
+
+  const arrayBuffer = await fileRes.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
+async function transcribeAudioBuffer(buffer, mimeType = 'audio/ogg') {
+  if (!OPENAI_API_KEY) {
+    console.error('Missing OPENAI_API_KEY');
+    return null;
+  }
+
+  const form = new FormData();
+  const ext = mimeType.includes('mpeg') ? 'mp3' : mimeType.includes('mp4') ? 'mp4' : mimeType.includes('wav') ? 'wav' : 'ogg';
+
+  form.append(
+    'file',
+    new Blob([buffer], { type: mimeType }),
+    `guest-audio.${ext}`
+  );
+  form.append('model', OPENAI_TRANSCRIBE_MODEL);
+
+  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: form,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenAI transcription failed: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data?.text?.trim() || null;
 }
 
 async function sendWhatsAppText(to, body) {
