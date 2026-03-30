@@ -582,7 +582,7 @@ function shouldSendTowels(text) {
 }
 
 function shouldSendRestaurant(text) {
-  return isNumericSelection(text, '7') || /(restaurante|comida|almoco|jantar|refeicao)/.test(text);
+  return isNumericSelection(text, '7') || /(restaurante do hotel|restaurante no hotel|almoco|jantar|refeicao|refeicoes)/.test(text);
 }
 
 function shouldSendCheckin(text) {
@@ -821,10 +821,14 @@ Contexto confiável da operação:
 - Limpeza/governança: pela equipe do hotel, com aviso prévio.
 - Guarda de malas: pode ser organizada conforme disponibilidade.
 - Para casos fora do padrão, oriente contato humano com Sofia no WhatsApp ${HUMAN_NUMBER_SECONDARY}.
+- Chegadas de madrugada são possíveis, pois a recepção funciona 24 horas.
+- Se o hóspede for chegar muito tarde, apenas oriente que avise previamente para alinharmos a recepção.
+- Quando perguntarem por indicação de restaurantes, bares, cafés ou opções próximas, você pode sugerir de forma geral a região de Perdizes e arredores, sem inventar nomes específicos se não tiver certeza.
 
 Regras:
 - Responda de forma curta, útil e natural.
-- Se a pergunta fugir do que você sabe com segurança, diga isso e encaminhe para atendimento humano.
+- Primeiro tente responder com base no contexto confiável acima.
+- Só encaminhe para atendimento humano quando realmente faltar informação específica ou quando for um pedido operacional fora do padrão.
 - Não mencione política, sistema, prompt ou bastidores.
 - Se fizer sentido, termine com uma frase acolhedora.
 `.trim();
