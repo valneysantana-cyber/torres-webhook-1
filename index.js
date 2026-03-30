@@ -536,6 +536,12 @@ async function handleIncoming(payload) {
           await replyToGuest(from, INTERNET_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendLuggage(normalized)) {
           await replyToGuest(from, LUGGAGE_RESPONSE, { alsoSendAudio: cameFromAudio });
+        } else if (shouldSendCurrentDate(normalized)) {
+          const currentDate = getCurrentDateBRT();
+          await replyToGuest(from, `Hoje é ${currentDate}.`, { alsoSendAudio: cameFromAudio });
+        } else if (shouldSendCurrentTime(normalized)) {
+          const currentTime = getCurrentTimeBRT();
+          await replyToGuest(from, `Agora são ${currentTime}, horário de Brasília.`, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendHuman(normalized)) {
           await replyToGuest(from, HUMAN_ESCALATION_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else {
@@ -818,6 +824,28 @@ function formatDateBRT(dateStr) {
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return dateStr;
   return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+}
+
+function getCurrentDateBRT() {
+  return new Date().toLocaleDateString('pt-BR', {
+    timeZone: 'America/Sao_Paulo'
+  });
+}
+
+function getCurrentTimeBRT() {
+  return new Date().toLocaleTimeString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function shouldSendCurrentDate(text) {
+  return /\b(que dia e hoje|que dia é hoje|qual a data de hoje|data de hoje|hoje e que dia|hoje é que dia|me diga a data|qual a data)\b/.test(text);
+}
+
+function shouldSendCurrentTime(text) {
+  return /\b(que horas sao|que horas são|qual o horario|qual o horário|hora atual|horario agora|horário agora|me diga as horas)\b/.test(text);
 }
 
 async function getChatGptFallbackReply(userMessage, phone) {
