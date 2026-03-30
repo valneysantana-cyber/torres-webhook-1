@@ -866,7 +866,9 @@ function shortenForAudio(text) {
   if (!text) return text;
 
   return text
-    .replace(/\n+/g, ' ')
+    .replace(/\n+/g, ' ')           // remove quebras
+    .replace(/\.\s+/g, '. ')       // mantém fluidez
+    .replace(/:\s+/g, ', ')        // evita pausa longa
     .replace('Se quiser voltar ao menu, é só digitar "menu".', '')
     .replace('Qualquer coisa que precisar, estou por aqui para te ajudar. 🌴', 'Qualquer coisa, estou por aqui.')
     .trim();
@@ -874,6 +876,9 @@ function shortenForAudio(text) {
 
 async function replyToGuest(to, text, options = {}) {
   const { alsoSendAudio = true } = options;
+
+const shouldSendAudio = alsoSendAudio && text.length <= 180;
+if (!shouldSendAudio) return;
 
   await sendWhatsAppText(to, text);
 
@@ -905,7 +910,7 @@ async function synthesizeSpeechBuffer(text) {
       voice: OPENAI_TTS_VOICE,
       input: text,
       format: 'mp3',
-      instructions: 'Fale em português do Brasil de forma natural, simpática e acolhedora, como atendimento humano de concierge. Evite soar robótico ou formal demais.'
+      instructions: 'Fale em português do Brasil de forma natural, simpática e acolhedora, com ritmo mais rápido, fluido e com poucas pausas. Evite falar devagar ou robótico.'
     }),
   });
 
