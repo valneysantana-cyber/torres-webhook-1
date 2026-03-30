@@ -617,7 +617,7 @@ function shouldSendTransfer(text) {
 }
 
 function shouldSendHuman(text) {
-  return isNumericSelection(text, '10') || /(falar com atendente|falar com humano|quero falar com alguem|preciso de atendimento humano|me chama um atendente)/.test(text);
+  return isNumericSelection(text, '10') || /\b(falar com atendente|falar com humano|quero falar com alguem|preciso de atendimento humano|me chama um atendente)\b/.test(text);
 }
 
 function shouldSendSecurity(text) {
