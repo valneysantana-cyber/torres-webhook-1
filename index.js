@@ -20,6 +20,9 @@ const pendingConfirmations = new Map();
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe';
 
+const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
+const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'alloy';
+
 const MENU_RESPONSE = `Olá! Seja muito bem-vindo(a) à TorresGuest 😊
 
 Estou aqui para te ajudar com tudo da sua hospedagem. Escolha uma opção ou digite o tema direto:
@@ -423,15 +426,18 @@ async function handleIncoming(payload) {
   const from = message.from;
   if (!from) continue;
 
+  let cameFromAudio = false;
+        
   let body = '';
 
   if (message.type === 'text') {
     body = message.text?.body || '';
   } else if (message.type === 'audio') {
+    cameFromAudio = true;
     try {
       const mediaId = message.audio?.id;
       if (!mediaId) {
-        await sendWhatsAppText(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎙️');
+        await replyToGuest(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎙️', { alsoSendAudio: cameFromAudio });
         continue;
       }
 
@@ -439,7 +445,7 @@ async function handleIncoming(payload) {
       const transcript = await transcribeAudioBuffer(audioBuffer, message.audio?.mime_type || 'audio/ogg');
 
       if (!transcript) {
-        await sendWhatsAppText(from, 'Recebi seu áudio, mas não consegui entender bem. Pode me mandar novamente ou escrever por texto? 😊');
+        await replyToGuest(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎙️', { alsoSendAudio: cameFromAudio });
         continue;
       }
 
@@ -447,7 +453,7 @@ async function handleIncoming(payload) {
       console.log('[audio transcript]', { from, transcript });
     } catch (err) {
       console.error('Failed to process audio message', err);
-      await sendWhatsAppText(from, 'Recebi seu áudio, mas tive uma falha para processar agora. Pode tentar novamente ou me escrever por texto? 😊');
+      await replyToGuest(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎙️', { alsoSendAudio: cameFromAudio });
       continue;
     }
   } else {
@@ -459,18 +465,18 @@ async function handleIncoming(payload) {
         const faqResponse = getFaqResponse(normalized);
 
         if (shouldSendGreeting(normalized)) {
-        await sendWhatsAppText(from, GREETING_RESPONSE);
+        await replyToGuest(from, GREETING_RESPONSE, { alsoSendAudio: cameFromAudio });
         continue;
         }
 
         if (shouldSendThanks(normalized)) {
-        await sendWhatsAppText(from, THANKS_RESPONSE);
+        await replyToGuest(from, THANKS_RESPONSE, { alsoSendAudio: cameFromAudio });
         continue;
         }
       
         if (shouldSendMenu(normalized)) {
           console.log('[menu] sending menu response');
-          await sendWhatsAppText(from, MENU_RESPONSE);
+          await replyToGuest(from, MENU_RESPONSE, { alsoSendAudio: cameFromAudio });
           pendingConfirmations.delete(from);
           continue;
         }
@@ -849,6 +855,22 @@ async function transcribeAudioBuffer(buffer, mimeType = 'audio/ogg') {
 
   const data = await response.json();
   return data?.text?.trim() || null;
+}
+
+async function replyToGuest(to, text, options = {}) {
+  const { alsoSendAudio = true } = options;
+
+  await sendWhatsAppText(to, text);
+
+  if (!alsoSendAudio) return;
+
+  try {
+    const audioBuffer = await synthesizeSpeechBuffer(text);
+    const mediaId = await uploadWhatsAppAudio(audioBuffer, 'reply.mp3', 'audio/mpeg');
+    await sendWhatsAppAudio(to, mediaId);
+  } catch (err) {
+    console.error('Failed to send audio reply', err);
+  }
 }
 
 async function sendWhatsAppText(to, body) {
