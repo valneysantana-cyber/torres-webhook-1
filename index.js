@@ -25,8 +25,6 @@ const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'alloy';
 
 const OPENAI_CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || 'gpt-4.1-mini';
 
-const STAYS_PASSWORD = process.env.STAYS_API_PASSWORD || process.env.STAYS_API_PASS;
-
 const FIXED_ADDRESS = 'TorresGuest Hospedagem - Rua Monte Alegre, 835 - Perdizes, São Paulo - SP';
 
 const MENU_RESPONSE = `Olá! Seja muito bem-vindo(a) à TorresGuest 😊
