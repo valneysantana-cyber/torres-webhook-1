@@ -879,14 +879,6 @@ async function replyToGuest(to, text, options = {}) {
 
   await sendWhatsAppText(to, text);
 
-  const shouldSendAudio = alsoSendAudio && text.length <= 280;
-  if (!shouldSendAudio) return;
-
-  async function replyToGuest(to, text, options = {}) {
-  const { alsoSendAudio = true } = options;
-
-  await sendWhatsAppText(to, text);
-
   if (!alsoSendAudio) return;
 
   try {
@@ -897,6 +889,7 @@ async function replyToGuest(to, text, options = {}) {
     const audioBuffer = await synthesizeSpeechBuffer(shortAudioText);
     const mediaId = await uploadWhatsAppAudio(audioBuffer, 'reply.mp3', 'audio/mpeg');
     await sendWhatsAppAudio(to, mediaId);
+
   } catch (err) {
     console.error('Failed to send audio reply', err);
   }
