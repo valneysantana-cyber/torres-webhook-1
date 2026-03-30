@@ -517,9 +517,22 @@ async function handleIncoming(payload) {
           await replyToGuest(from, INTERNET_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendLuggage(normalized)) {
           await replyToGuest(from, LUGGAGE_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (faqResponse) {
-          await replyToGuest(from, faqResponse, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendHuman(normalized)) {
+          await replyToGuest(from, HUMAN_ESCALATION_RESPONSE, { alsoSendAudio: cameFromAudio });
+        } else {
+          const aiReply = await getChatGptFallbackReply(body, from);
+  if (aiReply) {
+    await replyToGuest(from, aiReply, { alsoSendAudio: cameFromAudio });
+  } else if (faqResponse) {
+    await replyToGuest(from, faqResponse, { alsoSendAudio: cameFromAudio });
+  } else {
+    await replyToGuest(
+      from,
+      `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, é só digitar "menu".`,
+      { alsoSendAudio: cameFromAudio }
+    );
+  }
+}
           await replyToGuest(from, HUMAN_ESCALATION_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else {
           const aiReply = await getChatGptFallbackReply(body, from);
