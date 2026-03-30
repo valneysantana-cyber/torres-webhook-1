@@ -859,6 +859,7 @@ Regras:
   const data = await response.json();
   return data.output_text?.trim() || null;
 }
+async function downloadWhatsAppMedia(mediaId) {
   if (!WHATSAPP_TOKEN) {
     throw new Error('Missing WhatsApp token');
   }
