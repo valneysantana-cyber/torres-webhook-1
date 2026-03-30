@@ -879,11 +879,21 @@ async function replyToGuest(to, text, options = {}) {
 
   await sendWhatsAppText(to, text);
 
-  const shouldSendAudio = alsoSendAudio && text.length <= 180;
+  const shouldSendAudio = alsoSendAudio && text.length <= 280;
   if (!shouldSendAudio) return;
+
+  async function replyToGuest(to, text, options = {}) {
+  const { alsoSendAudio = true } = options;
+
+  await sendWhatsAppText(to, text);
+
+  if (!alsoSendAudio) return;
 
   try {
     const shortAudioText = shortenForAudio(text);
+
+    if (shortAudioText.length > 220) return;
+
     const audioBuffer = await synthesizeSpeechBuffer(shortAudioText);
     const mediaId = await uploadWhatsAppAudio(audioBuffer, 'reply.mp3', 'audio/mpeg');
     await sendWhatsAppAudio(to, mediaId);
