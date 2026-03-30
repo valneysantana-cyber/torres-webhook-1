@@ -86,8 +86,10 @@ Me avise seu voo e horário que conecto você direto com nossa concierge no ${HU
 
 const LOCATION_RESPONSE = `📍 Diferenciais TorresGuest
 • Flats dentro de um hotel completo (piscina, academia, restaurante)
-• Localização excelente em Santos/SP
+• Localização excelente em Perdizes, São Paulo/SP
+• Próximo ao Allianz Parque, PUC-SP e Shopping Bourbon
 • Atendimento próximo e humanizado, estilo concierge
+
 Ideal para lazer ou trabalho. Precisa de algo específico? Só chamar! 🌴`;
 
 const LONG_STAY_RESPONSE = `💰 Estadias longas
@@ -367,6 +369,10 @@ const RESERVATION_NOT_FOUND = (code) => `Ainda não localizei a reserva ${code}.
 const app = express();
 app.use(bodyParser.json());
 
+app.get('/', (req, res) => {
+  res.status(200).send('torres-webhook online');
+});
+
 app.get('/whatsapp-webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
@@ -482,7 +488,7 @@ function isNumericSelection(text, ...options) {
 }
 
 function shouldSendMenu(text) {
-  return isNumericSelection(text, '0') || /(menu|opcao|opcoes|ajuda|inicio|start|comecar)/.test(text);
+  return isNumericSelection(text, '0') || /\b(menu|opcao|opcoes|ajuda|inicio|start|comecar)\b/.test(text);
 }
 
 function shouldSendWifi(text) {
