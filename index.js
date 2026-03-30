@@ -114,7 +114,9 @@ Precisando deixar bagagem antes do check-in ou depois do check-out?
 Temos um acordo com o Sr. Alberto (chefe do restaurante) para guardar as malas de nossos hospedes conforme disponibilidade. 
 Me informe horários que já deixo alinhado com ele. 🌴`;
 
-const GREETING_RESPONSE = `Claro 😊 Me diga o que você precisa, ou digite *menu* para ver as opções. 🌴`;
+const GREETING_RESPONSE = (name) => `Perfeito, ${name || 'tudo bem'} 😊
+
+Me diga o que você precisa, ou digite *menu* para ver as opções. 🌴`;
 
 const THANKS_RESPONSE = `Imagina! 😊
 
@@ -430,7 +432,9 @@ async function handleIncoming(payload) {
 
       const value = change.value || {};
       const messages = value.messages || [];
-
+      
+      const contactName = value.contacts?.[0]?.profile?.name || '';
+      
       for (const message of messages) {
         const from = message.from;
         if (!from) continue;
@@ -494,7 +498,7 @@ async function handleIncoming(payload) {
         }
         
         if (shouldSendGreeting(normalized)) {
-          await replyToGuest(from, GREETING_RESPONSE, { alsoSendAudio: cameFromAudio });
+          await replyToGuest(from, GREETING_RESPONSE(contactName), { alsoSendAudio: cameFromAudio });
           continue;
         }
 
