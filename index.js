@@ -488,6 +488,11 @@ async function handleIncoming(payload) {
         const normalized = normalizeText(body);
         console.log('[incoming]', { from, body, normalized });
 
+        if (shouldRedirectToReservationSite(normalized)) {
+          await replyToGuest(from, RESERVATION_SITE_RESPONSE, { alsoSendAudio: cameFromAudio });
+          continue;
+        }
+        
         if (shouldSendGreeting(normalized)) {
           await replyToGuest(from, GREETING_RESPONSE, { alsoSendAudio: cameFromAudio });
           continue;
