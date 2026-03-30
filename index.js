@@ -108,6 +108,15 @@ const LUGGAGE_RESPONSE = `🧳 Guarda de malas
 Precisando deixar bagagem antes do check-in ou depois do check-out?
 Organizo com a recepção conforme disponibilidade. Me informe horários que já deixo alinhado. 🌴`;
 
+const GREETING_RESPONSE = `Olá! 😊 Que bom falar com você.
+
+Sou o assistente da TorresGuest e estou aqui para te ajudar com tudo da sua hospedagem.
+
+Se quiser, posso te mostrar o menu — é só digitar *menu* ou escolher um tema direto. 🌴`;
+
+const THANKS_RESPONSE = `Imagina! 😊
+
+Qualquer coisa que precisar, estou por aqui para te ajudar. 🌴`;
 
 const FAQ_ENTRIES = [
   {
@@ -417,6 +426,16 @@ async function handleIncoming(payload) {
         console.log('[incoming]', { from, body, normalized });
         const faqResponse = getFaqResponse(normalized);
 
+        if (shouldSendGreeting(normalized)) {
+        await sendWhatsAppText(from, GREETING_RESPONSE);
+        return;
+        }
+
+        if (shouldSendThanks(normalized)) {
+        await sendWhatsAppText(from, THANKS_RESPONSE);
+        return;
+        }
+      
         if (shouldSendMenu(normalized)) {
           console.log('[menu] sending menu response');
           await sendWhatsAppText(from, MENU_RESPONSE);
@@ -551,6 +570,14 @@ function shouldSendInternet(text) {
 
 function shouldSendLuggage(text) {
   return /(mala|bagagem|guardar|luggage|depositar)/.test(text);
+}
+
+function shouldSendGreeting(text) {
+  return /\b(oi|ola|olá|bom dia|boa tarde|boa noite|e ai|eai|hey|hello|hi|como vai|tudo bem)\b/.test(text);
+}
+
+function shouldSendThanks(text) {
+  return /\b(obrigado|obrigada|valeu|agradeco|agradeço|thanks|thank you)\b/.test(text);
 }
 
 function getFaqResponse(text) {
