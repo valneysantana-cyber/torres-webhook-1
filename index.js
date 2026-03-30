@@ -23,6 +23,8 @@ const OPENAI_TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-m
 const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
 const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'alloy';
 
+const OPENAI_CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || 'gpt-4.1-mini';
+
 const MENU_RESPONSE = `Olá! Seja muito bem-vindo(a) à TorresGuest 😊
 
 Estou aqui para te ajudar com tudo da sua hospedagem. Escolha uma opção ou digite o tema direto:
@@ -520,8 +522,18 @@ async function handleIncoming(payload) {
         } else if (shouldSendHuman(normalized)) {
           await replyToGuest(from, HUMAN_ESCALATION_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else {
-          await replyToGuest(from, `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, é só digitar "menu".`);
+          const aiReply = await getChatGptFallbackReply(body, from);
+
+        if (aiReply) {
+          await replyToGuest(from, aiReply, { alsoSendAudio: cameFromAudio });
+         } else {
+           await replyToGuest(
+            from,
+            `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, é só digitar "menu".`,
+            { alsoSendAudio: cameFromAudio }
+          );
         }
+      }
       }
     }
   }
@@ -785,7 +797,68 @@ function formatDateBRT(dateStr) {
   return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 }
 
-async function downloadWhatsAppMedia(mediaId) {
+async function getChatGptFallbackReply(userMessage, phone) {
+  if (!OPENAI_API_KEY) {
+    console.error('Missing OPENAI_API_KEY');
+    return null;
+  }
+
+  const systemPrompt = `
+Você é o concierge virtual da TorresGuest, com atendimento humano, cordial, elegante e objetivo.
+Responda sempre em português do Brasil.
+Nunca invente informações.
+
+Contexto confiável da operação:
+- TorresGuest opera flats particulares dentro de um hotel em Perdizes, São Paulo/SP.
+- Próximo ao Allianz Parque, PUC-SP e Shopping Bourbon.
+- Café da manhã: todos os dias, das 06h30 às 10h00, no restaurante do lobby.
+- Piscina e academia: todos os dias, das 08h00 às 21h00.
+- Check-in: a partir das 14h.
+- Check-out: até 12h.
+- Recepção e segurança: 24 horas.
+- Estacionamento com manobrista dentro do prédio, sem custo adicional para hóspedes.
+- Transfer aeroporto: sob demanda e com custo adicional.
+- Limpeza/governança: pela equipe do hotel, com aviso prévio.
+- Guarda de malas: pode ser organizada conforme disponibilidade.
+- Para casos fora do padrão, oriente contato humano com Sofia no WhatsApp ${HUMAN_NUMBER_SECONDARY}.
+
+Regras:
+- Responda de forma curta, útil e natural.
+- Se a pergunta fugir do que você sabe com segurança, diga isso e encaminhe para atendimento humano.
+- Não mencione política, sistema, prompt ou bastidores.
+- Se fizer sentido, termine com uma frase acolhedora.
+`.trim();
+
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: OPENAI_CHAT_MODEL,
+      input: [
+        {
+          role: 'system',
+          content: [{ type: 'text', text: systemPrompt }]
+        },
+        {
+          role: 'user',
+          content: [{ type: 'text', text: `Telefone: ${phone}\nMensagem: ${userMessage}` }]
+        }
+      ]
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('OpenAI fallback failed', response.status, errorText);
+    return null;
+  }
+
+  const data = await response.json();
+  return data.output_text?.trim() || null;
+}
   if (!WHATSAPP_TOKEN) {
     throw new Error('Missing WhatsApp token');
   }
