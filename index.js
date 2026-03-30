@@ -112,11 +112,7 @@ Precisando deixar bagagem antes do check-in ou depois do check-out?
 Temos um acordo com o Sr. Alberto (chefe do restaurante) para guardar as malas de nossos hospedes conforme disponibilidade. 
 Me informe horários que já deixo alinhado com ele. 🌴`;
 
-const GREETING_RESPONSE = `Olá! 😊 Que bom falar com você.
-
-Sou o assistente da TorresGuest e estou aqui para te ajudar com tudo da sua hospedagem.
-
-Se quiser, posso te mostrar o menu — é só digitar *menu* ou escolher um tema direto. 🌴`;
+const GREETING_RESPONSE = `Claro 😊 Me diga o que você precisa, ou digite *menu* para ver as opções. 🌴`;
 
 const THANKS_RESPONSE = `Imagina! 😊
 
