@@ -995,7 +995,7 @@ async function replyToGuest(to, text, options = {}) {
   try {
     const shortAudioText = shortenForAudio(text);
 
-    if (shortAudioText.length > 320) return;
+    if (shortAudioText.length > 600) return;
 
     const audioBuffer = await synthesizeSpeechBuffer(shortAudioText);
     const mediaId = await uploadWhatsAppAudio(audioBuffer, 'reply.mp3', 'audio/mpeg');
