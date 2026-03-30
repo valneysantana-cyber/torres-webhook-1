@@ -429,9 +429,7 @@ async function handleIncoming(payload) {
           continue;
         }
 
-        if (shouldSendMenu(normalized)) {
-          await sendWhatsAppText(from, MENU_RESPONSE);
-        } else if (shouldSendWifi(normalized)) {
+        if (shouldSendWifi(normalized)) {
           await sendWhatsAppText(from, WIFI_RESPONSE);
         } else if (shouldSendBreakfast(normalized)) {
           await sendWhatsAppText(from, BREAKFAST_RESPONSE);
@@ -492,7 +490,7 @@ function shouldSendMenu(text) {
 }
 
 function shouldSendWifi(text) {
-  return isNumericSelection(text, '1') || /(wi\s*-?\s*fi|wifi|senha do wi fi|internet)/.test(text);
+  return isNumericSelection(text, '1') || /(wi\s*-?\s*fi|wifi|senha do wi fi|senha wifi|senha do wifi)/.test(text);
 }
 
 function shouldSendBreakfast(text) {
@@ -520,7 +518,7 @@ function shouldSendRestaurant(text) {
 }
 
 function shouldSendCheckin(text) {
-  return isNumericSelection(text, '8') || /(checkin|check-in|checkout|check-out|entrada|saida|saída|horario|horário)/.test(text);
+  return isNumericSelection(text, '8') || /(checkin|check-in|checkout|check-out|horario de checkin|horario de checkout|entrada|saida|saída)/.test(text);
 }
 
 function shouldSendTransfer(text) {
