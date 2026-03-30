@@ -494,7 +494,7 @@ function shouldSendWifi(text) {
 }
 
 function shouldSendBreakfast(text) {
-  return isNumericSelection(text, '2') || /(cafe da manha|cafe|breakfast|desjejum)/.test(text);
+  return isNumericSelection(text, '2') || /(cafe da manha|breakfast|desjejum)/.test(text);
 }
 
 function shouldSendPool(text) {
