@@ -437,7 +437,7 @@ async function handleIncoming(payload) {
     try {
       const mediaId = message.audio?.id;
       if (!mediaId) {
-        await replyToGuest(from, 'Recebi seu áudio, mas não consegui entender bem. Pode me mandar novamente ou escrever por texto? 😊', { alsoSendAudio: cameFromAudio });
+        await replyToGuest(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎙️', { alsoSendAudio: cameFromAudio });
         continue;
       }
 
@@ -445,17 +445,17 @@ async function handleIncoming(payload) {
       const transcript = await transcribeAudioBuffer(audioBuffer, message.audio?.mime_type || 'audio/ogg');
 
       if (!transcript) {
-        await replyToGuest(from, 'Recebi seu áudio, mas tive uma falha para processar agora. Pode tentar novamente ou me escrever por texto? 😊', { alsoSendAudio: cameFromAudio });
-        continue;
+      await replyToGuest(from, 'Recebi seu áudio, mas não consegui entender bem. Pode me mandar novamente ou escrever por texto? 😊', { alsoSendAudio: cameFromAudio });
+      continue;
       }
 
       body = transcript;
       console.log('[audio transcript]', { from, transcript });
-    } catch (err) {
-      console.error('Failed to process audio message', err);
-      await replyToGuest(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎙️', { alsoSendAudio: cameFromAudio });
-      continue;
-    }
+     } catch (err) {
+        console.error('Failed to process audio message', err);
+        await replyToGuest(from, 'Recebi seu áudio, mas tive uma falha para processar agora. Pode tentar novamente ou me escrever por texto? 😊', { alsoSendAudio: cameFromAudio });
+        continue;
+      }
   } else {
     continue;
   }
@@ -877,12 +877,10 @@ function shortenForAudio(text) {
 async function replyToGuest(to, text, options = {}) {
   const { alsoSendAudio = true } = options;
 
-const shouldSendAudio = alsoSendAudio && text.length <= 180;
-if (!shouldSendAudio) return;
-
   await sendWhatsAppText(to, text);
 
-  if (!alsoSendAudio) return;
+  const shouldSendAudio = alsoSendAudio && text.length <= 180;
+  if (!shouldSendAudio) return;
 
   try {
     const shortAudioText = shortenForAudio(text);
