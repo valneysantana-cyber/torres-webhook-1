@@ -996,24 +996,32 @@ function shortenForAudio(text) {
 }
 
 async function replyToGuest(to, text, options = {}) {
-  const { alsoSendAudio = true } = options;
+  const { alsoSendAudio = false } = options;
 
-  await sendWhatsAppText(to, text);
+  // Se veio áudio → responde SOMENTE com áudio
+  if (alsoSendAudio) {
+    try {
+      const shortAudioText = shortenForAudio(text);
 
-  if (!alsoSendAudio) return;
+      if (shortAudioText.length > 600) {
+        await sendWhatsAppText(to, text);
+        return;
+      }
 
-  try {
-    const shortAudioText = shortenForAudio(text);
+      const audioBuffer = await synthesizeSpeechBuffer(shortAudioText);
+      const mediaId = await uploadWhatsAppAudio(audioBuffer, 'reply.mp3', 'audio/mpeg');
+      await sendWhatsAppAudio(to, mediaId);
+      return;
 
-    if (shortAudioText.length > 600) return;
-
-    const audioBuffer = await synthesizeSpeechBuffer(shortAudioText);
-    const mediaId = await uploadWhatsAppAudio(audioBuffer, 'reply.mp3', 'audio/mpeg');
-    await sendWhatsAppAudio(to, mediaId);
-
-  } catch (err) {
-    console.error('Failed to send audio reply', err);
+    } catch (err) {
+      console.error('Failed to send audio reply', err);
+      await sendWhatsAppText(to, text);
+      return;
+    }
   }
+
+  // Se veio texto → responde SOMENTE com texto
+  await sendWhatsAppText(to, text);
 }
 
 async function synthesizeSpeechBuffer(text) {
