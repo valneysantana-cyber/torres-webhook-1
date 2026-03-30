@@ -120,6 +120,16 @@ const THANKS_RESPONSE = `Imagina! 😊
 
 Qualquer coisa que precisar, estou por aqui para te ajudar. 🌴`;
 
+const RESERVATION_SITE_RESPONSE = `Claro 😊
+
+As reservas são feitas exclusivamente pelo nosso site oficial:
+
+🌐 www.torresguest.com.br
+
+Lá você consegue verificar disponibilidade, valores e garantir sua hospedagem de forma segura.
+
+Se precisar de apoio, posso te orientar por aqui também.`;
+
 const FAQ_ENTRIES = [
   {
     patterns: [/(onde.*localizad|qual.*bairro|localizacao|onde voces estao|onde fica)/],
@@ -624,6 +634,10 @@ function shouldSendTransfer(text) {
 
 function shouldSendHuman(text) {
   return isNumericSelection(text, '10') || /\b(falar com atendente|falar com atendimento|falar com humano|atendente humano|atendimento humano|quero falar com alguem|quero falar com uma pessoa|quero falar com humano|preciso de atendimento humano|me chama um atendente|me encaminha para atendente|me encaminhe para atendente|suporte humano)\b/.test(text);
+}
+
+function shouldRedirectToReservationSite(text) {
+  return /(reservar|reserva|disponibilidade|tem vaga|tem disponibilidade|valor da diaria|valor da diária|quanto custa|preco|preço|diaria|diária|hospedagem|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)/.test(text);
 }
 
 function shouldSendSecurity(text) {
