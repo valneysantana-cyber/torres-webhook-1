@@ -49,7 +49,7 @@ Estou aqui para te ajudar com tudo da sua hospedagem. Escolha uma opção ou dig
 
 const HUMAN_ESCALATION_RESPONSE = `Neste caso favor entrar em contato com a Sofia que atende no WhatsApp ${HUMAN_NUMBER_SECONDARY}. Cuidaremos para responder melhor suas duvidas. 😊`;
 
-const CONFIRMATION_PROMPT = `Claro! Me envia o código da sua reserva (ex.: IC09J) ou os dados completos para eu confirmar no sistema.`;
+const CONFIRMATION_PROMPT = `Claro! Me envia o código da sua reserva com 5 digitos (letras e números) que foi confirmada por e-mail (exemplo: IC09J) para eu confirmar no sistema.`;
 
 const WIFI_RESPONSE = `O Acesso ao Wi-Fi é através da rede do hotel. Ao abrir o portal Captiva, basta informar o Nome + CPF (os mesmos do check-in).
 Se tiver qualquer dificuldade, me chama aqui que eu ajudo. 🌴`;
