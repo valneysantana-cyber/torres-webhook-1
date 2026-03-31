@@ -873,7 +873,7 @@ async function fetchTodayCheckinReservations() {
 
   const today = getCurrentISODateBRT();
   const auth = Buffer.from(`${STAYS_USERNAME}:${STAYS_PASSWORD}`).toString('base64');
-  const url = `${STAYS_BASE_URL.replace(/\/$/, '')}/bookings?checkinDate=${today}`;
+  const url = `${STAYS_BASE_URL.replace(/\/$/, '')}/booking/reservations?from=${today}&to=${today}&dateType=arrival`;
 
   try {
     const response = await fetch(url, {
@@ -896,7 +896,7 @@ async function fetchTodayCheckinReservations() {
       console.log('[stays checkin raw keys]', Object.keys(data || {}));
       console.log('[stays checkin raw body]', JSON.stringify(data).slice(0, 3000));
         
-    return data?.bookings || [];
+    return Array.isArray(data) ? data : [];
   } catch (err) {
     console.error('Error fetching check-in reservations', err);
     return [];
@@ -911,7 +911,7 @@ async function fetchTodayCheckoutReservations() {
 
   const today = getCurrentISODateBRT();
   const auth = Buffer.from(`${STAYS_USERNAME}:${STAYS_PASSWORD}`).toString('base64');
-  const url = `${STAYS_BASE_URL.replace(/\/$/, '')}/bookings?checkoutDate=${today}`;
+  const url = `${STAYS_BASE_URL.replace(/\/$/, '')}/booking/reservations?from=${today}&to=${today}&dateType=departure`;
 
   try {
     const response = await fetch(url, {
@@ -929,7 +929,7 @@ async function fetchTodayCheckoutReservations() {
     }
 
     const data = await response.json();
-    return data?.bookings || [];
+    return Array.isArray(data) ? data : [];
   } catch (err) {
     console.error('Error fetching checkout reservations', err);
     return [];
