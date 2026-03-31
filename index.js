@@ -945,7 +945,7 @@ async function dailyCheckinDispatch() {
   } else {
     mensagem = `Check-ins para hoje (${getCurrentDateBRT()}):\n`;
     reservas.forEach((r, i) => {
-      mensagem += `${i + 1}. Hóspede: ${r.guestName || r.clientName || 'N/A'}, Apartamento: ${r.apartment || r.aptid || 'N/A'}, Status: ${r.status || 'N/A'}\n`;
+      mensagem += `${i + 1}. Hóspede: ${r?.guest?.name || r?.client?.name || r?.primaryGuest?.name || r?.agent?.name || 'N/A'}, Apartamento: ${r?.listing?.name || r?.apartment?.name || r?.unit?.name || r?._idlisting || 'N/A'}, Status: ${r?.status || r?.bookingStatus || r?.type || 'N/A'}\n`
     });
   }
 
