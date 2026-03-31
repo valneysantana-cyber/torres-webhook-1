@@ -870,7 +870,8 @@ async function fetchTodayCheckinReservations() {
     console.error('Missing Stays credentials');
     return [];
   }
-  conconst today = getCurrentISODateBRT();
+
+  const today = getCurrentISODateBRT();
   const auth = Buffer.from(`${STAYS_USERNAME}:${STAYS_PASSWORD}`).toString('base64');
   const url = `${STAYS_BASE_URL.replace(/\/$/, '')}/bookings?checkinDate=${today}`;
 
@@ -882,11 +883,13 @@ async function fetchTodayCheckinReservations() {
         'Content-Type': 'application/json',
       },
     });
+
     if (!response.ok) {
       const text = await response.text();
       console.error('Failed to fetch today reservations', response.status, text);
       return [];
     }
+
     const data = await response.json();
     return data?.bookings || [];
   } catch (err) {
@@ -900,6 +903,33 @@ async function fetchTodayCheckoutReservations() {
     console.error('Missing Stays credentials');
     return [];
   }
+
+  const today = getCurrentISODateBRT();
+  const auth = Buffer.from(`${STAYS_USERNAME}:${STAYS_PASSWORD}`).toString('base64');
+  const url = `${STAYS_BASE_URL.replace(/\/$/, '')}/bookings?checkoutDate=${today}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('Failed to fetch checkout reservations', response.status, text);
+      return [];
+    }
+
+    const data = await response.json();
+    return data?.bookings || [];
+  } catch (err) {
+    console.error('Error fetching checkout reservations', err);
+    return [];
+  }
+}
 
 async function dailyCheckinDispatch() {
   const reservas = await fetchTodayCheckinReservations();
@@ -923,7 +953,7 @@ async function dailyCheckinDispatch() {
     console.error('Erro ao enviar mensagem via WhatsApp:', erro);
   }
 }
-      
+
   const today = getCurrentISODateBRT();
 
   const auth = Buffer.from(`${STAYS_USERNAME}:${STAYS_PASSWORD}`).toString('base64');
