@@ -61,7 +61,7 @@ async function fetchListingsMap() {
   const map  = new Map();
   for (const l of list) {
     const id   = String(l._id || l.id || '');
-    const name = l.internalName || l.name || l.title || id;
+    const name = l.internalName || l.nickname || l.name || l.title || l.unitName || l.propertyName || id;
     if (id) map.set(id, name);
   }
   console.log(`[stays] listings cache: ${map.size} entries`);
@@ -128,7 +128,7 @@ async function fetchTodayAllActiveGuests() {
   const midStay    = priorArrivals.filter((r) => {
     if (arrivalIds.has(String(r._id || r.id))) return false;
     const checkout = (r.checkOutDate || r.checkout || '').split('T')[0];
-    return checkout >= today;
+    return checkout > today;
   });
 
   // Fetch full details for all reservations in parallel (to get client names)
