@@ -6,20 +6,16 @@
  * Responsibilities:
  *   - Boot Express server
  *   - Register WhatsApp webhook routes (GET verify + POST receive)
- *
- * NOT responsible for:
- *   - Business logic (see handlers/whatsapp.js)
- *   - Daily dispatch (see services/dispatch.js — trigger via cron, not boot)
- *
- * Bug fixed: removed `dailyCheckinDispatch().catch(console.error)` that was
- * firing on every server restart (original line at bottom of monolith).
+ *   - Schedule dailyCheckinDispatch at 08:00 BRT every day
+ *   - Expose POST /internal/dispatch for manual triggers (protected by DISPATCH_SECRET)
  */
 
 const express    = require('express');
 const bodyParser = require('body-parser');
 
-const { PORT, VERIFY_TOKEN } = require('./config');
-const { handleIncoming }    = require('./handlers/whatsapp');
+const { PORT, VERIFY_TOKEN, DISPATCH_SECRET } = require('./config');
+const { handleIncoming }     = require('./handlers/whatsapp');
+const { dailyCheckinDispatch } = require('./services/dispatch');
 
 const app = express();
 app.use(bodyParser.json());
@@ -46,7 +42,6 @@ app.get('/whatsapp-webhook', (req, res) => {
 
 // ---- incoming messages ----------------------------------------------------
 app.post('/whatsapp-webhook', async (req, res) => {
-  // Acknowledge immediately so Meta doesn't retry
   res.status(200).send({ status: 'received' });
   try {
     await handleIncoming(req.body);
@@ -55,9 +50,52 @@ app.post('/whatsapp-webhook', async (req, res) => {
   }
 });
 
+// ---- manual dispatch trigger (protected) ----------------------------------
+app.post('/internal/dispatch', async (req, res) => {
+  const secret = req.headers['x-dispatch-secret'] || req.query.secret;
+  if (DISPATCH_SECRET && secret !== DISPATCH_SECRET) {
+    return res.sendStatus(401);
+  }
+  res.status(200).send({ status: 'dispatch started' });
+  try {
+    await dailyCheckinDispatch();
+  } catch (err) {
+    console.error('[dispatch] Manual trigger error', err);
+  }
+});
+
+// ---- daily cron scheduler (pure Node — no extra deps) ---------------------
+function scheduleDailyDispatch() {
+  const now  = new Date();
+  // next 08:00 BRT (process.env.TZ is set to America/Sao_Paulo in config)
+  const next = new Date();
+  next.setHours(8, 0, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+
+  const delayMs = next - now;
+  console.log(
+    `[dispatch] Pr\u00f3xima execu\u00e7\u00e3o agendada: ${
+      next.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    } (em ${Math.round(delayMs / 60000)} min)`
+  );
+
+  setTimeout(async () => {
+    try {
+      console.log('[dispatch] Executando relat\u00f3rio di\u00e1rio...');
+      await dailyCheckinDispatch();
+    } catch (err) {
+      console.error('[dispatch] Erro na execu\u00e7\u00e3o agendada', err);
+    } finally {
+      // Reschedule for next day regardless of success/failure
+      scheduleDailyDispatch();
+    }
+  }, delayMs);
+}
+
 // ---- start ----------------------------------------------------------------
 const server = app.listen(PORT, () => {
   console.log(`WhatsApp webhook server listening on port ${PORT}`);
+  scheduleDailyDispatch();
 });
 
 server.on('close', () => console.log('Webhook server closed'));
