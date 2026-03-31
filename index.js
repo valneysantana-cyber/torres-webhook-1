@@ -547,45 +547,45 @@ async function handleIncoming(payload) {
           continue;
         }
         
-        if (shouldSendWifi(normalized)) {
-          await replyToGuest(from, WIFI_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendBreakfast(normalized)) {
-          await replyToGuest(from, BREAKFAST_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendPool(normalized)) {
-          await replyToGuest(from, POOL_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendParking(normalized)) {
-          await replyToGuest(from, PARKING_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendSnacks(normalized)) {
-          await replyToGuest(from, SNACKS_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendTowels(normalized)) {
-          await replyToGuest(from, TOWELS_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendRestaurant(normalized)) {
-          await replyToGuest(from, RESTAURANT_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendCheckin(normalized)) {
-          await replyToGuest(from, CHECKIN_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendSecurity(normalized)) {
-          await replyToGuest(from, SECURITY_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendTransfer(normalized)) {
-          await replyToGuest(from, TRANSFER_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendLocation(normalized)) {
-          await replyToGuest(from, LOCATION_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendLongStay(normalized)) {
-          await replyToGuest(from, LONG_STAY_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendCleaning(normalized)) {
-          await replyToGuest(from, CLEANING_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendInternet(normalized)) {
-          await replyToGuest(from, INTERNET_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendLuggage(normalized)) {
-          await replyToGuest(from, LUGGAGE_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendCurrentDate(normalized)) {
-          const currentDate = getCurrentDateBRT();
-          await replyToGuest(from, `Hoje é ${currentDate}.`, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendCurrentTime(normalized)) {
-          const currentTime = getCurrentTimeBRT();
-          await replyToGuest(from, `Agora são ${currentTime}, horário de Brasília.`, { alsoSendAudio: cameFromAudio });
-        } else if (shouldSendHuman(normalized)) {
-          await replyToGuest(from, HUMAN_ESCALATION_RESPONSE, { alsoSendAudio: cameFromAudio });
-        } else {
+if (language === 'pt' && shouldSendWifi(normalized)) {
+  await replyToGuest(from, WIFI_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendBreakfast(normalized)) {
+  await replyToGuest(from, BREAKFAST_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendPool(normalized)) {
+  await replyToGuest(from, POOL_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendParking(normalized)) {
+  await replyToGuest(from, PARKING_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendSnacks(normalized)) {
+  await replyToGuest(from, SNACKS_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendTowels(normalized)) {
+  await replyToGuest(from, TOWELS_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendRestaurant(normalized)) {
+  await replyToGuest(from, RESTAURANT_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendCheckin(normalized)) {
+  await replyToGuest(from, CHECKIN_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendSecurity(normalized)) {
+  await replyToGuest(from, SECURITY_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendTransfer(normalized)) {
+  await replyToGuest(from, TRANSFER_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendLocation(normalized)) {
+  await replyToGuest(from, getLocationResponse(language), { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendLongStay(normalized)) {
+  await replyToGuest(from, LONG_STAY_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendCleaning(normalized)) {
+  await replyToGuest(from, CLEANING_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendInternet(normalized)) {
+  await replyToGuest(from, INTERNET_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendLuggage(normalized)) {
+  await replyToGuest(from, LUGGAGE_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendCurrentDate(normalized)) {
+  const currentDate = getCurrentDateBRT();
+  await replyToGuest(from, `Hoje é ${currentDate}.`, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendCurrentTime(normalized)) {
+  const currentTime = getCurrentTimeBRT();
+  await replyToGuest(from, `Agora são ${currentTime}, horário de Brasília.`, { alsoSendAudio: cameFromAudio });
+} else if (language === 'pt' && shouldSendHuman(normalized)) {
+  await replyToGuest(from, HUMAN_ESCALATION_RESPONSE, { alsoSendAudio: cameFromAudio });
+} else {
           const aiReply = await getChatGptFallbackReply(body, from);
 
           if (aiReply) {
@@ -890,7 +890,7 @@ async function getChatGptFallbackReply(userMessage, phone) {
 const systemPrompt = `
 Você é o concierge virtual da TorresGuest, com atendimento humano, cordial, elegante e objetivo.
 
-Responda sempre em português do Brasil.
+Responda sempre no mesmo idioma do hóspede (português, inglês ou espanhol).
 
 Nunca invente informações.
 
