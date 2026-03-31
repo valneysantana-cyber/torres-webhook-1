@@ -122,15 +122,11 @@ const THANKS_RESPONSE = `Imagina! 😊
 
 Qualquer coisa que precisar, estou por aqui para te ajudar. 🌴`;
 
-const RESERVATION_SITE_RESPONSE = `Claro 😊
-
-As reservas são feitas exclusivamente pelo nosso site oficial:
+const RESERVATION_SITE_RESPONSE = `As reservas são feitas exclusivamente pelo nosso site oficial:
 
 🌐 www.torresguest.com.br
 
-Lá você consegue verificar disponibilidade, valores e garantir sua hospedagem de forma segura.
-
-Se precisar de apoio, posso te orientar por aqui também.`;
+Por aqui no WhatsApp eu não realizo reservas nem consulto disponibilidade para novas hospedagens.`;
 
 const FAQ_ENTRIES = [
   {
@@ -520,10 +516,10 @@ async function handleIncoming(payload) {
           continue;
         }
 
-        if (shouldRedirectToReservationSite(normalized)) {
-          await replyToGuest(from, RESERVATION_SITE_RESPONSE, { alsoSendAudio: cameFromAudio });
-          continue;
-        }
+        if (shouldRedirectToReservationSite(normalized) || /\b\d{1,2}[\/.-]\d{1,2}\b/.test(body) || /\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/.test(body)) {
+  await replyToGuest(from, RESERVATION_SITE_RESPONSE, { alsoSendAudio: cameFromAudio });
+  continue;
+}
         
         if (shouldSendWifi(normalized)) {
           await replyToGuest(from, WIFI_RESPONSE, { alsoSendAudio: cameFromAudio });
@@ -646,7 +642,7 @@ function shouldSendHuman(text) {
 }
 
 function shouldRedirectToReservationSite(text) {
-  return /(reservar|nova reserva|fazer reserva|quero reservar|disponibilidade|tem vaga|tem disponibilidade|valor da diaria|valor da diária|quanto custa|preco|preço|diaria|diária|hospedagem|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)/.test(text);
+  return /\b(reservar|reserva|nova reserva|fazer reserva|quero reservar|quero fazer uma reserva|como faco minha reserva|como faço minha reserva|consigo reservar|posso reservar|fechar reserva|fechar hospedagem|disponibilidade|tem vaga|tem disponibilidade|ha vaga|há vaga|valor da diaria|valor da diária|quanto custa|preco|preço|diaria|diária|quarto disponivel|quarto disponível|acomodacao|acomodação|hospedagem|ficar do dia|entrada dia|saida dia|saída dia|checkin dia|checkout dia)\b/.test(text);
 }
 
 function shouldSendSecurity(text) {
@@ -905,23 +901,16 @@ Regras:
 - Sempre que o hóspede perguntar endereço, localização ou como chegar, responda EXATAMENTE:
   "Rua Monte Alegre, 835 - Perdizes, São Paulo - SP."
 - Nunca informe outro endereço.
-
 - Nunca comece respostas com "Olá", "Oi", "Bom dia", "Boa tarde" ou qualquer saudação.
-
 - Responda direto ao ponto, de forma natural, como uma conversa contínua.
 - Responda de forma curta, útil, natural e acolhedora.
 - Sempre tente responder diretamente.
-
 - O atendimento deve ser 100% focado em hospedagem, turismo, estadia, estrutura do hotel e região de Perdizes.
 - Nunca responda ou desenvolva assuntos fora desse contexto.
-
 - Se o hóspede perguntar sobre temas fora da hospedagem (ex: política, guerras, notícias, tecnologia, OpenAI, programação, curiosidades gerais ou qualquer outro assunto não relacionado à estadia), responda de forma educada redirecionando para hospedagem.
-
 - Nestes casos, responda de forma breve como:
   "Posso te ajudar com tudo sobre a sua hospedagem na TorresGuest 😊 Me diga o que você precisa durante sua estadia."
-
 - Nunca aprofunde ou continue conversas fora do contexto da hospedagem.
-
 - Só encaminhe para humano quando for necessário.
 `.trim();
   
