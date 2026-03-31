@@ -491,11 +491,6 @@ async function handleIncoming(payload) {
 
         const normalized = normalizeText(body);
         console.log('[incoming]', { from, body, normalized });
-
-        if (shouldRedirectToReservationSite(normalized)) {
-          await replyToGuest(from, RESERVATION_SITE_RESPONSE, { alsoSendAudio: cameFromAudio });
-          continue;
-        }
         
         if (shouldSendGreeting(normalized)) {
           await replyToGuest(from, GREETING_RESPONSE(contactName), { alsoSendAudio: cameFromAudio });
@@ -525,6 +520,11 @@ async function handleIncoming(payload) {
           continue;
         }
 
+        if (shouldRedirectToReservationSite(normalized)) {
+          await replyToGuest(from, RESERVATION_SITE_RESPONSE, { alsoSendAudio: cameFromAudio });
+          continue;
+        }
+        
         if (shouldSendWifi(normalized)) {
           await replyToGuest(from, WIFI_RESPONSE, { alsoSendAudio: cameFromAudio });
         } else if (shouldSendBreakfast(normalized)) {
@@ -646,7 +646,7 @@ function shouldSendHuman(text) {
 }
 
 function shouldRedirectToReservationSite(text) {
-  return /(reservar|reserva|disponibilidade|tem vaga|tem disponibilidade|valor da diaria|valor da diária|quanto custa|preco|preço|diaria|diária|hospedagem|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)/.test(text);
+  return /(reservar|nova reserva|fazer reserva|quero reservar|disponibilidade|tem vaga|tem disponibilidade|valor da diaria|valor da diária|quanto custa|preco|preço|diaria|diária|hospedagem|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)/.test(text);
 }
 
 function shouldSendSecurity(text) {
