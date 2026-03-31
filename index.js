@@ -859,12 +859,18 @@ function formatDateBRT(dateStr) {
   return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 }
 
-async function fetchTodaysReservations() {
+function getCurrentISODateBRT() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo'
+  }).format(new Date());
+}
+
+async function fetchTodayCheckinReservations() {
   if (!STAYS_USERNAME || !STAYS_PASSWORD) {
     console.error('Missing Stays credentials');
     return [];
   }
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()); // YYYY-MM-DD
+  conconst today = getCurrentISODateBRT();
   const auth = Buffer.from(`${STAYS_USERNAME}:${STAYS_PASSWORD}`).toString('base64');
   const url = `${STAYS_BASE_URL.replace(/\/$/, '')}/bookings?checkinDate=${today}`;
 
@@ -895,9 +901,30 @@ async function fetchTodayCheckoutReservations() {
     return [];
   }
 
-  const today = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Sao_Paulo'
-  }).format(new Date());
+async function dailyCheckinDispatch() {
+  const reservas = await fetchTodayCheckinReservations();
+  let mensagem;
+
+  if (reservas.length === 0) {
+    mensagem = 'Não há check-ins para hoje.';
+  } else {
+    mensagem = `Check-ins para hoje (${getCurrentDateBRT()}):\n`;
+    reservas.forEach((r, i) => {
+      mensagem += `${i + 1}. Hóspede: ${r.guestName || r.clientName || 'N/A'}, Apartamento: ${r.apartment || r.aptid || 'N/A'}, Status: ${r.status || 'N/A'}\n`;
+    });
+  }
+
+  const numero = '5511999073135';
+
+  try {
+    await sendWhatsAppText(numero, mensagem);
+    console.log('Mensagem de check-ins enviada com sucesso!');
+  } catch (erro) {
+    console.error('Erro ao enviar mensagem via WhatsApp:', erro);
+  }
+}
+      
+  const today = getCurrentISODateBRT();
 
   const auth = Buffer.from(`${STAYS_USERNAME}:${STAYS_PASSWORD}`).toString('base64');
 
@@ -1283,6 +1310,9 @@ async function sendWhatsAppText(to, body) {
     console.log('WhatsApp reply sent', JSON.stringify(data));
   }
 }
+
+// TESTE MANUAL TEMPORÁRIO
+// dailyCheckinDispatch().catch(console.error);
 
 const server = app.listen(PORT, () => {
   console.log(`WhatsApp webhook server listening on port ${PORT}`);
