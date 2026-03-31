@@ -708,11 +708,11 @@ function detectLanguage(text) {
 
   const t = text.toLowerCase();
 
-  if (/(hello|hi|good morning|good afternoon|good evening|thanks|thank you|price|book|reservation)/.test(t)) {
+  if (/(hello|hi|hey|good morning|good afternoon|good evening|thanks|thank you|price|book|booking|reservation|where|address|location|located|hotel|check in|check-in|check out|checkout|wifi|pool|gym|breakfast|parking)/.test(t)) {
     return 'en';
   }
 
-  if (/(hola|buenos dias|buenas tardes|buenas noches|gracias|precio|reserva)/.test(t)) {
+  if (/(hola|buenos dias|buenas tardes|buenas noches|gracias|precio|reserva|direccion|dirección|ubicacion|ubicación|donde|hotel|check in|check-in|check out|checkout|wifi|piscina|gimnasio|desayuno|estacionamiento)/.test(t)) {
     return 'es';
   }
 
