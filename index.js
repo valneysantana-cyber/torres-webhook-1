@@ -1296,7 +1296,7 @@ async function sendWhatsAppText(to, body) {
 }
 
 // TESTE MANUAL TEMPORÁRIO
-// dailyCheckinDispatch().catch(console.error);
+dailyCheckinDispatch().catch(console.error);
 
 const server = app.listen(PORT, () => {
   console.log(`WhatsApp webhook server listening on port ${PORT}`);
