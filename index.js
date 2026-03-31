@@ -721,12 +721,21 @@ function extractReservationCode(rawText) {
 
 async function maybeHandleReservationConfirmation({ rawText, normalizedText, from, cameFromAudio = false }) {
   const expectingCode = isAwaitingCode(from);
-  const wantsConfirmation = expectingCode || shouldHandleReservationConfirmation(normalizedText);
+  const explicitlyWantsConfirmation = shouldHandleReservationConfirmation(normalizedText);
+  const code = extractReservationCode(rawText);
+
+  // Só entra no fluxo se a pessoa pediu confirmação agora
+  // ou se ela já estava nesse fluxo E mandou um possível código
+  const wantsConfirmation = explicitlyWantsConfirmation || (expectingCode && !!code);
+
   if (!wantsConfirmation) {
+    // se estava aguardando código, mas a pessoa mudou de assunto, sai do fluxo
+    if (expectingCode) {
+      pendingConfirmations.delete(from);
+    }
     return false;
   }
 
-  const code = extractReservationCode(rawText);
   if (!code) {
     rememberPendingConfirmation(from);
     await replyToGuest(from, CONFIRMATION_PROMPT, { alsoSendAudio: cameFromAudio });
@@ -734,6 +743,7 @@ async function maybeHandleReservationConfirmation({ rawText, normalizedText, fro
   }
 
   const reservation = await fetchReservationByCode(code);
+
   if (reservation) {
     pendingConfirmations.delete(from);
     await replyToGuest(from, formatReservationMessage(reservation), { alsoSendAudio: cameFromAudio });
@@ -741,46 +751,8 @@ async function maybeHandleReservationConfirmation({ rawText, normalizedText, fro
     rememberPendingConfirmation(from);
     await replyToGuest(from, RESERVATION_NOT_FOUND(code), { alsoSendAudio: cameFromAudio });
   }
+
   return true;
-}
-
-async function fetchReservationByCode(code) {
-  if (!STAYS_USERNAME || !STAYS_PASSWORD) {
-    console.error('Missing Stays credentials');
-    return null;
-  }
-
-  const auth = Buffer.from(`${STAYS_USERNAME}:${STAYS_PASSWORD}`).toString('base64');
-  const url = `${STAYS_BASE_URL.replace(/\/$/, '')}/booking/reservations/${encodeURIComponent(code)}`;
-
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.status === 404) {
-      return null;
-    }
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error('Failed to fetch reservation', response.status, text);
-      return null;
-    }
-
-    const data = await response.json();
-    const reservation = data?.reservation || data;
-    if (reservation && reservation.id) {
-      return reservation;
-    }
-  } catch (err) {
-    console.error('Error fetching reservation', err);
-  }
-  return null;
 }
 
 function formatReservationMessage(reservation) {
