@@ -891,6 +891,11 @@ async function fetchTodayCheckinReservations() {
     }
 
     const data = await response.json();
+
+      console.log('[stays checkin today]', today);
+      console.log('[stays checkin raw keys]', Object.keys(data || {}));
+      console.log('[stays checkin raw body]', JSON.stringify(data).slice(0, 3000));
+        
     return data?.bookings || [];
   } catch (err) {
     console.error('Error fetching check-in reservations', err);
@@ -1296,7 +1301,7 @@ async function sendWhatsAppText(to, body) {
 }
 
 // TESTE MANUAL TEMPORÁRIO
-dailyCheckinDispatch().catch(console.error);
+// dailyCheckinDispatch().catch(console.error);
 
 const server = app.listen(PORT, () => {
   console.log(`WhatsApp webhook server listening on port ${PORT}`);
