@@ -859,6 +859,74 @@ function formatDateBRT(dateStr) {
   return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 }
 
+async function fetchTodaysReservations() {
+  if (!STAYS_USERNAME || !STAYS_PASSWORD) {
+    console.error('Missing Stays credentials');
+    return [];
+  }
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()); // YYYY-MM-DD
+  const auth = Buffer.from(`${STAYS_USERNAME}:${STAYS_PASSWORD}`).toString('base64');
+  const url = `${STAYS_BASE_URL.replace(/\/$/, '')}/bookings?checkinDate=${today}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('Failed to fetch today reservations', response.status, text);
+      return [];
+    }
+    const data = await response.json();
+    return data?.bookings || [];
+  } catch (err) {
+    console.error('Error fetching today reservations', err);
+    return [];
+  }
+}
+
+async function fetchTodayCheckoutReservations() {
+  if (!STAYS_USERNAME || !STAYS_PASSWORD) {
+    console.error('Missing Stays credentials');
+    return [];
+  }
+
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo'
+  }).format(new Date());
+
+  const auth = Buffer.from(`${STAYS_USERNAME}:${STAYS_PASSWORD}`).toString('base64');
+
+  const url = `${STAYS_BASE_URL.replace(/\/$/, '')}/bookings?checkoutDate=${today}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('Failed to fetch checkout reservations', response.status, text);
+      return [];
+    }
+
+    const data = await response.json();
+    return data?.bookings || [];
+
+  } catch (err) {
+    console.error('Error fetching checkout reservations', err);
+    return [];
+  }
+}
+
 function getCurrentDateBRT() {
   return new Date().toLocaleDateString('pt-BR', {
     timeZone: 'America/Sao_Paulo'
