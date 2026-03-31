@@ -1,4 +1,4 @@
-  
+      
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -385,6 +385,30 @@ const FAQ_ENTRIES = [
 
 const RESERVATION_NOT_FOUND = (code) => `Ainda não localizei a reserva ${code}. Você consegue confirmar se o código está correto ou me enviar o print do canal? Se preferir, nosso atendimento humano resolve rapidinho nos números ${HUMAN_NUMBER_PRIMARY} e ${HUMAN_NUMBER_SECONDARY}.`;
 
+function getReservationResponse(lang) {
+  if (lang === 'en') {
+    return `Reservations must be made exclusively through our official website:
+
+🌐 www.torresguest.com.br
+
+We do not process reservations via WhatsApp.`;
+  }
+
+  if (lang === 'es') {
+    return `Las reservas se realizan exclusivamente a través de nuestro sitio web oficial:
+
+🌐 www.torresguest.com.br
+
+No realizamos reservas por WhatsApp.`;
+  }
+
+  return `As reservas são feitas exclusivamente pelo nosso site oficial:
+
+🌐 www.torresguest.com.br
+
+Por aqui no WhatsApp não realizo reservas nem consulto disponibilidade.`;
+}
+
 const app = express();
 app.use(bodyParser.json());
 
@@ -487,6 +511,8 @@ async function handleIncoming(payload) {
 
         const normalized = normalizeText(body);
         console.log('[incoming]', { from, body, normalized });
+
+        const language = detectLanguage(body);
         
         if (shouldSendGreeting(normalized)) {
           await replyToGuest(from, GREETING_RESPONSE(contactName), { alsoSendAudio: cameFromAudio });
@@ -517,9 +543,9 @@ async function handleIncoming(payload) {
         }
 
         if (shouldRedirectToReservationSite(normalized) || /\b\d{1,2}[\/.-]\d{1,2}\b/.test(body) || /\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/.test(body)) {
-  await replyToGuest(from, RESERVATION_SITE_RESPONSE, { alsoSendAudio: cameFromAudio });
-  continue;
-}
+          await replyToGuest(from, getReservationResponse(language), { alsoSendAudio: cameFromAudio });
+          continue;
+        }
         
         if (shouldSendWifi(normalized)) {
           await replyToGuest(from, WIFI_RESPONSE, { alsoSendAudio: cameFromAudio });
@@ -675,6 +701,22 @@ function shouldSendGreeting(text) {
 
 function shouldSendThanks(text) {
   return /\b(obrigado|obrigada|valeu|agradeco|agradeço|thanks|thank you)\b/.test(text);
+}
+
+function detectLanguage(text) {
+  if (!text) return 'pt';
+
+  const t = text.toLowerCase();
+
+  if (/(hello|hi|good morning|good afternoon|good evening|thanks|thank you|price|book|reservation)/.test(t)) {
+    return 'en';
+  }
+
+  if (/(hola|buenos dias|buenas tardes|buenas noches|gracias|precio|reserva)/.test(t)) {
+    return 'es';
+  }
+
+  return 'pt';
 }
 
 function getFaqResponse(text) {
@@ -883,6 +925,7 @@ Regras:
 - Nestes casos, responda de forma breve como:
   "Posso te ajudar com tudo sobre a sua hospedagem na TorresGuest 😊 Me diga o que você precisa durante sua estadia."
 - Nunca aprofunde ou continue conversas fora do contexto da hospedagem.
+- Responda sempre no mesmo idioma do hóspede (português, inglês ou espanhol).
 - Só encaminhe para humano quando for necessário.
 `.trim();
   
