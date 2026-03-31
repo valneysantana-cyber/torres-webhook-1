@@ -886,14 +886,14 @@ async function fetchTodayCheckinReservations() {
 
     if (!response.ok) {
       const text = await response.text();
-      console.error('Failed to fetch today reservations', response.status, text);
+      console.error('Failed to fetch check-in reservations', response.status, text);
       return [];
     }
 
     const data = await response.json();
     return data?.bookings || [];
   } catch (err) {
-    console.error('Error fetching today reservations', err);
+    console.error('Error fetching check-in reservations', err);
     return [];
   }
 }
@@ -954,56 +954,10 @@ async function dailyCheckinDispatch() {
   }
 }
 
-  const today = getCurrentISODateBRT();
-
-  const auth = Buffer.from(`${STAYS_USERNAME}:${STAYS_PASSWORD}`).toString('base64');
-
-  const url = `${STAYS_BASE_URL.replace(/\/$/, '')}/bookings?checkoutDate=${today}`;
-
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error('Failed to fetch checkout reservations', response.status, text);
-      return [];
-    }
-
-    const data = await response.json();
-    return data?.bookings || [];
-
-  } catch (err) {
-    console.error('Error fetching checkout reservations', err);
-    return [];
-  }
-}
-
 function getCurrentDateBRT() {
   return new Date().toLocaleDateString('pt-BR', {
     timeZone: 'America/Sao_Paulo'
   });
-}
-
-function getCurrentTimeBRT() {
-  return new Date().toLocaleTimeString('pt-BR', {
-    timeZone: 'America/Sao_Paulo',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}
-
-function shouldSendCurrentDate(text) {
-  return /\b(que dia e hoje|que dia é hoje|qual a data de hoje|data de hoje|hoje e que dia|hoje é que dia|me diga a data|qual a data)\b/.test(text);
-}
-
-function shouldSendCurrentTime(text) {
-  return /\b(que horas sao|que horas são|qual o horario|qual o horário|hora atual|horario agora|horário agora|me diga as horas)\b/.test(text);
 }
 
 async function getChatGptFallbackReply(userMessage, phone) {
