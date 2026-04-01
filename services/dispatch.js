@@ -31,6 +31,10 @@ function resolveApartmentName(r, listingsMap) {
   return idListing ? `#${idListing.slice(-6)}` : 'N/A';
 }
 
+function fmtDate(iso) {
+  if (!iso || iso.length < 10) return iso || 'N/A';
+  return `${iso.slice(8,10)}/${iso.slice(5,7)}/${iso.slice(0,4)}`;
+}
 async function dailyCheckinDispatch() {
   const { arrivals, midStay, listingsMap } = await fetchTodayAllActiveGuests();
   const today = getCurrentDateBRT();
@@ -46,7 +50,9 @@ async function dailyCheckinDispatch() {
       const statusMap = { booked: 'Reservado', confirmed: 'Confirmado', inquiry: 'Consulta', canceled: 'Cancelado' };
       const status = statusMap[statusRaw] || statusRaw || 'N/A';
       const checkout = (r.checkOutDate || r.checkout || '').split('T')[0] || 'N/A';
-      lines.push(`${i + 1}. ${guest} \u2014 Flat ${apt} \u2014 ${status} \u2014 sa\u00edda ${checkout}`);
+      const numGuests = r.guestsCount || r.numberOfGuests || (r.guests && r.guests.length) || ((r.adults||0)+(r.children||0)) || 1;
+      const guestLabel = `${numGuests} h\u00f3spede${numGuests > 1 ? 's' : ''}`;
+      lines.push(`${i + 1}. ${guest} \u2014 Flat ${apt} \u2014 ${guestLabel} \u2014 ${status} \u2014 sa\u00edda ${fmtDate(checkout)}`);
     });
   } else {
     lines.push('\ud83d\udeec Nenhum check-in hoje.');
@@ -59,7 +65,9 @@ async function dailyCheckinDispatch() {
       const guest    = resolveGuestName(r) || r.agent?.name || 'N/A';
       const apt      = resolveApartmentName(r, listingsMap);
       const checkout = (r.checkOutDate || r.checkout || '').split('T')[0] || 'N/A';
-      lines.push(`${i + 1}. ${guest} \u2014 Flat ${apt} \u2014 sa\u00edda ${checkout}`);
+      const numGuests = r.guestsCount || r.numberOfGuests || (r.guests && r.guests.length) || ((r.adults||0)+(r.children||0)) || 1;
+      const guestLabel = `${numGuests} h\u00f3spede${numGuests > 1 ? 's' : ''}`;
+      lines.push(`${i + 1}. ${guest} \u2014 Flat ${apt} \u2014 ${guestLabel} \u2014 sa\u00edda ${fmtDate(checkout)}`);
     });
   }
 
