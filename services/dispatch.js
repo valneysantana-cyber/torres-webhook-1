@@ -22,13 +22,12 @@ const { fetchTodayAllActiveGuests }          = require('./stays');
 const { sendWhatsAppText }                   = require('./whatsapp');
 
 function resolveApartmentName(r, listingsMap) {
-  // Try nested listing object first (full-detail response)
-  if (r.listing?.internalName) return r.listing.internalName;
-  if (r.listing?.name)         return r.listing.name;
-  // Fall back to listings map
+  const nested = r.listing || r.unit || r.accommodation || {};
+  const fromNested = nested.internalName || nested.nickname || nested.name || nested.title || nested.unitNumber;
+  if (fromNested) return fromNested;
   const idListing = String(r._idlisting || '');
   if (idListing && listingsMap.has(idListing)) return listingsMap.get(idListing);
-  // Last resort: shorten the ObjectID to last 6 chars so it’s at least compact
+  if (arrivals && arrivals[0] === r) console.log('[flat-debug]', JSON.stringify(r).substring(0, 2000));
   return idListing ? `#${idListing.slice(-6)}` : 'N/A';
 }
 
