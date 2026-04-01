@@ -27,7 +27,7 @@ function resolveApartmentName(r, listingsMap) {
   if (fromNested) return fromNested;
   const idListing = String(r._idlisting || '');
   if (idListing && listingsMap.has(idListing)) return listingsMap.get(idListing);
-  if (arrivals && arrivals[0] === r) console.log('[flat-debug]', JSON.stringify(r).substring(0, 2000));
+
   return idListing ? `#${idListing.slice(-6)}` : 'N/A';
 }
 

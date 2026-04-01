@@ -15,7 +15,7 @@ async function staysFetch(path) {
   const base = STAYS_BASE_URL.replace(/\/$/, '');
   const url  = `${base}${path}`;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(url, 
       method: 'GET',
       headers: {
         Authorization: `Basic ${getStaysAuth()}`,
@@ -71,6 +71,7 @@ for (const ep of ['/listing', '/listing?limit=100', '/listing/listingSearch']) {
     if (id) map.set(id, name);
   }
   console.log(`[stays] listings cache: ${map.size} entries`);
+  if(map.size===0&&process.env.LISTING_NAMES_JSON){try{const n=JSON.parse(process.env.LISTING_NAMES_JSON);for(const[id,name]of Object.entries(n))map.set(String(id),String(name));console.log('[stays] listings from env: '+map.size+' entries');}catch(e){console.error('[stays] LISTING_NAMES_JSON error:',e.message);}}
   return map;
 }
 
