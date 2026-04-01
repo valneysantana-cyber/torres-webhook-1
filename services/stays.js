@@ -15,7 +15,7 @@ async function staysFetch(path) {
   const base = STAYS_BASE_URL.replace(/\/$/, '');
   const url  = `${base}${path}`;
   try {
-    const res = await fetch(url, 
+    const res = await fetch(url,  {
       method: 'GET',
       headers: {
         Authorization: `Basic ${getStaysAuth()}`,
