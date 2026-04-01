@@ -75,7 +75,10 @@ async function dailyCheckinDispatch() {
   console.log('[dispatch] mensagem:\n', mensagem);
 
   try {
-    await sendWhatsAppText(DISPATCH_NUMBER, mensagem);
+    const dispatchNumbers = DISPATCH_NUMBER.split(',').map(n => n.trim()).filter(Boolean);
+        for (const num of dispatchNumbers) {
+              await sendWhatsAppText(num, mensagem);
+                  }
     console.log('[dispatch] Mensagem de h\u00f3spedes ativos enviada com sucesso!');
   } catch (err) {
     console.error('[dispatch] Erro ao enviar mensagem via WhatsApp:', err);
