@@ -56,8 +56,14 @@ async function fetchReservationDetails(mongoId) {
  * Used to resolve `_idlisting` (MongoDB ObjectID) to a human-readable apartment name.
  */
 async function fetchListingsMap() {
-  const data = await staysFetch('/listing/listings?limit=100');
-  const list = Array.isArray(data) ? data : (data?.result || data?.listings || data?.data || []);
+let list = [];
+for (const ep of ['/listing', '/listing?limit=100', '/listing/listingSearch']) {
+  const data = await staysFetch(ep);
+  if (data) {
+    const items = Array.isArray(data) ? data : (data?.result || data?.listings || data?.data || data?.items || []);
+    if (items.length > 0) { list = items; console.log(`[stays] listings em ${ep}: ${items.length}`); break; }
+  }
+}
   const map  = new Map();
   for (const l of list) {
     const id   = String(l._id || l.id || '');
