@@ -45,6 +45,7 @@ async function dailyCheckinDispatch() {
     lines.push(`\ud83d\udeec Check-ins de hoje (${arrivals.length}):`);
     arrivals.forEach((r, i) => {
       const guest  = resolveGuestName(r) || r.agent?.name || 'N/A';
+      console.log('[dispatch] RAW_R:', JSON.stringify(r));
       const apt    = resolveApartmentName(r, listingsMap);
       const statusRaw = (r.type || r.status || r.bookingStatus || '').toLowerCase();
       const statusMap = { booked: 'Reservado', confirmed: 'Confirmado', inquiry: 'Consulta', canceled: 'Cancelado' };
