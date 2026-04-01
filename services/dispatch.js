@@ -45,13 +45,12 @@ async function dailyCheckinDispatch() {
     lines.push(`\ud83d\udeec Check-ins de hoje (${arrivals.length}):`);
     arrivals.forEach((r, i) => {
       const guest  = resolveGuestName(r) || r.agent?.name || 'N/A';
-      console.log('[dispatch] RAW_R:', JSON.stringify(r));
       const apt    = resolveApartmentName(r, listingsMap);
       const statusRaw = (r.type || r.status || r.bookingStatus || '').toLowerCase();
       const statusMap = { booked: 'Reservado', confirmed: 'Confirmado', inquiry: 'Consulta', canceled: 'Cancelado' };
       const status = statusMap[statusRaw] || statusRaw || 'N/A';
       const checkout = (r.checkOutDate || r.checkout || '').split('T')[0] || 'N/A';
-      const numGuests = r.guestsCount || r.numberOfGuests || (r.guests && r.guests.length) || ((r.adults||0)+(r.children||0)) || 1;
+      const numGuests = r.guests || r.guestsDetails?.adults || r.guestsCount || r.numberOfGuests || 1;
       const guestLabel = `${numGuests} h\u00f3spede${numGuests > 1 ? 's' : ''}`;
       lines.push(`${i + 1}. ${guest} \u2014 Flat ${apt} \u2014 ${guestLabel} \u2014 ${status} \u2014 sa\u00edda ${fmtDate(checkout)}`);
     });
@@ -66,7 +65,7 @@ async function dailyCheckinDispatch() {
       const guest    = resolveGuestName(r) || r.agent?.name || 'N/A';
       const apt      = resolveApartmentName(r, listingsMap);
       const checkout = (r.checkOutDate || r.checkout || '').split('T')[0] || 'N/A';
-      const numGuests = r.guestsCount || r.numberOfGuests || (r.guests && r.guests.length) || ((r.adults||0)+(r.children||0)) || 1;
+      const numGuests = r.guests || r.guestsDetails?.adults || r.guestsCount || r.numberOfGuests || 1;
       const guestLabel = `${numGuests} h\u00f3spede${numGuests > 1 ? 's' : ''}`;
       lines.push(`${i + 1}. ${guest} \u2014 Flat ${apt} \u2014 ${guestLabel} \u2014 sa\u00edda ${fmtDate(checkout)}`);
     });
