@@ -36,14 +36,17 @@ async function dailyCheckinDispatch() {
   const today = getCurrentDateBRT();
   const lines = [`\ud83d\udccb H\u00f3spedes ativos \u2014 ${today}\n`];
 
-  // ---- check-ins de hoje ------------------------------------------------
+  // ---- check-ins de hoje -----------------------------------------------
   if (arrivals.length > 0) {
     lines.push(`\ud83d\udeec Check-ins de hoje (${arrivals.length}):`);
     arrivals.forEach((r, i) => {
       const guest  = resolveGuestName(r) || r.agent?.name || 'N/A';
       const apt    = resolveApartmentName(r, listingsMap);
-      const status = r.type || r.status || r.bookingStatus || 'N/A';
-      lines.push(`${i + 1}. ${guest} \u2014 Flat ${apt} \u2014 ${status}`);
+      const statusRaw = (r.type || r.status || r.bookingStatus || '').toLowerCase();
+      const statusMap = { booked: 'Reservado', confirmed: 'Confirmado', inquiry: 'Consulta', canceled: 'Cancelado' };
+      const status = statusMap[statusRaw] || statusRaw || 'N/A';
+      const checkout = (r.checkOutDate || r.checkout || '').split('T')[0] || 'N/A';
+      lines.push(`${i + 1}. ${guest} \u2014 Flat ${apt} \u2014 ${status} \u2014 sa\u00edda ${checkout}`);
     });
   } else {
     lines.push('\ud83d\udeec Nenhum check-in hoje.');
