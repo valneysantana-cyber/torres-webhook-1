@@ -152,7 +152,7 @@ async function handleIncoming(payload) {
         if (escalation) {
           console.log('[classifier] escalação detectada:', escalation.name, escalation.level);
           await replyToGuest(from, escalation.guestReply, { alsoSendAudio: cameFromAudio });
-          await sendEscalationAlert(from, body, escalation);
+        if (!escalation.noAlert) await sendEscalationAlert(from, body, escalation);
           await saveMessage(from, 'user', body);
           await saveMessage(from, 'assistant', escalation.guestReply);
           continue;
