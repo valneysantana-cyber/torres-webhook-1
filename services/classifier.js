@@ -47,6 +47,25 @@ const CATEGORIES = [
     keywords: ['pessimo','pésimo','péssimo','horrivel','horrível','absurdo','inaceitavel','inaceitável','decepcionado','decepção','revoltado','nao to gostando','não to gostando','mal atendido','falta de respeito','quero reclamar','muito ruim','insatisfeito'],
     guestReply: 'Lamentamos muito pelo inconveniente. Encaminhei para nossa gerência — entrarão em contato para resolver isso da melhor forma. 🙏',
   },
+  {
+    level: 'INFO', emoji: '📅', name: 'Reserva',
+    noAlert: true,
+    keywords: [
+      'quero reservar','fazer reserva','fazer uma reserva','quero fazer reserva',
+      'quero uma reserva','como reservo','como faço reserva','como faço uma reserva',
+      'disponibilidade','tem quarto disponivel','tem quarto disponível',
+      'tem apartamento disponivel','tem apartamento disponível',
+      'quero me hospedar','quero me hospedar','preciso de quarto','preciso de hospedagem',
+      'quanto custa a diaria','quanto custa a diária','qual o valor da diaria','qual o valor da diária',
+      'qual o preco','qual o preço','como reservar','quero reserva','efetuar reserva',
+      'fazer booking','quero booking','site para reservar','onde reservo'
+    ],
+    guestReply: 'Para fazer sua reserva, entre em contato com a *Sofia*: 📞 *+55 13 99615-5505*
+
+Ou acesse nosso site: 🌐 *www.torresguest.com.br*
+
+Estamos felizes em te receber no TorresGuest! 🏨😊',
+  },
 ];
 
 function classifyMessage(text) {
