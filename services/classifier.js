@@ -63,6 +63,23 @@ const CATEGORIES = [
     guestReply: 'Entendido! Estou direcionando para nossa equipe entrar em contato sobre seus pertences. Em breve algu\u00e9m te retornar\u00e1! \u{1F4E6}',
   },
   {
+    level: 'INFO', emoji: '\u{1F4DE}', name: 'Contato Recep\u00e7\u00e3o', noAlert: true,
+    keywords: [
+      'falar com a recepcao','falar com recepcao','falar com a recep\u00e7\u00e3o','falar com recep\u00e7\u00e3o',
+      'contato da recepcao','contato da recep\u00e7\u00e3o','contato com a recepcao','contato com a recep\u00e7\u00e3o',
+      'numero da recepcao','n\u00famero da recepcao','numero da recep\u00e7\u00e3o','n\u00famero da recep\u00e7\u00e3o',
+      'telefone da recepcao','telefone da recep\u00e7\u00e3o','ramal da recepcao','ramal da recep\u00e7\u00e3o',
+      'como falo com a recepcao','como falo com a recep\u00e7\u00e3o',
+      'como chamo a recepcao','como chamo a recep\u00e7\u00e3o',
+      'chamar a recepcao','chamar a recep\u00e7\u00e3o','chamar recepcao','chamar recep\u00e7\u00e3o',
+      'ligar para recepcao','ligar para a recepcao','ligar para recep\u00e7\u00e3o','ligar para a recep\u00e7\u00e3o',
+      'quero falar com alguem do hotel','preciso falar com a recepcao','preciso falar com a recep\u00e7\u00e3o',
+      'como falo com alguem','falar com alguem do hotel',
+      'tem recepcao','tem recep\u00e7\u00e3o','onde fica a recepcao','onde fica a recep\u00e7\u00e3o'
+    ],
+    guestReply: 'Para falar com a recep\u00e7\u00e3o, disque *9* ou **1* no telefone do seu quarto. Estamos dispon\u00edveis 24 horas! \u{1F4DE}',
+  },
+  {
     level: 'INFO', emoji: '\u{1F4C5}', name: 'Reserva', noAlert: true,
     keywords: [
       'quero reservar','fazer reserva','fazer uma reserva','quero fazer reserva',
