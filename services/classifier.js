@@ -52,15 +52,25 @@ const CATEGORIES = [
     noAlert: true,
     keywords: [
       'quero reservar','fazer reserva','fazer uma reserva','quero fazer reserva',
-      'quero uma reserva','como reservo','como fa\u00e7o reserva','como fa\u00e7o uma reserva',
+      'quero uma reserva','como reservo','como faco reserva','como fa\u00e7o reserva',
+      'como faco uma reserva','como fa\u00e7o uma reserva',
+      'quero alugar','como alugo','como eu alugo','alugar um flat','alugar o flat',
+      'alugar um apto','alugar o apto','alugar um apartamento','alugar apartamento',
+      'aluguel do flat','aluguel do apto','aluguel','quero um flat','quero o flat',
       'disponibilidade','tem quarto disponivel','tem quarto dispon\u00edvel',
       'tem apartamento disponivel','tem apartamento dispon\u00edvel',
+      'tem flat disponivel','tem flat dispon\u00edvel',
       'quero me hospedar','preciso de quarto','preciso de hospedagem',
       'quanto custa a diaria','quanto custa a di\u00e1ria','qual o valor da diaria','qual o valor da di\u00e1ria',
       'qual o preco','qual o pre\u00e7o','como reservar','quero reserva','efetuar reserva',
-      'fazer booking','quero booking','site para reservar','onde reservo'
+      'fazer booking','quero booking','site para reservar','onde reservo',
+      'qual o site','qual o telefone','qual o numero','qual o n\u00famero',
+      'telefone para reserva','numero para reserva','n\u00famero para reserva',
+      'contato para reserva','como entro em contato','quero contato',
+      'como faco para reservar','como fa\u00e7o para reservar',
+      'quero fazer uma reserva','gostaria de reservar','gostaria de alugar'
     ],
-    guestReply: 'Para fazer sua reserva, fale com a *Sofia*: *+55 13 99615-5505* ou acesse *www.torresguest.com.br* \u{1F3E8}',
+    guestReply: 'Para fazer sua reserva, fale com a *Sofia*: \u{1F4DE} *+55 13 99615-5505* ou acesse nosso site: \u{1F310} *www.torresguest.com.br* \u{1F3E8}',
   },
 ];
 
