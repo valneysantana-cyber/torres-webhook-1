@@ -1,5 +1,4 @@
 'use strict';
-
 const { CONFIRMATION_TTL_MS } = require('../config');
 const {
   MENU_RESPONSE,
@@ -25,7 +24,7 @@ const {
   getReservationResponse,
   getLocationResponse,
 } = require('../responses/strings');
-const { getFaqResponse }          = require('../responses/faq');
+const { getFaqResponse } = require('../responses/faq');
 const {
   normalizeText,
   getCurrentDateBRT,
@@ -59,9 +58,10 @@ const {
   detectLanguage,
   extractReservationCode,
 } = require('../utils/matchers');
-const { fetchReservationByCode }              = require('../services/stays');
+const { fetchReservationByCode } = require('../services/stays');
 const { getChatGptFallbackReply, transcribeAudioBuffer } = require('../services/openai');
 const { downloadWhatsAppMedia, replyToGuest } = require('../services/whatsapp');
+const { saveMessage, getContext } = require('../services/crm');
 
 // ---------------------------------------------------------------------------
 // Pending confirmation state (in-memory, per process)
@@ -74,11 +74,9 @@ function cleanupPendingConfirmations() {
     if (now - ts > CONFIRMATION_TTL_MS) pendingConfirmations.delete(key);
   }
 }
-
 function rememberPendingConfirmation(phone) {
   pendingConfirmations.set(phone, Date.now());
 }
-
 function isAwaitingCode(phone) {
   cleanupPendingConfirmations();
   return pendingConfirmations.has(phone);
@@ -89,46 +87,44 @@ function isAwaitingCode(phone) {
 // Each entry: { check(normalizedText) => bool, reply(lang) => string }
 // ---------------------------------------------------------------------------
 const PT_DISPATCH = [
-  { check: shouldSendWifi,        reply: ()     => WIFI_RESPONSE },
-  { check: shouldSendBreakfast,   reply: ()     => BREAKFAST_RESPONSE },
-  { check: shouldSendPool,        reply: ()     => POOL_RESPONSE },
-  { check: shouldSendParking,     reply: ()     => PARKING_RESPONSE },
-  { check: shouldSendSnacks,      reply: ()     => SNACKS_RESPONSE },
-  { check: shouldSendTowels,      reply: ()     => TOWELS_RESPONSE },
-  { check: shouldSendRestaurant,  reply: ()     => RESTAURANT_RESPONSE },
-  { check: shouldSendCheckin,     reply: ()     => CHECKIN_RESPONSE },
-  { check: shouldSendSecurity,    reply: ()     => SECURITY_RESPONSE },
-  { check: shouldSendTransfer,    reply: ()     => TRANSFER_RESPONSE },
-  { check: shouldSendLocation,    reply: (lang) => getLocationResponse(lang) },
-  { check: shouldSendLongStay,    reply: ()     => LONG_STAY_RESPONSE },
-  { check: shouldSendCleaning,    reply: ()     => CLEANING_RESPONSE },
-  { check: shouldSendInternet,    reply: ()     => INTERNET_RESPONSE },
-  { check: shouldSendLuggage,     reply: ()     => LUGGAGE_RESPONSE },
-  { check: shouldSendCurrentDate, reply: ()     => `Hoje \u00e9 ${getCurrentDateBRT()}.` },
-  { check: shouldSendCurrentTime, reply: ()     => `Agora s\u00e3o ${getCurrentTimeBRT()}, hor\u00e1rio de Bras\u00edlia.` },
-  { check: shouldSendHuman,       reply: ()     => HUMAN_ESCALATION_RESPONSE },
+  { check: shouldSendWifi,      reply: () => WIFI_RESPONSE },
+  { check: shouldSendBreakfast, reply: () => BREAKFAST_RESPONSE },
+  { check: shouldSendPool,      reply: () => POOL_RESPONSE },
+  { check: shouldSendParking,   reply: () => PARKING_RESPONSE },
+  { check: shouldSendSnacks,    reply: () => SNACKS_RESPONSE },
+  { check: shouldSendTowels,    reply: () => TOWELS_RESPONSE },
+  { check: shouldSendRestaurant,reply: () => RESTAURANT_RESPONSE },
+  { check: shouldSendCheckin,   reply: () => CHECKIN_RESPONSE },
+  { check: shouldSendSecurity,  reply: () => SECURITY_RESPONSE },
+  { check: shouldSendTransfer,  reply: () => TRANSFER_RESPONSE },
+  { check: shouldSendLocation,  reply: (lang) => getLocationResponse(lang) },
+  { check: shouldSendLongStay,  reply: () => LONG_STAY_RESPONSE },
+  { check: shouldSendCleaning,  reply: () => CLEANING_RESPONSE },
+  { check: shouldSendInternet,  reply: () => INTERNET_RESPONSE },
+  { check: shouldSendLuggage,   reply: () => LUGGAGE_RESPONSE },
+  { check: shouldSendCurrentDate, reply: () => `Hoje é ${getCurrentDateBRT()}.` },
+  { check: shouldSendCurrentTime, reply: () => `Agora são ${getCurrentTimeBRT()}, horário de Brasília.` },
+  { check: shouldSendHuman,     reply: () => HUMAN_ESCALATION_RESPONSE },
 ];
 
 // ---------------------------------------------------------------------------
 // Reservation confirmation flow
 // ---------------------------------------------------------------------------
 async function maybeHandleReservationConfirmation({ rawText, normalizedText, from, cameFromAudio = false }) {
-  const expectingCode            = isAwaitingCode(from);
-  const explicitlyWantsConfirm   = shouldHandleReservationConfirmation(normalizedText);
-  const code                     = extractReservationCode(rawText);
-  const wantsConfirmation        = explicitlyWantsConfirm || (expectingCode && !!code);
+  const expectingCode = isAwaitingCode(from);
+  const explicitlyWantsConfirm = shouldHandleReservationConfirmation(normalizedText);
+  const code = extractReservationCode(rawText);
+  const wantsConfirmation = explicitlyWantsConfirm || (expectingCode && !!code);
 
   if (!wantsConfirmation) {
     if (expectingCode) pendingConfirmations.delete(from);
     return false;
   }
-
   if (!code) {
     rememberPendingConfirmation(from);
     await replyToGuest(from, CONFIRMATION_PROMPT, { alsoSendAudio: cameFromAudio });
     return true;
   }
-
   const reservation = await fetchReservationByCode(code);
   if (reservation) {
     pendingConfirmations.delete(from);
@@ -150,8 +146,8 @@ async function handleIncoming(payload) {
     for (const change of (entry.changes || [])) {
       if (change.field !== 'messages') continue;
 
-      const value       = change.value || {};
-      const messages    = value.messages || [];
+      const value = change.value || {};
+      const messages = value.messages || [];
       const contactName = value.contacts?.[0]?.profile?.name || '';
 
       for (const message of messages) {
@@ -159,7 +155,7 @@ async function handleIncoming(payload) {
         if (!from) continue;
 
         let cameFromAudio = false;
-        let body          = '';
+        let body = '';
 
         // ---- resolve body ------------------------------------------------
         if (message.type === 'text') {
@@ -169,20 +165,20 @@ async function handleIncoming(payload) {
           try {
             const mediaId = message.audio?.id;
             if (!mediaId) {
-              await replyToGuest(from, 'Recebi seu \u00e1udio, mas n\u00e3o consegui identificar o arquivo. Pode tentar novamente? \ud83c\udfa4', { alsoSendAudio: cameFromAudio });
+              await replyToGuest(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? 🎤', { alsoSendAudio: cameFromAudio });
               continue;
             }
             const audioBuffer = await downloadWhatsAppMedia(mediaId);
-            const transcript  = await transcribeAudioBuffer(audioBuffer, message.audio?.mime_type || 'audio/ogg');
+            const transcript = await transcribeAudioBuffer(audioBuffer, message.audio?.mime_type || 'audio/ogg');
             if (!transcript) {
-              await replyToGuest(from, 'Recebi seu \u00e1udio, mas n\u00e3o consegui entender bem. Pode me mandar novamente ou escrever por texto? \ud83d\ude0a', { alsoSendAudio: cameFromAudio });
+              await replyToGuest(from, 'Recebi seu áudio, mas não consegui entender bem. Pode me mandar novamente ou escrever por texto? 😊', { alsoSendAudio: cameFromAudio });
               continue;
             }
             body = transcript;
             console.log('[audio transcript]', { from, transcript });
           } catch (err) {
             console.error('Failed to process audio message', err);
-            await replyToGuest(from, 'Recebi seu \u00e1udio, mas tive uma falha para processar agora. Pode tentar novamente ou me escrever por texto? \ud83d\ude0a', { alsoSendAudio: cameFromAudio });
+            await replyToGuest(from, 'Recebi seu áudio, mas tive uma falha para processar agora. Pode tentar novamente ou me escrever por texto? 😊', { alsoSendAudio: cameFromAudio });
             continue;
           }
         } else {
@@ -190,7 +186,7 @@ async function handleIncoming(payload) {
         }
 
         const normalized = normalizeText(body);
-        const language   = detectLanguage(body);
+        const language = detectLanguage(body);
         console.log('[incoming]', { from, body, normalized, language });
 
         // ---- greeting ----------------------------------------------------
@@ -237,10 +233,14 @@ async function handleIncoming(payload) {
           }
         }
 
-        // ---- AI fallback --------------------------------------------------
-        const aiReply = await getChatGptFallbackReply(body, from);
+        // ---- AI fallback (with CRM context) --------------------------------
+        // Save the user message, fetch history, call AI, save the AI reply
+        await saveMessage(from, 'user', body);
+        const context = await getContext(from);
+        const aiReply = await getChatGptFallbackReply(body, from, context);
         if (aiReply) {
           await replyToGuest(from, aiReply, { alsoSendAudio: cameFromAudio });
+          await saveMessage(from, 'assistant', aiReply);
           continue;
         }
 
@@ -254,7 +254,7 @@ async function handleIncoming(payload) {
         // ---- final fallback -----------------------------------------------
         await replyToGuest(
           from,
-          `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, \u00e9 s\u00f3 digitar "menu".`,
+          `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, é só digitar "menu".`,
           { alsoSendAudio: cameFromAudio }
         );
       }
