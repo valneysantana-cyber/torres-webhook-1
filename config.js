@@ -16,9 +16,9 @@ module.exports = {
   HUMAN_NUMBER_PRIMARY:     '+55 11 99907-3135',
   HUMAN_NUMBER_SECONDARY:   '+55 13 99615-5505',
   CONFIRMATION_TTL_MS:      10 * 60 * 1000,
-  DISPATCH_NUMBER:          '5511999073135',
+  // Números que recebem o relatório diário (separados por vírgula na env var)
+  DISPATCH_NUMBER:          process.env.DISPATCH_NUMBER || '5511999073135',
   // Secret token to protect POST /internal/dispatch
-  // Set via env var DISPATCH_SECRET on your hosting platform
   DISPATCH_SECRET:          process.env.DISPATCH_SECRET || null,
   // TorresGuest CRM API (Phase 1) — VPS endpoint
   CRM_API_URL:              process.env.CRM_API_URL || null,
