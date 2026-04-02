@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TorresGuest CRM</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* LOGIN */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .login-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 40px;
+      width: 340px;
+      text-align: center;
+    }
+    .login-card .logo {
+      font-size: 2.2rem;
+      margin-bottom: 8px;
+    }
+    .login-card h1 { font-size: 1.4rem; color: #f8fafc; margin-bottom: 4px; }
+    .login-card p { font-size: 0.85rem; color: #94a3b8; margin-bottom: 28px; }
+    .login-card input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 1rem;
+      margin-bottom: 14px;
+      outline: none;
+    }
+    .login-card input:focus { border-color: #6366f1; }
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover { background: #4f46e5; }
+    .error-msg { color: #f87171; font-size: 0.85rem; margin-top: 10px; }
+
+    /* MAIN */
+    #main-screen { display: none; }
+    header {
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header .brand { font-size: 1.1rem; font-weight: 700; color: #f8fafc; }
+    header .brand span { color: #6366f1; }
+    .logout-btn {
+      background: none;
+      border: 1px solid #475569;
+      color: #94a3b8;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    .logout-btn:hover { border-color: #6366f1; color: #6366f1; }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+    .search-section {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .search-section h2 { font-size: 1rem; color: #94a3b8; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .search-row { display: flex; gap: 12px; }
+    .search-row input {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 1rem;
+      outline: none;
+    }
+    .search-row input:focus { border-color: #6366f1; }
+    .search-row input::placeholder { color: #475569; }
+    .btn-search {
+      padding: 12px 24px;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .btn-search:hover { background: #4f46e5; }
+    .btn-search:disabled { background: #334155; cursor: not-allowed; }
+
+    /* GUEST CARD */
+    #guest-section { display: none; }
+    .guest-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+    .guest-avatar {
+      width: 52px; height: 52px;
+      background: #6366f1;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .guest-info h3 { font-size: 1.1rem; color: #f8fafc; }
+    .guest-info p { font-size: 0.85rem; color: #94a3b8; margin-top: 2px; }
+    .badge {
+      margin-left: auto;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-online { background: #064e3b; color: #34d399; border: 1px solid #065f46; }
+
+    /* MESSAGES */
+    .messages-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .messages-card .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .messages-card .card-header h3 { font-size: 0.95rem; color: #f8fafc; }
+    .messages-card .card-header span { font-size: 0.8rem; color: #64748b; }
+    .messages-list { padding: 16px 20px; max-height: 420px; overflow-y: auto; }
+    .messages-list::-webkit-scrollbar { width: 5px; }
+    .messages-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    .message-bubble {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 14px;
+    }
+    .message-bubble.guest { align-items: flex-start; }
+    .message-bubble.bot { align-items: flex-end; }
+    .bubble-label { font-size: 0.72rem; color: #64748b; margin-bottom: 4px; }
+    .bubble-text {
+      max-width: 72%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .message-bubble.guest .bubble-text {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-bottom-left-radius: 4px;
+    }
+    .message-bubble.bot .bubble-text {
+      background: #312e81;
+      color: #e0e7ff;
+      border-bottom-right-radius: 4px;
+    }
+    .bubble-time { font-size: 0.72rem; color: #475569; margin-top: 4px; }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #475569;
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ADD MESSAGE */
+    .add-message-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .add-message-card h3 { font-size: 0.95rem; color: #f8fafc; margin-bottom: 14px; }
+    .msg-form { display: flex; flex-direction: column; gap: 10px; }
+    .msg-row { display: flex; gap: 10px; }
+    .role-select {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 0.9rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .msg-input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 0.9rem;
+      outline: none;
+      resize: none;
+    }
+    .msg-input:focus, .role-select:focus { border-color: #6366f1; }
+    .btn-send {
+      padding: 10px 20px;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      align-self: flex-end;
+    }
+    .btn-send:hover { background: #4f46e5; }
+    .btn-send:disabled { background: #334155; cursor: not-allowed; }
+    .success-msg { color: #34d399; font-size: 0.85rem; }
+
+    /* LOADING */
+    .loading { text-align: center; padding: 30px; color: #64748b; font-size: 0.9rem; }
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2px solid #334155;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* STATUS BAR */
+    .status-bar {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: #64748b;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #334155;
+      flex-shrink: 0;
+    }
+    .status-dot.online { background: #34d399; box-shadow: 0 0 6px #34d399; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="logo">🏨</div>
+    <h1>TorresGuest CRM</h1>
+    <p>Painel de gestão de hóspedes</p>
+    <input type="password" id="pwd-input" placeholder="Senha de acesso" />
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <div class="error-msg" id="login-error"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main-screen">
+  <header>
+    <div class="brand">Torres<span>Guest</span> CRM</div>
+    <button class="logout-btn" onclick="doLogout()">Sair</button>
+  </header>
+
+  <div class="container">
+    <!-- API STATUS -->
+    <div class="status-bar">
+      <div class="status-dot" id="api-dot"></div>
+      <span id="api-status">Verificando conexão com API...</span>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="search-section">
+      <h2>Buscar Hóspede</h2>
+      <div class="search-row">
+        <input
+          type="tel"
+          id="phone-input"
+          placeholder="Ex: 5511999073135 (com código do país, sem +)"
+          onkeydown="if(event.key==='Enter') searchGuest()"
+        />
+        <button class="btn-search" id="btn-search" onclick="searchGuest()">Buscar</button>
+      </div>
+    </div>
+
+    <!-- GUEST SECTION -->
+    <div id="guest-section">
+      <div class="guest-header">
+        <div class="guest-avatar">👤</div>
+        <div class="guest-info">
+          <h3 id="guest-phone-display">—</h3>
+          <p id="guest-msg-count">— mensagens no histórico</p>
+        </div>
+        <span class="badge badge-online">Ativo</span>
+      </div>
+
+      <!-- MESSAGES -->
+      <div class="messages-card">
+        <div class="card-header">
+          <h3>Histórico de Conversas</h3>
+          <span id="msg-count-label">—</span>
+        </div>
+        <div class="messages-list" id="messages-list">
+          <div class="loading"><span class="spinner"></span> Carregando...</div>
+        </div>
+      </div>
+
+      <!-- ADD MESSAGE -->
+      <div class="add-message-card">
+        <h3>Registrar Mensagem Manual</h3>
+        <div class="msg-form">
+          <div class="msg-row">
+            <select class="role-select" id="msg-role">
+              <option value="guest">Hóspede</option>
+              <option value="bot">Bot</option>
+            </select>
+            <textarea class="msg-input" id="msg-content" rows="2" placeholder="Conteúdo da mensagem..."></textarea>
+          </div>
+          <button class="btn-send" id="btn-send" onclick="sendMessage()">Salvar Mensagem</button>
+          <span class="success-msg" id="send-status"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────────────────────
+  const PASSWORD = 'torres2026';          // senha simples — altere se quiser
+  const API_BASE = '';                    // URL relativa — funciona do mesmo servidor
+
+  // ─── LOGIN ────────────────────────────────────────────────────────────────
+  function doLogin() {
+    const pwd = document.getElementById('pwd-input').value;
+    if (pwd === PASSWORD) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-screen').style.display = 'block';
+      checkApiHealth();
+    } else {
+      document.getElementById('login-error').textContent = 'Senha incorreta.';
+    }
+  }
+
+  document.getElementById('pwd-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  function doLogout() {
+    document.getElementById('main-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('pwd-input').value = '';
+    document.getElementById('guest-section').style.display = 'none';
+  }
+
+  // ─── API HEALTH ───────────────────────────────────────────────────────────
+  async function checkApiHealth() {
+    const dot = document.getElementById('api-dot');
+    const status = document.getElementById('api-status');
+    try {
+      const res = await fetch(API_BASE + '/health');
+      if (res.ok) {
+        dot.classList.add('online');
+        status.textContent = 'API online — 129.121.49.120:3001';
+      } else {
+        status.textContent = 'API retornou erro ' + res.status;
+      }
+    } catch (e) {
+      status.textContent = 'API indisponível — ' + e.message;
+    }
+  }
+
+  // ─── SEARCH GUEST ─────────────────────────────────────────────────────────
+  let currentPhone = null;
+
+  async function searchGuest() {
+    const phoneRaw = document.getElementById('phone-input').value.trim();
+    const phone = phoneRaw.replace(/\D/g, '');
+    if (!phone) return;
+
+    const btn = document.getElementById('btn-search');
+    btn.disabled = true;
+    btn.textContent = 'Buscando...';
+
+    document.getElementById('guest-section').style.display = 'block';
+    document.getElementById('guest-phone-display').textContent = '+' + phone;
+    document.getElementById('messages-list').innerHTML = '<div class="loading"><span class="spinner"></span> Carregando...</div>';
+    document.getElementById('send-status').textContent = '';
+
+    try {
+      const res = await fetch(API_BASE + '/guest/' + phone + '/context');
+      const data = await res.json();
+
+      currentPhone = phone;
+      renderMessages(data);
+    } catch (e) {
+      document.getElementById('messages-list').innerHTML =
+        '<div class="empty-state"><div class="icon">⚠️</div><p>Erro ao carregar: ' + e.message + '</p></div>';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Buscar';
+    }
+  }
+
+  // ─── RENDER MESSAGES ──────────────────────────────────────────────────────
+  function renderMessages(messages) {
+    const list = document.getElementById('messages-list');
+    const count = messages.length;
+
+    document.getElementById('guest-msg-count').textContent = count + ' mensagem' + (count !== 1 ? 's' : '') + ' no histórico';
+    document.getElementById('msg-count-label').textContent = 'últimas ' + count + ' mensagens';
+
+    if (!count) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>Nenhuma mensagem encontrada para este hóspede.</p></div>';
+      return;
+    }
+
+    list.innerHTML = messages.map(msg => {
+      const isGuest = msg.role === 'guest';
+      const label = isGuest ? '👤 Hóspede' : '🤖 Bot';
+      const time = msg.ts ? formatTime(msg.ts) : '';
+      return `
+        <div class="message-bubble ${isGuest ? 'guest' : 'bot'}">
+          <div class="bubble-label">${label}</div>
+          <div class="bubble-text">${escapeHtml(msg.content)}</div>
+          ${time ? `<div class="bubble-time">${time}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    list.scrollTop = list.scrollHeight;
+  }
+
+  // ─── SEND MESSAGE ─────────────────────────────────────────────────────────
+  async function sendMessage() {
+    if (!currentPhone) return;
+    const role = document.getElementById('msg-role').value;
+    const content = document.getElementById('msg-content').value.trim();
+    if (!content) return;
+
+    const btn = document.getElementById('btn-send');
+    const statusEl = document.getElementById('send-status');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+    statusEl.textContent = '';
+
+    try {
+      const res = await fetch(API_BASE + '/guest/' + currentPhone + '/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, content })
+      });
+      if (res.ok) {
+        statusEl.textContent = '✓ Mensagem salva com sucesso!';
+        document.getElementById('msg-content').value = '';
+        // Reload conversation
+        const ctxRes = await fetch(API_BASE + '/guest/' + currentPhone + '/context');
+        const data = await ctxRes.json();
+        renderMessages(data);
+      } else {
+        const err = await res.json();
+        statusEl.textContent = '⚠️ Erro: ' + (err.error || res.status);
+        statusEl.style.color = '#f87171';
+      }
+    } catch (e) {
+      statusEl.textContent = '⚠️ Erro de conexão: ' + e.message;
+      statusEl.style.color = '#f87171';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Salvar Mensagem';
+    }
+  }
+
+  // ─── UTILS ────────────────────────────────────────────────────────────────
+  function formatTime(ts) {
+    try {
+      const d = new Date(ts);
+      return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/\n/g, '<br>');
+  }
+</script>
+</body>
+</html>
