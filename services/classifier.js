@@ -48,8 +48,22 @@ const CATEGORIES = [
     guestReply: 'Lamentamos muito pelo inconveniente. Encaminhei para nossa ger\u00eancia \u2014 entrar\u00e3o em contato para resolver isso da melhor forma. \u{1F64F}',
   },
   {
-    level: 'INFO', emoji: '\u{1F4C5}', name: 'Reserva',
-    noAlert: true,
+    level: 'OPERACIONAL', emoji: '\u{1F4E6}', name: 'Objetos Esquecidos',
+    keywords: [
+      'esqueci no hotel','esqueci no quarto','esqueci no apartamento','esqueci no flat',
+      'deixei no hotel','deixei no quarto','deixei no apartamento','deixei no flat',
+      'esqueci minha roupa','esqueci meu casaco','esqueci minha bolsa','esqueci minha mala',
+      'esqueci meu documento','esqueci meus pertences','esqueci minhas coisas',
+      'deixei minha roupa','deixei meu casaco','deixei minha bolsa','deixei minha mala',
+      'objeto esquecido','pertences esquecidos','roupa esquecida','roupas esquecidas',
+      'achados e perdidos','lost and found',
+      'esqueceu no quarto','esqueceu no hotel','deixou no quarto','deixou no hotel',
+      'esqueci algo la','esqueci alguma coisa no hotel','deixei algo no quarto'
+    ],
+    guestReply: 'Entendido! Estou direcionando para nossa equipe entrar em contato sobre seus pertences. Em breve algu\u00e9m te retornar\u00e1! \u{1F4E6}',
+  },
+  {
+    level: 'INFO', emoji: '\u{1F4C5}', name: 'Reserva', noAlert: true,
     keywords: [
       'quero reservar','fazer reserva','fazer uma reserva','quero fazer reserva',
       'quero uma reserva','como reservo','como faco reserva','como fa\u00e7o reserva',
