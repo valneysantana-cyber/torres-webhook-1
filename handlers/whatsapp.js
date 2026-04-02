@@ -1,67 +1,32 @@
 'use strict';
 const { CONFIRMATION_TTL_MS } = require('../config');
 const {
-  MENU_RESPONSE,
-  HUMAN_ESCALATION_RESPONSE,
-  CONFIRMATION_PROMPT,
-  WIFI_RESPONSE,
-  BREAKFAST_RESPONSE,
-  POOL_RESPONSE,
-  PARKING_RESPONSE,
-  SNACKS_RESPONSE,
-  TOWELS_RESPONSE,
-  RESTAURANT_RESPONSE,
-  CHECKIN_RESPONSE,
-  SECURITY_RESPONSE,
-  TRANSFER_RESPONSE,
-  LONG_STAY_RESPONSE,
-  CLEANING_RESPONSE,
-  INTERNET_RESPONSE,
-  LUGGAGE_RESPONSE,
-  GREETING_RESPONSE,
-  THANKS_RESPONSE,
-  RESERVATION_NOT_FOUND,
-  getReservationResponse,
-  getLocationResponse,
+  MENU_RESPONSE, HUMAN_ESCALATION_RESPONSE, CONFIRMATION_PROMPT,
+  WIFI_RESPONSE, BREAKFAST_RESPONSE, POOL_RESPONSE, PARKING_RESPONSE,
+  SNACKS_RESPONSE, TOWELS_RESPONSE, RESTAURANT_RESPONSE, CHECKIN_RESPONSE,
+  SECURITY_RESPONSE, TRANSFER_RESPONSE, LONG_STAY_RESPONSE, CLEANING_RESPONSE,
+  INTERNET_RESPONSE, LUGGAGE_RESPONSE, GREETING_RESPONSE, THANKS_RESPONSE,
+  RESERVATION_NOT_FOUND, getReservationResponse, getLocationResponse,
 } = require('../responses/strings');
 const { getFaqResponse } = require('../responses/faq');
 const {
-  normalizeText,
-  getCurrentDateBRT,
-  getCurrentTimeBRT,
-  formatReservationMessage,
+  normalizeText, getCurrentDateBRT, getCurrentTimeBRT, formatReservationMessage,
 } = require('../utils/formatters');
 const {
-  shouldSendMenu,
-  shouldSendWifi,
-  shouldSendBreakfast,
-  shouldSendPool,
-  shouldSendParking,
-  shouldSendSnacks,
-  shouldSendTowels,
-  shouldSendRestaurant,
-  shouldSendCheckin,
-  shouldSendTransfer,
-  shouldSendHuman,
-  shouldRedirectToReservationSite,
-  shouldSendSecurity,
-  shouldSendLocation,
-  shouldSendLongStay,
-  shouldSendCleaning,
-  shouldSendInternet,
-  shouldSendLuggage,
-  shouldSendGreeting,
-  shouldSendThanks,
-  shouldSendCurrentDate,
-  shouldSendCurrentTime,
-  shouldHandleReservationConfirmation,
-  detectLanguage,
-  extractReservationCode,
+  shouldSendMenu, shouldSendWifi, shouldSendBreakfast, shouldSendPool,
+  shouldSendParking, shouldSendSnacks, shouldSendTowels, shouldSendRestaurant,
+  shouldSendCheckin, shouldSendTransfer, shouldSendHuman, shouldRedirectToReservationSite,
+  shouldSendSecurity, shouldSendLocation, shouldSendLongStay, shouldSendCleaning,
+  shouldSendInternet, shouldSendLuggage, shouldSendGreeting, shouldSendThanks,
+  shouldSendCurrentDate, shouldSendCurrentTime, shouldHandleReservationConfirmation,
+  detectLanguage, extractReservationCode,
 } = require('../utils/matchers');
 const { fetchReservationByCode } = require('../services/stays');
 const { getChatGptFallbackReply, transcribeAudioBuffer } = require('../services/openai');
 const { downloadWhatsAppMedia, replyToGuest } = require('../services/whatsapp');
 const { saveMessage, getContext } = require('../services/crm');
+const { classifyMessage } = require('../services/classifier');
+const { sendEscalationAlert } = require('../services/dispatch');
 
 // ---------------------------------------------------------------------------
 // Pending confirmation state (in-memory, per process)
@@ -74,37 +39,31 @@ function cleanupPendingConfirmations() {
     if (now - ts > CONFIRMATION_TTL_MS) pendingConfirmations.delete(key);
   }
 }
-function rememberPendingConfirmation(phone) {
-  pendingConfirmations.set(phone, Date.now());
-}
-function isAwaitingCode(phone) {
-  cleanupPendingConfirmations();
-  return pendingConfirmations.has(phone);
-}
+function rememberPendingConfirmation(phone) { pendingConfirmations.set(phone, Date.now()); }
+function isAwaitingCode(phone) { cleanupPendingConfirmations(); return pendingConfirmations.has(phone); }
 
 // ---------------------------------------------------------------------------
 // PT_DISPATCH — replaces the 15-branch if-else chain
-// Each entry: { check(normalizedText) => bool, reply(lang) => string }
 // ---------------------------------------------------------------------------
 const PT_DISPATCH = [
-  { check: shouldSendWifi,      reply: () => WIFI_RESPONSE },
-  { check: shouldSendBreakfast, reply: () => BREAKFAST_RESPONSE },
-  { check: shouldSendPool,      reply: () => POOL_RESPONSE },
-  { check: shouldSendParking,   reply: () => PARKING_RESPONSE },
-  { check: shouldSendSnacks,    reply: () => SNACKS_RESPONSE },
-  { check: shouldSendTowels,    reply: () => TOWELS_RESPONSE },
-  { check: shouldSendRestaurant,reply: () => RESTAURANT_RESPONSE },
-  { check: shouldSendCheckin,   reply: () => CHECKIN_RESPONSE },
-  { check: shouldSendSecurity,  reply: () => SECURITY_RESPONSE },
-  { check: shouldSendTransfer,  reply: () => TRANSFER_RESPONSE },
-  { check: shouldSendLocation,  reply: (lang) => getLocationResponse(lang) },
-  { check: shouldSendLongStay,  reply: () => LONG_STAY_RESPONSE },
-  { check: shouldSendCleaning,  reply: () => CLEANING_RESPONSE },
-  { check: shouldSendInternet,  reply: () => INTERNET_RESPONSE },
-  { check: shouldSendLuggage,   reply: () => LUGGAGE_RESPONSE },
+  { check: shouldSendWifi,       reply: () => WIFI_RESPONSE },
+  { check: shouldSendBreakfast,  reply: () => BREAKFAST_RESPONSE },
+  { check: shouldSendPool,       reply: () => POOL_RESPONSE },
+  { check: shouldSendParking,    reply: () => PARKING_RESPONSE },
+  { check: shouldSendSnacks,     reply: () => SNACKS_RESPONSE },
+  { check: shouldSendTowels,     reply: () => TOWELS_RESPONSE },
+  { check: shouldSendRestaurant, reply: () => RESTAURANT_RESPONSE },
+  { check: shouldSendCheckin,    reply: () => CHECKIN_RESPONSE },
+  { check: shouldSendSecurity,   reply: () => SECURITY_RESPONSE },
+  { check: shouldSendTransfer,   reply: () => TRANSFER_RESPONSE },
+  { check: shouldSendLocation,   reply: (lang) => getLocationResponse(lang) },
+  { check: shouldSendLongStay,   reply: () => LONG_STAY_RESPONSE },
+  { check: shouldSendCleaning,   reply: () => CLEANING_RESPONSE },
+  { check: shouldSendInternet,   reply: () => INTERNET_RESPONSE },
+  { check: shouldSendLuggage,    reply: () => LUGGAGE_RESPONSE },
   { check: shouldSendCurrentDate, reply: () => `Hoje é ${getCurrentDateBRT()}.` },
   { check: shouldSendCurrentTime, reply: () => `Agora são ${getCurrentTimeBRT()}, horário de Brasília.` },
-  { check: shouldSendHuman,     reply: () => HUMAN_ESCALATION_RESPONSE },
+  { check: shouldSendHuman,      reply: () => HUMAN_ESCALATION_RESPONSE },
 ];
 
 // ---------------------------------------------------------------------------
@@ -145,7 +104,6 @@ async function handleIncoming(payload) {
   for (const entry of payload.entry) {
     for (const change of (entry.changes || [])) {
       if (change.field !== 'messages') continue;
-
       const value = change.value || {};
       const messages = value.messages || [];
       const contactName = value.contacts?.[0]?.profile?.name || '';
@@ -188,6 +146,17 @@ async function handleIncoming(payload) {
         const normalized = normalizeText(body);
         const language = detectLanguage(body);
         console.log('[incoming]', { from, body, normalized, language });
+
+        // ---- escalation classifier (tem prioridade sobre tudo) -----------
+        const escalation = classifyMessage(body);
+        if (escalation) {
+          console.log('[classifier] escalação detectada:', escalation.name, escalation.level);
+          await replyToGuest(from, escalation.guestReply, { alsoSendAudio: cameFromAudio });
+          await sendEscalationAlert(from, body, escalation);
+          await saveMessage(from, 'user', body);
+          await saveMessage(from, 'assistant', escalation.guestReply);
+          continue;
+        }
 
         // ---- greeting ----------------------------------------------------
         if (shouldSendGreeting(normalized)) {
@@ -234,7 +203,6 @@ async function handleIncoming(payload) {
         }
 
         // ---- AI fallback (with CRM context) --------------------------------
-        // Save the user message, fetch history, call AI, save the AI reply
         await saveMessage(from, 'user', body);
         const context = await getContext(from);
         const aiReply = await getChatGptFallbackReply(body, from, context);
