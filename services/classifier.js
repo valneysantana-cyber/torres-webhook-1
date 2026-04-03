@@ -9,6 +9,28 @@ const CATEGORIES = [
     guestReply: 'Entendido! Acionei nossa equipe com prioridade m\u00e1xima \u2014 algu\u00e9m entrar\u00e1 em contato com voc\u00ea em instantes! \u{1F534}',
   },
   {
+    level: 'CRITICO',
+    emoji: '\u{1FAB2}',
+    name: 'Praga / Inseto',
+    keywords: [
+      'barata','baratinha','baratao',
+      'inseto','insetos','bicho no quarto','bicho no banheiro','bicho na cama',
+      'bichos no quarto','bichos no banheiro','animal no quarto',
+      'mosquito','mosquitos','mosca','moscas','pernilongo',
+      'formiga','formigas','formigueiro',
+      'abelha','abelhas','vespa','vespas','marimbondo',
+      'aranha','aranhas','caranguejeira',
+      'escorpiao','escorpi\u00e3o','lacraia','lacrainha','centopeia',
+      'rato','ratazana','camundongo','rato no quarto',
+      'percevejo','percevejos','pulga','pulgas',
+      'cupim','cupins','tra\u00e7a',
+      'cobra','cobras','serpente',
+      'lagarto','lagartixa','lagarta',
+      'praga','pragas','infestacao','infesta\u00e7\u00e3o',
+    ],
+    guestReply: 'Entendido! Acionei nossa equipe agora mesmo com prioridade m\u00e1xima \u2014 algu\u00e9m entrar\u00e1 em contato em instantes para resolver o problema no seu apartamento! \u{1F6A8}',
+  },
+  {
     level: 'CRITICO', emoji: '\u{1F534}', name: 'Manuten\u00e7\u00e3o',
     keywords: [
       'ar condicionado','ar-condicionado','chuveiro','agua quente','\u00e1gua quente',
