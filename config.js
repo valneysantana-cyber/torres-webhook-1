@@ -7,7 +7,7 @@ module.exports = {
   PORT:                     Number(process.env.PORT) || 8000,
   STAYS_BASE_URL:           process.env.STAYS_API_BASE_URL || 'https://valney.stays.net/external/v1',
   STAYS_USERNAME:           process.env.STAYS_API_LOGIN || process.env.STAYS_API_USER,
-  STAYS_PASSWORD:           process.env.STAYS_API_PASSWORD || process.env.STAYS_API_PASS,
+  STAYS_PASSWORD:           process.env.STAYS_API_PASSWORD || pro  cess.env.STAYS_API_PASS,
   OPENAI_API_KEY:           process.env.OPENAI_API_KEY,
   OPENAI_TRANSCRIBE_MODEL:  process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe',
   OPENAI_TTS_MODEL:         process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts',
@@ -22,4 +22,5 @@ module.exports = {
   DISPATCH_SECRET:          process.env.DISPATCH_SECRET || null,
   // TorresGuest CRM API (Phase 1) — VPS endpoint
   CRM_API_URL:              process.env.CRM_API_URL || null,
+    CRM_API_KEY: process.env.CRM_API_KEY || null,
 };
