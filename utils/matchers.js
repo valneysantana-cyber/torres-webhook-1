@@ -127,6 +127,27 @@ function extractReservationCode(rawText) {
   return null;
 }
 
+
+const FRIGOBAR_ITEMS_REGEX = /(agua com gas|agua sem gas|agua|refrigerante|coca.cola|coca|guarana|suco|fanta|cerveja|vinho|energetico|chocolate|bala|drops|halls|chiclete)/;
+
+function shouldSendFrigobarPix(text) {
+  const paymentIntent = /(pagar|pagamento|quanto custa|quanto fica|valor|conta|cobrar|cobrado|pago|devo|como pago|como pagar|pix|chave pix)/;
+  const frigobarRef = /(frigobar|frigebar|minibar|mini.?bar)/;
+  if (frigobarRef.test(text) && paymentIntent.test(text)) return true;
+  if (FRIGOBAR_ITEMS_REGEX.test(text) && paymentIntent.test(text)) return true;
+  return false;
+}
+
+function shouldRequestFrigobarRestock(text) {
+  const frigobarRef = /(frigobar|frigebar|minibar|mini.?bar|geladeira)/;
+  const restockIntent = /(abastecer|reabastecer|repor|reposicao|recarregar|pode repor|pode abastecer)/;
+  const requestItems = /(me traz|me manda|pode trazer|pode me trazer|traga|preciso de|precisamos de|quero mais|queria mais|faltou|acabou|tem mais|pode colocar)/;
+  if (frigobarRef.test(text) && restockIntent.test(text)) return true;
+  if (frigobarRef.test(text) && FRIGOBAR_ITEMS_REGEX.test(text) && !/(pagar|pagamento|pix)/.test(text)) return true;
+  if ((restockIntent.test(text) || requestItems.test(text)) && FRIGOBAR_ITEMS_REGEX.test(text)) return true;
+  return false;
+}
+
 module.exports = {
   isNumericSelection,
   shouldSendMenu,
@@ -154,4 +175,6 @@ module.exports = {
   shouldHandleReservationConfirmation,
   detectLanguage,
   extractReservationCode,
+  shouldSendFrigobarPix,
+  shouldRequestFrigobarRestock,
 };
