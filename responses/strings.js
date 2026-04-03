@@ -68,6 +68,21 @@ function getLocationResponse(lang) {
   return LOCATION_RESPONSE;
 }
 
+
+const FRIGOBAR_PIX_RESPONSE = `💳 *Frigobar — Pagamento*
+
+Para pagar os itens consumidos, basta fazer um PIX para:
+
+🏦 CNPJ: *62.169.624/0001-94*
+
+Me confirme quando o pagamento for feito! 🌴`;
+
+const FRIGOBAR_RESTOCK_RESPONSE = `🧊 *Reposição do Frigobar*
+
+Anotado! Estou avisando a equipe de governança agora para repor os itens.
+
+Em breve estaremos aí para abastecer. Qualquer outra coisa, é só chamar! 🌴`;
+
 module.exports = {
   MENU_RESPONSE,
   HUMAN_ESCALATION_RESPONSE,
@@ -93,4 +108,6 @@ module.exports = {
   RESERVATION_NOT_FOUND,
   getReservationResponse,
   getLocationResponse,
+  FRIGOBAR_PIX_RESPONSE,
+  FRIGOBAR_RESTOCK_RESPONSE,
 };
