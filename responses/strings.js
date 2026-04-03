@@ -69,14 +69,27 @@ function getLocationResponse(lang) {
 }
 
 
-const FRIGOBAR_PIX_RESPONSE = `💳 *Frigobar — Pagamento*
+const FRIGOBAR_PIX_RESPONSE = `🍽️ *Cardápio — Frigobar & Snacks*
 
-Para pagar os itens consumidos, basta fazer um PIX para:
+☕ Café – R$ 8,00
+🥤 Refrigerante 350ml – R$ 8,90
+🥤 Refrigerante 200/220ml – R$ 5,50
+💧 Água – R$ 7,50
+🍺 Cerveja 269ml – R$ 12,90
+🍺 Cerveja 350ml – R$ 18,90
+⚡ Energético – R$ 18,90
+🧂 Salgadinhos – R$ 4,90
+🍬 Drops/Balas – R$ 4,50
+🍬 Chicletes – R$ 4,90
+🍫 Chocolates – R$ 8,90
+🥜 Amendoim – R$ 9,90
+🌾 Barras de Cereais – R$ 9,90
+🍹 Sucos – R$ 8,90
 
+💳 *Pagamento via PIX:*
 🏦 CNPJ: *62.169.624/0001-94*
 
-Me confirme quando o pagamento for feito! 🌴`;
-
+Me confirme quando o pagamento for feito! 🌴`
 const FRIGOBAR_RESTOCK_RESPONSE = `🧊 *Reposição do Frigobar*
 
 Anotado! Estou avisando a equipe de governança agora para repor os itens.
