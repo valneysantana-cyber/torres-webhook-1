@@ -1,4 +1,5 @@
 'use strict';
+
 const {
   OPENAI_API_KEY,
   OPENAI_CHAT_MODEL,
@@ -49,14 +50,13 @@ Regras:
 
 /**
  * Build conversation history block from CRM context messages.
- * Returns a formatted string to prepend to the user message.
  * @param {Array<{role: string, content: string}>} context
  * @returns {string}
  */
 function buildHistoryBlock(context) {
   if (!context || context.length === 0) return '';
   const lines = context
-    .slice(-8) // use last 8 messages for context window
+    .slice(-8)
     .map((m) => {
       const label = m.role === 'assistant' ? 'Assistente' : 'Hóspede';
       return `[${label}]: ${m.content}`;
@@ -66,19 +66,40 @@ function buildHistoryBlock(context) {
 }
 
 /**
- * Get a reply from ChatGPT for a guest message.
- * @param {string} userMessage  The current message from the guest
- * @param {string} phone        Guest phone number
- * @param {Array}  context      Previous messages from CRM (oldest first)
+ * Build guest loyalty profile block to inject into the system prompt.
+ * @param {Object|null} profile Guest profile from CRM
+ * @returns {string}
  */
-async function getChatGptFallbackReply(userMessage, phone, context = []) {
+function buildProfileBlock(profile) {
+  if (!profile) return '';
+  const lines = [];
+  if (profile.name)               lines.push(`Nome do hóspede: ${profile.name}`);
+  if (profile.level)              lines.push(`Nível de fidelidade: ${profile.level}`);
+  if (profile.totalStays)         lines.push(`Total de estadias: ${profile.totalStays}`);
+  if (profile.totalNights)        lines.push(`Total de noites hospedado: ${profile.totalNights}`);
+  if (profile.preferredApartment) lines.push(`Apartamento preferido: ${profile.preferredApartment}`);
+  if (profile.notes)              lines.push(`Observações: ${profile.notes}`);
+  if (!lines.length) return '';
+  return `\n\nPerfil do hóspede (use para personalizar o atendimento):\n${lines.join('\n')}`;
+}
+
+/**
+ * Get a reply from ChatGPT for a guest message.
+ * @param {string} userMessage The current message from the guest
+ * @param {string} phone Guest phone number
+ * @param {Array} context Previous messages from CRM (oldest first)
+ * @param {Object|null} profile Guest loyalty profile from CRM
+ */
+async function getChatGptFallbackReply(userMessage, phone, context = [], profile = null) {
   if (!OPENAI_API_KEY) {
     console.error('Missing OPENAI_API_KEY');
     return null;
   }
 
-  const historyBlock = buildHistoryBlock(context);
-  const userInput = `${historyBlock}Telefone: ${phone}\nMensagem: ${userMessage}`;
+  const historyBlock  = buildHistoryBlock(context);
+  const profileBlock  = buildProfileBlock(profile);
+  const systemContent = profileBlock ? `${SYSTEM_PROMPT}${profileBlock}` : SYSTEM_PROMPT;
+  const userInput     = `${historyBlock}Telefone: ${phone}\nMensagem: ${userMessage}`;
 
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -91,7 +112,7 @@ async function getChatGptFallbackReply(userMessage, phone, context = []) {
       input: [
         {
           role: 'system',
-          content: [{ type: 'input_text', text: SYSTEM_PROMPT }],
+          content: [{ type: 'input_text', text: systemContent }],
         },
         {
           role: 'user',
@@ -103,10 +124,12 @@ async function getChatGptFallbackReply(userMessage, phone, context = []) {
 
   const raw = await response.text();
   console.log('[openai fallback raw]', raw.slice(0, 500));
+
   if (!response.ok) {
     console.error('OpenAI fallback failed', response.status, raw);
     return null;
   }
+
   let data;
   try {
     data = JSON.parse(raw);
@@ -114,9 +137,11 @@ async function getChatGptFallbackReply(userMessage, phone, context = []) {
     console.error('Failed to parse JSON', err);
     return null;
   }
+
   if (data.output_text && data.output_text.trim()) {
     return data.output_text.trim();
   }
+
   return (
     data.output
       ?.flatMap((item) => item.content || [])
