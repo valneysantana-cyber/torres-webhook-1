@@ -7,10 +7,10 @@ const {
   RESTAURANT_RESPONSE, CHECKIN_RESPONSE, SECURITY_RESPONSE, TRANSFER_RESPONSE,
   LONG_STAY_RESPONSE, CLEANING_RESPONSE, INTERNET_RESPONSE, LUGGAGE_RESPONSE,
   GREETING_RESPONSE, THANKS_RESPONSE, RESERVATION_NOT_FOUND, getReservationResponse, getLocationResponse,
-FRIGOBAR_PIX_RESPONSE,
+  FRIGOBAR_PIX_RESPONSE,
   FRIGOBAR_RESTOCK_RESPONSE,
 } = require('../responses/strings');
-const { getFaqResponse }        = require('../responses/faq');
+const { getFaqResponse }                  = require('../responses/faq');
 const { normalizeText, getCurrentDateBRT, getCurrentTimeBRT, formatReservationMessage } = require('../utils/formatters');
 const {
   shouldSendMenu, shouldSendWifi, shouldSendBreakfast, shouldSendPool, shouldSendParking,
@@ -22,16 +22,16 @@ const {
   shouldSendFrigobarPix,
   shouldRequestFrigobarRestock,
 } = require('../utils/matchers');
-const { fetchReservationByCode }                          = require('../services/stays');
-const { getChatGptFallbackReply, transcribeAudioBuffer }  = require('../services/openai');
-const { downloadWhatsAppMedia, replyToGuest }             = require('../services/whatsapp');
-const { saveMessage, getContext, getProfile }             = require('../services/crm');
-const { classifyMessage }                                 = require('../services/classifier');
-const { sendEscalationAlert, sendFrigobarRestockNotification } = require('../services/dispatch');
+const { fetchReservationByCode }                                  = require('../services/stays');
+const { getChatGptFallbackReply, transcribeAudioBuffer }          = require('../services/openai');
+const { downloadWhatsAppMedia, replyToGuest, markReadAndTyping }  = require('../services/whatsapp');
+const { saveMessage, getContext, getProfile }                     = require('../services/crm');
+const { classifyMessage }                                         = require('../services/classifier');
+const { sendEscalationAlert, sendFrigobarRestockNotification }    = require('../services/dispatch');
 
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // Pending confirmation state (in-memory, per process)
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 const pendingConfirmations = new Map();
 
 function cleanupPendingConfirmations() {
@@ -43,9 +43,9 @@ function cleanupPendingConfirmations() {
 function rememberPendingConfirmation(phone) { pendingConfirmations.set(phone, Date.now()); }
 function isAwaitingCode(phone) { cleanupPendingConfirmations(); return pendingConfirmations.has(phone); }
 
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // PT_DISPATCH
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 const PT_DISPATCH = [
   { check: shouldSendWifi,        reply: () => WIFI_RESPONSE },
   { check: shouldSendBreakfast,   reply: () => BREAKFAST_RESPONSE },
@@ -62,42 +62,42 @@ const PT_DISPATCH = [
   { check: shouldSendCleaning,    reply: () => CLEANING_RESPONSE },
   { check: shouldSendInternet,    reply: () => INTERNET_RESPONSE },
   { check: shouldSendLuggage,     reply: () => LUGGAGE_RESPONSE },
-  { check: shouldSendCurrentDate, reply: () => `Hoje é ${getCurrentDateBRT()}.` },
-  { check: shouldSendCurrentTime, reply: () => `Agora são ${getCurrentTimeBRT()}, horário de Brasília.` },
+  { check: shouldSendCurrentDate, reply: () => `Hoje e ${getCurrentDateBRT()}.` },
+  { check: shouldSendCurrentTime, reply: () => `Agora sao ${getCurrentTimeBRT()}, horario de Brasilia.` },
   { check: shouldSendHuman,       reply: () => HUMAN_ESCALATION_RESPONSE },
 ];
 
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // Reservation confirmation flow
-// ---------------------------------------------------------------------------
-async function maybeHandleReservationConfirmation({ rawText, normalizedText, from, cameFromAudio = false }) {
-  const expectingCode        = isAwaitingCode(from);
+// ─────────────────────────────────────────────────────────────────────────────
+async function maybeHandleReservationConfirmation({ rawText, normalizedText, from, camFromAudio = false }) {
+  const expectingCode         = isAwaitingCode(from);
   const explicitlyWantsConfirm = shouldHandleReservationConfirmation(normalizedText);
-  const code                 = extractReservationCode(rawText);
-  const wantsConfirmation    = explicitlyWantsConfirm || (expectingCode && !!code);
+  const code                  = extractReservationCode(rawText);
+  const wantsConfirmation     = explicitlyWantsConfirm || (expectingCode && !!code);
 
   if (!wantsConfirmation) { if (expectingCode) pendingConfirmations.delete(from); return false; }
 
   if (!code) {
     rememberPendingConfirmation(from);
-    await replyToGuest(from, CONFIRMATION_PROMPT, { alsoSendAudio: cameFromAudio });
+    await replyToGuest(from, CONFIRMATION_PROMPT, { alsoSendAudio: camFromAudio });
     return true;
   }
 
   const reservation = await fetchReservationByCode(code);
   if (reservation) {
     pendingConfirmations.delete(from);
-    await replyToGuest(from, formatReservationMessage(reservation), { alsoSendAudio: cameFromAudio });
+    await replyToGuest(from, formatReservationMessage(reservation), { alsoSendAudio: camFromAudio });
   } else {
     rememberPendingConfirmation(from);
-    await replyToGuest(from, RESERVATION_NOT_FOUND(code), { alsoSendAudio: cameFromAudio });
+    await replyToGuest(from, RESERVATION_NOT_FOUND(code), { alsoSendAudio: camFromAudio });
   }
   return true;
 }
 
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // Main entry point
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 async function handleIncoming(payload) {
   if (!payload?.entry) return;
 
@@ -113,31 +113,34 @@ async function handleIncoming(payload) {
         const from = message.from;
         if (!from) continue;
 
-        let cameFromAudio = false;
+        // ── UX imediato: visto azul + "digitando..." antes de processar ──
+        markReadAndTyping(from, message.id).catch(() => {});
+
+        let camFromAudio = false;
         let body = '';
 
         // ---- resolve body ------------------------------------------------
         if (message.type === 'text') {
           body = message.text?.body || '';
         } else if (message.type === 'audio') {
-          cameFromAudio = true;
+          camFromAudio = true;
           try {
             const mediaId = message.audio?.id;
             if (!mediaId) {
-              await replyToGuest(from, 'Recebi seu áudio, mas não consegui identificar o arquivo. Pode tentar novamente? \u{1F3A4}', { alsoSendAudio: cameFromAudio });
+              await replyToGuest(from, 'Recebi seu audio, mas nao consegui identificar o arquivo. Pode tentar novamente? 🎤', { alsoSendAudio: camFromAudio });
               continue;
             }
             const audioBuffer = await downloadWhatsAppMedia(mediaId);
             const transcript  = await transcribeAudioBuffer(audioBuffer, message.audio?.mime_type || 'audio/ogg');
             if (!transcript) {
-              await replyToGuest(from, 'Recebi seu áudio, mas não consegui entender bem. Pode me mandar novamente ou escrever por texto? \u{1F60A}', { alsoSendAudio: cameFromAudio });
+              await replyToGuest(from, 'Recebi seu audio, mas nao consegui entender bem. Pode me mandar novamente ou escrever por texto? 😊', { alsoSendAudio: camFromAudio });
               continue;
             }
             body = transcript;
             console.log('[audio transcript]', { from, transcript });
           } catch (err) {
             console.error('Failed to process audio message', err);
-            await replyToGuest(from, 'Recebi seu áudio, mas tive uma falha para processar agora. Pode tentar novamente ou me escrever por texto? \u{1F60A}', { alsoSendAudio: cameFromAudio });
+            await replyToGuest(from, 'Recebi seu audio, mas tive uma falha para processar agora. Pode tentar novamente ou me escrever por texto? 😊', { alsoSendAudio: camFromAudio });
             continue;
           }
         } else {
@@ -148,94 +151,93 @@ async function handleIncoming(payload) {
         const language   = detectLanguage(body);
         console.log('[incoming]', { from, body, normalized, language });
 
-        // ---- escalation classifier (prioridade máxima) --------------------
+        // ---- escalation classifier (prioridade maxima) ------------------
         const escalation = classifyMessage(body);
         if (escalation) {
-          console.log('[classifier] escalação detectada:', escalation.name, escalation.level);
-          await replyToGuest(from, escalation.guestReply, { alsoSendAudio: cameFromAudio });
+          console.log('[classifier] escalacao detectada:', escalation.name, escalation.level);
+          await replyToGuest(from, escalation.guestReply, { alsoSendAudio: camFromAudio });
           if (!escalation.noAlert) await sendEscalationAlert(from, body, escalation);
           await saveMessage(from, 'user', body);
           await saveMessage(from, 'assistant', escalation.guestReply);
           continue;
         }
 
-        // ---- greeting ----------------------------------------------------
+        // ---- greeting ---------------------------------------------------
         if (shouldSendGreeting(normalized)) {
-          await replyToGuest(from, GREETING_RESPONSE(contactName), { alsoSendAudio: cameFromAudio });
+          await replyToGuest(from, GREETING_RESPONSE(contactName), { alsoSendAudio: camFromAudio });
           continue;
         }
 
-        // ---- thanks ------------------------------------------------------
+        // ---- thanks -----------------------------------------------------
         if (shouldSendThanks(normalized)) {
-          await replyToGuest(from, THANKS_RESPONSE, { alsoSendAudio: cameFromAudio });
+          await replyToGuest(from, THANKS_RESPONSE, { alsoSendAudio: camFromAudio });
           continue;
         }
 
-        // ---- menu --------------------------------------------------------
+        // ---- menu -------------------------------------------------------
         if (shouldSendMenu(normalized)) {
           console.log('[menu] sending menu response');
-          await replyToGuest(from, MENU_RESPONSE, { alsoSendAudio: cameFromAudio });
+          await replyToGuest(from, MENU_RESPONSE, { alsoSendAudio: camFromAudio });
           pendingConfirmations.delete(from);
           continue;
         }
 
-        // ---- reservation confirmation flow -------------------------------
-        if (await maybeHandleReservationConfirmation({ rawText: body, normalizedText: normalized, from, cameFromAudio })) {
+        // ---- reservation confirmation flow ------------------------------
+        if (await maybeHandleReservationConfirmation({ rawText: body, normalizedText: normalized, from, camFromAudio })) {
           continue;
         }
 
-        // ---- reservation site redirect -----------------------------------
+        // ---- reservation site redirect ----------------------------------
         if (
           shouldRedirectToReservationSite(normalized) ||
           /\b\d{1,2}[\/.-]\d{1,2}\b/.test(body) ||
           /\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/.test(body)
         ) {
-          await replyToGuest(from, getReservationResponse(language), { alsoSendAudio: cameFromAudio });
+          await replyToGuest(from, getReservationResponse(language), { alsoSendAudio: camFromAudio });
           continue;
         }
 
-        
-  // ---- frigobar: PIX de pagamento ----------------------------------------
-  if (shouldSendFrigobarPix(normalized)) {
-    await replyToGuest(from, FRIGOBAR_PIX_RESPONSE, { alsoSendAudio: cameFromAudio });
-    continue;
-  }
+        // ---- frigobar: PIX de pagamento ---------------------------------
+        if (shouldSendFrigobarPix(normalized)) {
+          await replyToGuest(from, FRIGOBAR_PIX_RESPONSE, { alsoSendAudio: camFromAudio });
+          continue;
+        }
 
-  // ---- frigobar: reposição → avisa governança ----------------------------
-  if (shouldRequestFrigobarRestock(normalized)) {
-    await replyToGuest(from, FRIGOBAR_RESTOCK_RESPONSE, { alsoSendAudio: cameFromAudio });
-    await sendFrigobarRestockNotification(from, body);
-    continue;
-  }
+        // ---- frigobar: reposicao -> avisa governanca -------------------
+        if (shouldRequestFrigobarRestock(normalized)) {
+          await replyToGuest(from, FRIGOBAR_RESTOCK_RESPONSE, { alsoSendAudio: camFromAudio });
+          await sendFrigobarRestockNotification(from, body);
+          continue;
+        }
 
-  // ---- PT_DISPATCH -------------------------------------------------
+        // ---- PT_DISPATCH ------------------------------------------------
         if (language === 'pt') {
           const match = PT_DISPATCH.find(({ check }) => check(normalized));
           if (match) {
-            await replyToGuest(from, match.reply(language), { alsoSendAudio: cameFromAudio });
+            await replyToGuest(from, match.reply(language), { alsoSendAudio: camFromAudio });
             continue;
           }
         }
 
-        // ---- AI fallback (contexto + perfil de fidelidade) ---------------
+        // ---- AI fallback (contexto + perfil de fidelidade) -------------
         await saveMessage(from, 'user', body);
         const [context, profile] = await Promise.all([getContext(from), getProfile(from)]);
         const aiReply = await getChatGptFallbackReply(body, from, context, profile);
         if (aiReply) {
-          await replyToGuest(from, aiReply, { alsoSendAudio: cameFromAudio });
+          await replyToGuest(from, aiReply, { alsoSendAudio: camFromAudio });
           await saveMessage(from, 'assistant', aiReply);
           continue;
         }
 
-        // ---- FAQ ---------------------------------------------------------
+        // ---- FAQ --------------------------------------------------------
         const faqResponse = getFaqResponse(normalized);
         if (faqResponse) {
-          await replyToGuest(from, faqResponse, { alsoSendAudio: cameFromAudio });
+          await replyToGuest(from, faqResponse, { alsoSendAudio: camFromAudio });
           continue;
         }
 
-        // ---- fallback final ----------------------------------------------
-        await replyToGuest(from, `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, é só digitar "menu".`, { alsoSendAudio: cameFromAudio });
+        // ---- fallback final ---------------------------------------------
+        await replyToGuest(from, `${HUMAN_ESCALATION_RESPONSE}\n\nSe quiser voltar ao menu, e so digitar "menu".`, { alsoSendAudio: camFromAudio });
       }
     }
   }
