@@ -1,10 +1,8 @@
 'use strict';
-
 /**
  * crm.js — CRM service client for TorresGuest
  * Thin wrapper around the CRM API running on the VPS (CRM_API_URL).
  */
-
 const { CRM_API_URL, CRM_API_KEY } = require('../config');
 
 function crmHeaders() {
@@ -23,19 +21,11 @@ async function saveMessage(phone, role, content) {
   if (!CRM_API_URL) return null;
   try {
     const res = await fetch(`${CRM_API_URL}/guest/${phone}/message`, {
-      method: 'POST',
-      headers: crmHeaders(),
-      body: JSON.stringify({ role, content }),
+      method: 'POST', headers: crmHeaders(), body: JSON.stringify({ role, content }),
     });
-    if (!res.ok) {
-      console.error('[crm] saveMessage failed', res.status, await res.text());
-      return null;
-    }
+    if (!res.ok) { console.error('[crm] saveMessage failed', res.status, await res.text()); return null; }
     return await res.json();
-  } catch (err) {
-    console.error('[crm] saveMessage error', err.message);
-    return null;
-  }
+  } catch (err) { console.error('[crm] saveMessage error', err.message); return null; }
 }
 
 /**
@@ -50,15 +40,9 @@ async function getContext(phone, limit = 10) {
     const res = await fetch(`${CRM_API_URL}/guest/${phone}/context?limit=${limit}`, {
       headers: crmHeaders(),
     });
-    if (!res.ok) {
-      console.error('[crm] getContext failed', res.status);
-      return [];
-    }
+    if (!res.ok) { console.error('[crm] getContext failed', res.status); return []; }
     return await res.json();
-  } catch (err) {
-    console.error('[crm] getContext error', err.message);
-    return [];
-  }
+  } catch (err) { console.error('[crm] getContext error', err.message); return []; }
 }
 
 /**
@@ -72,39 +56,42 @@ async function getProfile(phone) {
     const res = await fetch(`${CRM_API_URL}/guest/${phone}/profile`, {
       headers: crmHeaders(),
     });
-    if (!res.ok) {
-      console.error('[crm] getProfile failed', res.status);
-      return null;
-    }
+    if (!res.ok) { console.error('[crm] getProfile failed', res.status); return null; }
     return await res.json();
-  } catch (err) {
-    console.error('[crm] getProfile error', err.message);
-    return null;
-  }
+  } catch (err) { console.error('[crm] getProfile error', err.message); return null; }
+}
+
+/**
+ * Update guest profile with partial data (name, preferences, etc.)
+ * @param {string} phone
+ * @param {object} data Partial profile fields to update
+ * @returns {Promise<object|null>}
+ */
+async function updateProfile(phone, data) {
+  if (!CRM_API_URL) return null;
+  try {
+    const res = await fetch(`${CRM_API_URL}/guest/${phone}/profile`, {
+      method: 'PUT', headers: crmHeaders(), body: JSON.stringify(data),
+    });
+    if (!res.ok) { console.error('[crm] updateProfile failed', res.status, await res.text()); return null; }
+    return await res.json();
+  } catch (err) { console.error('[crm] updateProfile error', err.message); return null; }
 }
 
 /**
  * Register a checkout to update loyalty level.
  * @param {string} phone
- * @param {object} opts  { nights, name, apartment }
+ * @param {object} opts { nights, name, apartment }
  */
 async function registerCheckout(phone, opts = {}) {
   if (!CRM_API_URL) return null;
   try {
     const res = await fetch(`${CRM_API_URL}/guest/${phone}/checkout`, {
-      method: 'POST',
-      headers: crmHeaders(),
-      body: JSON.stringify(opts),
+      method: 'POST', headers: crmHeaders(), body: JSON.stringify(opts),
     });
-    if (!res.ok) {
-      console.error('[crm] registerCheckout failed', res.status, await res.text());
-      return null;
-    }
+    if (!res.ok) { console.error('[crm] registerCheckout failed', res.status, await res.text()); return null; }
     return await res.json();
-  } catch (err) {
-    console.error('[crm] registerCheckout error', err.message);
-    return null;
-  }
+  } catch (err) { console.error('[crm] registerCheckout error', err.message); return null; }
 }
 
-module.exports = { saveMessage, getContext, getProfile, registerCheckout };
+module.exports = { saveMessage, getContext, getProfile, updateProfile, registerCheckout };
