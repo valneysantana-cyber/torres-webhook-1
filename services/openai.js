@@ -66,6 +66,17 @@ function buildHistoryBlock(context) {
 }
 
 /**
+ * Behavior instructions per loyalty level.
+ * Injected into the GPT system prompt via buildProfileBlock.
+ */
+const LEVEL_BENEFITS = {
+  Visitante: '',
+  Frequente: 'Hóspede que já retornou ao TorresGuest. Mencione que é um prazer tê-lo de volta.',
+  VIP: 'Hóspede VIP. Use o nome se souber. Demonstre que o hotel o conhece e valoriza muito sua fidelidade.',
+  Embaixador: 'Hóspede EMBAIXADOR — o mais fiel de todos. Máxima personalização, mencione sua lealdade e quanto ele é especial para o TorresGuest.',
+};
+
+/**
  * Build guest loyalty profile block to inject into the system prompt.
  * @param {Object|null} profile Guest profile from CRM
  * @returns {string}
@@ -73,12 +84,14 @@ function buildHistoryBlock(context) {
 function buildProfileBlock(profile) {
   if (!profile) return '';
   const lines = [];
-  if (profile.name)               lines.push(`Nome do hóspede: ${profile.name}`);
-  if (profile.level)              lines.push(`Nível de fidelidade: ${profile.level}`);
-  if (profile.totalStays)         lines.push(`Total de estadias: ${profile.totalStays}`);
-  if (profile.totalNights)        lines.push(`Total de noites hospedado: ${profile.totalNights}`);
+  if (profile.name) lines.push(`Nome do hóspede: ${profile.name}`);
+  if (profile.level) lines.push(`Nível de fidelidade: ${profile.level}`);
+  if (profile.totalStays) lines.push(`Total de estadias: ${profile.totalStays}`);
+  if (profile.totalNights) lines.push(`Total de noites hospedado: ${profile.totalNights}`);
   if (profile.preferredApartment) lines.push(`Apartamento preferido: ${profile.preferredApartment}`);
-  if (profile.notes)              lines.push(`Observações: ${profile.notes}`);
+  if (profile.notes) lines.push(`Observações: ${profile.notes}`);
+  const levelInstruction = profile.level && LEVEL_BENEFITS[profile.level];
+  if (levelInstruction) lines.push(`Instrução de atendimento: ${levelInstruction}`);
   if (!lines.length) return '';
   return `\n\nPerfil do hóspede (use para personalizar o atendimento):\n${lines.join('\n')}`;
 }
@@ -91,57 +104,33 @@ function buildProfileBlock(profile) {
  * @param {Object|null} profile Guest loyalty profile from CRM
  */
 async function getChatGptFallbackReply(userMessage, phone, context = [], profile = null) {
-  if (!OPENAI_API_KEY) {
-    console.error('Missing OPENAI_API_KEY');
-    return null;
-  }
+  if (!OPENAI_API_KEY) { console.error('Missing OPENAI_API_KEY'); return null; }
 
-  const historyBlock  = buildHistoryBlock(context);
-  const profileBlock  = buildProfileBlock(profile);
+  const historyBlock = buildHistoryBlock(context);
+  const profileBlock = buildProfileBlock(profile);
   const systemContent = profileBlock ? `${SYSTEM_PROMPT}${profileBlock}` : SYSTEM_PROMPT;
-  const userInput     = `${historyBlock}Telefone: ${phone}\nMensagem: ${userMessage}`;
+  const userInput = `${historyBlock}Telefone: ${phone}\nMensagem: ${userMessage}`;
 
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
     body: JSON.stringify({
       model: OPENAI_CHAT_MODEL,
       input: [
-        {
-          role: 'system',
-          content: [{ type: 'input_text', text: systemContent }],
-        },
-        {
-          role: 'user',
-          content: [{ type: 'input_text', text: userInput }],
-        },
+        { role: 'system', content: [{ type: 'input_text', text: systemContent }] },
+        { role: 'user', content: [{ type: 'input_text', text: userInput }] },
       ],
     }),
   });
 
   const raw = await response.text();
   console.log('[openai fallback raw]', raw.slice(0, 500));
-
-  if (!response.ok) {
-    console.error('OpenAI fallback failed', response.status, raw);
-    return null;
-  }
+  if (!response.ok) { console.error('OpenAI fallback failed', response.status, raw); return null; }
 
   let data;
-  try {
-    data = JSON.parse(raw);
-  } catch (err) {
-    console.error('Failed to parse JSON', err);
-    return null;
-  }
+  try { data = JSON.parse(raw); } catch (err) { console.error('Failed to parse JSON', err); return null; }
 
-  if (data.output_text && data.output_text.trim()) {
-    return data.output_text.trim();
-  }
-
+  if (data.output_text && data.output_text.trim()) return data.output_text.trim();
   return (
     data.output
       ?.flatMap((item) => item.content || [])
@@ -152,18 +141,9 @@ async function getChatGptFallbackReply(userMessage, phone, context = [], profile
 }
 
 async function transcribeAudioBuffer(buffer, mimeType = 'audio/ogg') {
-  if (!OPENAI_API_KEY) {
-    console.error('Missing OPENAI_API_KEY');
-    return null;
-  }
+  if (!OPENAI_API_KEY) { console.error('Missing OPENAI_API_KEY'); return null; }
   const form = new FormData();
-  const ext = mimeType.includes('mpeg')
-    ? 'mp3'
-    : mimeType.includes('mp4')
-    ? 'mp4'
-    : mimeType.includes('wav')
-    ? 'wav'
-    : 'ogg';
+  const ext = mimeType.includes('mpeg') ? 'mp3' : mimeType.includes('mp4') ? 'mp4' : mimeType.includes('wav') ? 'wav' : 'ogg';
   form.append('file', new Blob([buffer], { type: mimeType }), `guest-audio.${ext}`);
   form.append('model', OPENAI_TRANSCRIBE_MODEL);
   const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -171,10 +151,7 @@ async function transcribeAudioBuffer(buffer, mimeType = 'audio/ogg') {
     headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
     body: form,
   });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI transcription failed: ${response.status} ${errorText}`);
-  }
+  if (!response.ok) { const errorText = await response.text(); throw new Error(`OpenAI transcription failed: ${response.status} ${errorText}`); }
   const data = await response.json();
   return data?.text?.trim() || null;
 }
@@ -183,23 +160,16 @@ async function synthesizeSpeechBuffer(text) {
   if (!OPENAI_API_KEY) throw new Error('Missing OPENAI_API_KEY');
   const response = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
     body: JSON.stringify({
       model: OPENAI_TTS_MODEL,
       voice: OPENAI_TTS_VOICE,
       input: text,
       format: 'mp3',
-      instructions:
-        'Fale em português do Brasil de forma natural, simpática e acolhedora, com ritmo mais rápido, fluido e com poucas pausas. Evite falar devagar ou robótico.',
+      instructions: 'Fale em português do Brasil de forma natural, simpática e acolhedora, com ritmo mais rápido, fluido e com poucas pausas. Evite falar devagar ou robótico.',
     }),
   });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI speech failed: ${response.status} ${errorText}`);
-  }
+  if (!response.ok) { const errorText = await response.text(); throw new Error(`OpenAI speech failed: ${response.status} ${errorText}`); }
   return Buffer.from(await response.arrayBuffer());
 }
 
