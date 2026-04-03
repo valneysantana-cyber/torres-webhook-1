@@ -1,5 +1,11 @@
 'use strict';
 
+// Resolve _idlisting (MongoDB ObjectId) → nome do apartamento via env var
+const _LISTING_NAMES = (() => {
+  try { return JSON.parse(process.env.LISTING_NAMES_JSON || '{}'); }
+  catch (e) { return {}; }
+})();
+
 function normalizeText(text) {
   return text
     .toLowerCase()
@@ -106,6 +112,7 @@ function formatReservationMessage(reservation) {
   const listing =
     reservation.listing?.internalName ||
     reservation.listing?.name ||
+    _LISTING_NAMES[String(reservation._idlisting || '')] ||
     reservation.listing?.id ||
     String(reservation._idlisting || '');
   const partner  = reservation.partnerName || reservation.partner?.name || 'canal direto';
