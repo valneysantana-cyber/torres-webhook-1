@@ -7,6 +7,8 @@ const {
   RESTAURANT_RESPONSE, CHECKIN_RESPONSE, SECURITY_RESPONSE, TRANSFER_RESPONSE,
   LONG_STAY_RESPONSE, CLEANING_RESPONSE, INTERNET_RESPONSE, LUGGAGE_RESPONSE,
   GREETING_RESPONSE, THANKS_RESPONSE, RESERVATION_NOT_FOUND, getReservationResponse, getLocationResponse,
+FRIGOBAR_PIX_RESPONSE,
+  FRIGOBAR_RESTOCK_RESPONSE,
 } = require('../responses/strings');
 const { getFaqResponse }        = require('../responses/faq');
 const { normalizeText, getCurrentDateBRT, getCurrentTimeBRT, formatReservationMessage } = require('../utils/formatters');
@@ -17,13 +19,15 @@ const {
   shouldSendLocation, shouldSendLongStay, shouldSendCleaning, shouldSendInternet,
   shouldSendLuggage, shouldSendGreeting, shouldSendThanks, shouldSendCurrentDate,
   shouldSendCurrentTime, shouldHandleReservationConfirmation, detectLanguage, extractReservationCode,
+  shouldSendFrigobarPix,
+  shouldRequestFrigobarRestock,
 } = require('../utils/matchers');
 const { fetchReservationByCode }                          = require('../services/stays');
 const { getChatGptFallbackReply, transcribeAudioBuffer }  = require('../services/openai');
 const { downloadWhatsAppMedia, replyToGuest }             = require('../services/whatsapp');
 const { saveMessage, getContext, getProfile }             = require('../services/crm');
 const { classifyMessage }                                 = require('../services/classifier');
-const { sendEscalationAlert }                             = require('../services/dispatch');
+const { sendEscalationAlert, sendFrigobarRestockNotification } = require('../services/dispatch');
 
 // ---------------------------------------------------------------------------
 // Pending confirmation state (in-memory, per process)
@@ -190,7 +194,21 @@ async function handleIncoming(payload) {
           continue;
         }
 
-        // ---- PT_DISPATCH -------------------------------------------------
+        
+  // ---- frigobar: PIX de pagamento ----------------------------------------
+  if (shouldSendFrigobarPix(normalized)) {
+    await replyToGuest(from, FRIGOBAR_PIX_RESPONSE, { alsoSendAudio: cameFromAudio });
+    continue;
+  }
+
+  // ---- frigobar: reposição → avisa governança ----------------------------
+  if (shouldRequestFrigobarRestock(normalized)) {
+    await replyToGuest(from, FRIGOBAR_RESTOCK_RESPONSE, { alsoSendAudio: cameFromAudio });
+    await sendFrigobarRestockNotification(from, body);
+    continue;
+  }
+
+  // ---- PT_DISPATCH -------------------------------------------------
         if (language === 'pt') {
           const match = PT_DISPATCH.find(({ check }) => check(normalized));
           if (match) {
