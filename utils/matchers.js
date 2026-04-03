@@ -64,7 +64,7 @@ function shouldSendHuman(text) {
 }
 
 function shouldRedirectToReservationSite(text) {
-  return /\b(reservar|reserva|nova reserva|fazer reserva|quero reservar|quero fazer uma reserva|como faco minha reserva|consigo reservar|posso reservar|fechar reserva|fechar hospedagem|disponibilidade|tem vaga|tem disponibilidade|ha vaga|valor da diaria|preco|diaria|quarto disponivel|acomodacao|hospedagem|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)\b/.test(text);
+  return /\b(reservar|nova reserva|fazer reserva|quero reservar|quero fazer uma reserva|como faco minha reserva|consigo reservar|posso reservar|fechar reserva|fechar hospedagem|disponibilidade|tem vaga|tem disponibilidade|ha vaga|valor da diaria|preco|diaria|quarto disponivel|acomodacao|hospedagem|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)\b/.test(text);
 }
 
 function shouldSendSecurity(text) {
@@ -109,7 +109,17 @@ function shouldSendCurrentTime(text) {
 }
 
 function shouldHandleReservationConfirmation(text) {
-  return isNumericSelection(text, '11') || /(confirmar|confirmacao|status|codigo).*reserva/.test(text);
+  return (
+    isNumericSelection(text, '11') ||
+    // pedido explícito de confirmação
+    /(confirmar|confirmacao|status|codigo).*reserva/.test(text) ||
+    // hóspede diz que JÁ TEM uma reserva
+    /\b(tenho|ja tenho|ja fiz|fiz a|temos)\b.{0,20}\breserva\b/.test(text) ||
+    // "minha reserva" / "nossa reserva"
+    /\b(minha|nossa)\b.{0,10}\breserva\b/.test(text) ||
+    // "como confirmo" / "quero confirmar"
+    /\b(como|quero|preciso).{0,15}\bconfirm/.test(text)
+  );
 }
 
 function detectLanguage(text) {
@@ -118,7 +128,7 @@ function detectLanguage(text) {
   if (/(hello|hi|hey|good morning|good afternoon|good evening|thanks|thank you|price|book|booking|reservation|where|address|location|located|hotel|check in|check-in|check out|checkout|wifi|pool|gym|breakfast|parking)/.test(t)) {
     return 'en';
   }
-  if (/(hola|buenos dias|buenas tardes|buenas noches|gracias|precio|reserva|direccion|direcci\u00f3n|ubicacion|ubicaci\u00f3n|donde|hotel|check in|check-in|check out|checkout|wifi|piscina|gimnasio|desayuno|estacionamiento)/.test(t)) {
+  if (/(hola|buenos dias|buenas tardes|buenas noches|gracias|precio|direccion|direcci\u00f3n|ubicacion|ubicaci\u00f3n|donde|hotel|check in|check-in|check out|checkout|wifi|piscina|gimnasio|desayuno|estacionamiento)/.test(t)) {
     return 'es';
   }
   return 'pt';
