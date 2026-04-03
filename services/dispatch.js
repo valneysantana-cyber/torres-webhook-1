@@ -9,7 +9,7 @@
  *
  * Trigger via cron — NOT on server boot.
  */
-const { DISPATCH_NUMBER } = require('../config');
+const { DISPATCH_NUMBER } = require('../config')
 const { getCurrentDateBRT, resolveGuestName } = require('../utils/formatters');
 const { fetchTodayAllActiveGuests } = require('./stays');
 const { sendWhatsAppText } = require('./whatsapp');
@@ -26,7 +26,7 @@ function resolveApartmentName(r, listingsMap) {
 async function dailyCheckinDispatch() {
   try {
     const today = getCurrentDateBRT();
-    const { checkinsHoje, emEstadia, listingsMap } = await fetchTodayAllActiveGuests();
+    const { arrivals: checkinsHoje, midStay: emEstadia, listingsMap } = await fetchTodayAllActiveGuests();
 
     const fmtCheckins = checkinsHoje.length === 0
       ? '  (nenhum check-in hoje)'
