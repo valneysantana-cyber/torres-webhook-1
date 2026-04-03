@@ -97,4 +97,29 @@ async function sendEscalationAlert(guestPhone, originalMessage, classification) 
   }
 }
 
-module.exports = { dailyCheckinDispatch, sendEscalationAlert };
+
+async function sendFrigobarRestockNotification(guestPhone, originalMessage) {
+  try {
+    const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    const mensagem = [
+      '🧊 *TorresGuest — Reposição de Frigobar*',
+      '',
+      `📱 *Hóspede:* +${guestPhone}`,
+      `⏰ *Horário (BRT):* ${now}`,
+      '',
+      '💬 *Solicitação:*',
+      `"${originalMessage}"`,
+      '',
+      '👉 Por favor, acionar a governança para reposição.',
+    ].join('\n');
+    const numbers = DISPATCH_NUMBER.split(',').map(n => n.trim()).filter(Boolean);
+    for (const num of numbers) {
+      await sendWhatsAppText(num, mensagem);
+    }
+    console.log('[dispatch] Alerta de reposição de frigobar enviado');
+  } catch (err) {
+    console.error('[dispatch] Erro no sendFrigobarRestockNotification:', err.message);
+  }
+}
+
+module.exports = { dailyCheckinDispatch, sendEscalationAlert, sendFrigobarRestockNotification };
