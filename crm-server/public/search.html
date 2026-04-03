@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TorresGuest — Pesquisa de Hóspedes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+  header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+  header .logo { font-size: 22px; }
+  header h1 { font-size: 18px; font-weight: 600; color: #f0f6fc; }
+  header .sub { font-size: 13px; color: #8b949e; margin-top: 2px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+  .search-wrap { position: relative; margin-bottom: 28px; }
+  .search-wrap input {
+    width: 100%; padding: 14px 48px 14px 18px;
+    background: #161b22; border: 1px solid #30363d;
+    border-radius: 10px; color: #e6edf3; font-size: 16px;
+    outline: none; transition: border-color .2s;
+  }
+  .search-wrap input:focus { border-color: #58a6ff; }
+  .search-wrap input::placeholder { color: #484f58; }
+  .search-wrap .icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #484f58; font-size: 18px; }
+  .stats-bar { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .stat { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px 16px; font-size: 13px; color: #8b949e; }
+  .stat span { display: block; font-size: 22px; font-weight: 700; color: #e6edf3; }
+  .results { display: flex; flex-direction: column; gap: 12px; }
+  .card {
+    background: #161b22; border: 1px solid #30363d;
+    border-radius: 10px; padding: 16px 20px;
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 8px; transition: border-color .2s;
+  }
+  .card:hover { border-color: #58a6ff33; }
+  .card-left {}
+  .card-name { font-size: 16px; font-weight: 600; color: #f0f6fc; margin-bottom: 4px; }
+  .card-phone { font-size: 13px; color: #8b949e; margin-bottom: 8px; }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; }
+  .tag { background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 3px 8px; color: #8b949e; }
+  .tag strong { color: #e6edf3; }
+  .card-right { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; }
+  .badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; }
+  .badge-visitante { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+  .badge-frequente { background: #0d2137; color: #58a6ff; border: 1px solid #1f6feb; }
+  .badge-vip { background: #1a0a2e; color: #d2a8ff; border: 1px solid #8957e5; }
+  .badge-embaixador { background: #2d1a00; color: #e3b341; border: 1px solid #9e6a03; }
+  .card-nights { font-size: 22px; font-weight: 700; color: #f0f6fc; text-align: right; }
+  .card-nights-label { font-size: 11px; color: #484f58; text-align: right; }
+  .empty { text-align: center; padding: 60px 20px; color: #484f58; }
+  .empty .icon { font-size: 48px; margin-bottom: 12px; }
+  .hint { font-size: 13px; color: #484f58; margin-bottom: 20px; }
+  .loading { text-align: center; padding: 40px; color: #484f58; }
+  .key-prompt { position: fixed; bottom: 20px; right: 20px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #8b949e; }
+  .key-prompt a { color: #58a6ff; text-decoration: none; }
+  @media (max-width: 600px) { .card { grid-template-columns: 1fr; } .card-right { flex-direction: row; align-items: center; margin-top: 8px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🏨</div>
+  <div>
+    <div class="h1">TorresGuest — Hóspedes</div>
+    <div class="sub">Painel de pesquisa · CRM</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="search-wrap">
+    <input id="q" type="text" placeholder="Pesquisar por nome do hóspede..." autofocus autocomplete="off">
+    <span class="icon">🔍</span>
+  </div>
+
+  <div class="stats-bar" id="stats-bar" style="display:none"></div>
+
+  <div class="hint" id="hint">Digite pelo menos 2 letras para pesquisar</div>
+  <div id="results" class="results"></div>
+</div>
+
+<div class="key-prompt" id="key-prompt" style="display:none">
+  API Key: <input id="api-key-input" type="password" placeholder="x-api-key" style="background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:4px;padding:3px 8px;font-size:12px;width:140px"> <button onclick="saveKey()" style="background:#1f6feb;color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px">OK</button>
+</div>
+
+<script>
+  const BASE = window.location.origin;
+  let apiKey = localStorage.getItem('crm_api_key') || '';
+  let timer = null;
+
+  if (!apiKey) document.getElementById('key-prompt').style.display = 'block';
+
+  function saveKey() {
+    apiKey = document.getElementById('api-key-input').value.trim();
+    localStorage.setItem('crm_api_key', apiKey);
+    document.getElementById('key-prompt').style.display = 'none';
+    loadStats();
+  }
+
+  async function loadStats() {
+    try {
+      const r = await fetch(BASE + '/guests/stats', { headers: { 'x-api-key': apiKey } });
+      if (!r.ok) return;
+      const d = await r.json();
+      const bar = document.getElementById('stats-bar');
+      bar.style.display = 'flex';
+      bar.innerHTML = `
+        <div class="stat"><span>${d.total||0}</span>Hóspedes</div>
+        <div class="stat"><span style="color:#e3b341">${d.Embaixador||0}</span>Embaixadores</div>
+        <div class="stat"><span style="color:#d2a8ff">${d.VIP||0}</span>VIPs</div>
+        <div class="stat"><span style="color:#58a6ff">${d.Frequente||0}</span>Frequentes</div>
+        <div class="stat"><span>${d.Visitante||0}</span>Visitantes</div>
+      `;
+    } catch(e) {}
+  }
+
+  function levelBadge(level) {
+    const map = { Visitante:'visitante', Frequente:'frequente', VIP:'vip', Embaixador:'embaixador' };
+    const cls = map[level] || 'visitante';
+    return `<span class="badge badge-${cls}">${level||'Visitante'}</span>`;
+  }
+
+  function renderCard(g) {
+    const apts = (g.apartments||[]).join(', ') || g.preferredApartment || '—';
+    const checkout = g.lastCheckout ? new Date(g.lastCheckout).toLocaleDateString('pt-BR') : '—';
+    const channel = g.mainChannel ? `<span class="tag">${g.mainChannel}</span>` : '';
+    const phone = g.phone ? `<a href="https://wa.me/${g.phone}" target="_blank" style="color:#58a6ff;text-decoration:none">${g.phone}</a>` : '—';
+    return `
+      <div class="card">
+        <div class="card-left">
+          <div class="card-name">${g.name||'Sem nome'}</div>
+          <div class="card-phone">${phone}</div>
+          <div class="card-meta">
+            <span class="tag">🏠 <strong>${apts}</strong></span>
+            <span class="tag">📅 <strong>${g.totalStays||0}</strong> estadia${(g.totalStays||0)!==1?'s':''}</span>
+            <span class="tag">🌙 <strong>${g.totalNights||0}</strong> noite${(g.totalNights||0)!==1?'s':''}</span>
+            <span class="tag">📤 Último checkout: <strong>${checkout}</strong></span>
+            ${channel}
+          </div>
+        </div>
+        <div class="card-right">
+          ${levelBadge(g.level)}
+          <div>
+            <div class="card-nights">${g.totalNights||0}</div>
+            <div class="card-nights-label">noites</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function search(q) {
+    const res = document.getElementById('results');
+    const hint = document.getElementById('hint');
+    if (q.length < 2) {
+      res.innerHTML = '';
+      hint.textContent = 'Digite pelo menos 2 letras para pesquisar';
+      hint.style.display = 'block';
+      return;
+    }
+    hint.style.display = 'none';
+    res.innerHTML = '<div class="loading">Buscando...</div>';
+    try {
+      const r = await fetch(`${BASE}/guests/search?q=${encodeURIComponent(q)}`, { headers: { 'x-api-key': apiKey } });
+      if (r.status === 401) { res.innerHTML = '<div class="empty"><div class="icon">🔑</div>Informe a API Key abaixo</div>'; document.getElementById('key-prompt').style.display='block'; return; }
+      const guests = await r.json();
+      if (!guests.length) { res.innerHTML = '<div class="empty"><div class="icon">🔍</div>Nenhum hóspede encontrado</div>'; return; }
+      res.innerHTML = guests.map(renderCard).join('');
+    } catch(e) { res.innerHTML = '<div class="empty"><div class="icon">⚠️</div>Erro ao conectar ao CRM</div>'; }
+  }
+
+  document.getElementById('q').addEventListener('input', e => {
+    clearTimeout(timer);
+    timer = setTimeout(() => search(e.target.value.trim()), 350);
+  });
+
+  if (apiKey) loadStats();
+</script>
+</body>
+</html>
