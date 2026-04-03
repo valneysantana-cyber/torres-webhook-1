@@ -18,7 +18,7 @@ function resolveApartmentName(r, listingsMap) {
   const nested = r.listing || r.unit || r.accommodation || {};
   const fromNested = nested.internalName || nested.nickname || nested.name || nested.title || nested.unitNumber;
   if (fromNested) return fromNested;
-  const id = r.listingId || r.unitId || r.accommodationId || nested._id || nested.id;
+  const id = r._idlisting || r.listingId || r.unitId || r.accommodationId || nested._id || nested.id;
   if (id && listingsMap && listingsMap[id]) return listingsMap[id];
   return 'Apto desconhecido';
 }
@@ -33,7 +33,7 @@ async function dailyCheckinDispatch() {
       : checkinsHoje.map(r => {
           const name = resolveGuestName(r);
           const apt = resolveApartmentName(r, listingsMap);
-          const checkout = r.checkoutDate || r.endDate || '?';
+                  const checkout = r.checkOutDate || r.checkoutDate || r.endDate || '?';
           return `  • ${name} → ${apt} (saída: ${checkout})`;
         }).join('\n');
 
@@ -42,7 +42,7 @@ async function dailyCheckinDispatch() {
       : emEstadia.map(r => {
           const name = resolveGuestName(r);
           const apt = resolveApartmentName(r, listingsMap);
-          const checkout = r.checkoutDate || r.endDate || '?';
+                  const checkout = r.checkOutDate || r.checkoutDate || r.endDate || '?';
           return `  • ${name} → ${apt} (saída: ${checkout})`;
         }).join('\n');
 
