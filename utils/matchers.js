@@ -1,5 +1,13 @@
 'use strict';
 
+/**
+ * Strip accents and lowercase — used internally so regexes without accents
+ * still match inputs like "água", "café", "olá", etc.
+ */
+function stripAccents(t) {
+  return (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 function isNumericSelection(text, ...options) {
   const digits = text.replace(/[^0-9]/g, '');
   return digits && options.includes(digits);
@@ -56,7 +64,7 @@ function shouldSendHuman(text) {
 }
 
 function shouldRedirectToReservationSite(text) {
-  return /\b(reservar|reserva|nova reserva|fazer reserva|quero reservar|quero fazer uma reserva|como faco minha reserva|consigo reservar|posso reservar|fechar reserva|fechar hospedagem|disponibilidade|tem vaga|tem disponibilidade|ha vaga|valor da diaria|quanto custa|preco|diaria|quarto disponivel|acomodacao|hospedagem|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)\b/.test(text);
+  return /\b(reservar|reserva|nova reserva|fazer reserva|quero reservar|quero fazer uma reserva|como faco minha reserva|consigo reservar|posso reservar|fechar reserva|fechar hospedagem|disponibilidade|tem vaga|tem disponibilidade|ha vaga|valor da diaria|preco|diaria|quarto disponivel|acomodacao|hospedagem|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)\b/.test(text);
 }
 
 function shouldSendSecurity(text) {
@@ -127,24 +135,39 @@ function extractReservationCode(rawText) {
   return null;
 }
 
+// ─── Frigobar / Minibar ────────────────────────────────────────────────────
 
-const FRIGOBAR_ITEMS_REGEX = /(agua com gas|agua sem gas|agua|refrigerante|coca.cola|coca|guarana|suco|fanta|cerveja|vinho|energetico|chocolate|bala|drops|halls|chiclete)/;
+/**
+ * Items that can be in the frigobar — tested on ACCENT-STRIPPED text.
+ * Includes common variants: com/sem gás, refri, latinha, garrafinha, etc.
+ */
+const FRIGOBAR_ITEMS_REGEX = /(agua com gas|agua sem gas|agua|refri|refrigerante|coca cola|coca|guarana|suco|fanta|cerveja|vinho|energetico|red bull|monster|chocolate|bala|drops|halls|chiclete|latinha|garrafinha|garrafao|garrafinha)/;
 
+/**
+ * Returns true if the guest is asking how to pay for a frigobar item.
+ * Works even when the input has accented characters (e.g. "água", "é").
+ */
 function shouldSendFrigobarPix(text) {
-  const paymentIntent = /(pagar|pagamento|quanto custa|quanto fica|valor|conta|cobrar|cobrado|pago|devo|como pago|como pagar|pix|chave pix)/;
-  const frigobarRef = /(frigobar|frigebar|minibar|mini.?bar)/;
-  if (frigobarRef.test(text) && paymentIntent.test(text)) return true;
-  if (FRIGOBAR_ITEMS_REGEX.test(text) && paymentIntent.test(text)) return true;
+  const t = stripAccents(text);
+  const paymentIntent = /(pagar|pagamento|quanto custa|quanto fica|valor|conta|cobrar|cobrado|pago|devo|como pago|como pagar|pix|chave pix|quanto e|quanto eh|quanto fica|paga|preciso pagar|preciso de pagar)/;
+  const frigobarRef   = /(frigobar|frigebar|minibar|mini.?bar)/;
+  if (frigobarRef.test(t) && paymentIntent.test(t)) return true;
+  if (FRIGOBAR_ITEMS_REGEX.test(t) && paymentIntent.test(t)) return true;
   return false;
 }
 
+/**
+ * Returns true if the guest wants to restock the frigobar.
+ * Works even when the input has accented characters.
+ */
 function shouldRequestFrigobarRestock(text) {
-  const frigobarRef = /(frigobar|frigebar|minibar|mini.?bar|geladeira)/;
+  const t = stripAccents(text);
+  const frigobarRef   = /(frigobar|frigebar|minibar|mini.?bar|geladeira)/;
   const restockIntent = /(abastecer|reabastecer|repor|reposicao|recarregar|pode repor|pode abastecer)/;
-  const requestItems = /(me traz|me manda|pode trazer|pode me trazer|traga|preciso de|precisamos de|quero mais|queria mais|faltou|acabou|tem mais|pode colocar)/;
-  if (frigobarRef.test(text) && restockIntent.test(text)) return true;
-  if (frigobarRef.test(text) && FRIGOBAR_ITEMS_REGEX.test(text) && !/(pagar|pagamento|pix)/.test(text)) return true;
-  if ((restockIntent.test(text) || requestItems.test(text)) && FRIGOBAR_ITEMS_REGEX.test(text)) return true;
+  const requestItems  = /(me traz|me manda|pode trazer|pode me trazer|traga|preciso de|precisamos de|quero mais|queria mais|faltou|acabou|tem mais|pode colocar)/;
+  if (frigobarRef.test(t) && restockIntent.test(t)) return true;
+  if (frigobarRef.test(t) && FRIGOBAR_ITEMS_REGEX.test(t) && !/(pagar|pagamento|pix)/.test(t)) return true;
+  if ((restockIntent.test(t) || requestItems.test(t)) && FRIGOBAR_ITEMS_REGEX.test(t)) return true;
   return false;
 }
 
