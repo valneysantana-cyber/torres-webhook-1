@@ -2,66 +2,29 @@
 
 const { CONFIRMATION_TTL_MS } = require('../config');
 const {
-  MENU_RESPONSE,
-  HUMAN_ESCALATION_RESPONSE,
-  CONFIRMATION_PROMPT,
-  WIFI_RESPONSE,
-  BREAKFAST_RESPONSE,
-  POOL_RESPONSE,
-  PARKING_RESPONSE,
-  SNACKS_RESPONSE,
-  TOWELS_RESPONSE,
-  RESTAURANT_RESPONSE,
-  CHECKIN_RESPONSE,
-  SECURITY_RESPONSE,
-  TRANSFER_RESPONSE,
-  LONG_STAY_RESPONSE,
-  CLEANING_RESPONSE,
-  INTERNET_RESPONSE,
-  LUGGAGE_RESPONSE,
-  GREETING_RESPONSE,
-  THANKS_RESPONSE,
-  RESERVATION_NOT_FOUND,
-  getReservationResponse,
-  getLocationResponse,
-  FRIGOBAR_PIX_RESPONSE,
-  FRIGOBAR_RESTOCK_RESPONSE,
+  MENU_RESPONSE, HUMAN_ESCALATION_RESPONSE, CONFIRMATION_PROMPT,
+  WIFI_RESPONSE, BREAKFAST_RESPONSE, POOL_RESPONSE, PARKING_RESPONSE,
+  SNACKS_RESPONSE, TOWELS_RESPONSE, RESTAURANT_RESPONSE, CHECKIN_RESPONSE,
+  SECURITY_RESPONSE, TRANSFER_RESPONSE, LONG_STAY_RESPONSE, CLEANING_RESPONSE,
+  INTERNET_RESPONSE, LUGGAGE_RESPONSE, GREETING_RESPONSE, THANKS_RESPONSE,
+  RESERVATION_NOT_FOUND, getReservationResponse, getLocationResponse,
+  FRIGOBAR_PIX_RESPONSE, FRIGOBAR_RESTOCK_RESPONSE,
 } = require('../responses/strings');
 const { getFaqResponse } = require('../responses/faq');
 const { normalizeText, getCurrentDateBRT, getCurrentTimeBRT, formatReservationMessage } = require('../utils/formatters');
 const {
-  shouldSendMenu,
-  shouldSendWifi,
-  shouldSendBreakfast,
-  shouldSendPool,
-  shouldSendParking,
-  shouldSendSnacks,
-  shouldSendTowels,
-  shouldSendRestaurant,
-  shouldSendCheckin,
-  shouldSendTransfer,
-  shouldSendHuman,
-  shouldRedirectToReservationSite,
-  shouldSendSecurity,
-  shouldSendLocation,
-  shouldSendLongStay,
-  shouldSendCleaning,
-  shouldSendInternet,
-  shouldSendLuggage,
-  shouldSendGreeting,
-  shouldSendThanks,
-  shouldSendCurrentDate,
-  shouldSendCurrentTime,
-  shouldHandleReservationConfirmation,
-  detectLanguage,
-  extractReservationCode,
-  shouldSendFrigobarPix,
-  shouldRequestFrigobarRestock,
+  shouldSendMenu, shouldSendWifi, shouldSendBreakfast, shouldSendPool, shouldSendParking,
+  shouldSendSnacks, shouldSendTowels, shouldSendRestaurant, shouldSendCheckin,
+  shouldSendTransfer, shouldSendHuman, shouldRedirectToReservationSite, shouldSendSecurity,
+  shouldSendLocation, shouldSendLongStay, shouldSendCleaning, shouldSendInternet,
+  shouldSendLuggage, shouldSendGreeting, shouldSendThanks, shouldSendCurrentDate,
+  shouldSendCurrentTime, shouldHandleReservationConfirmation, detectLanguage,
+  extractReservationCode, shouldSendFrigobarPix, shouldRequestFrigobarRestock,
 } = require('../utils/matchers');
 const { fetchReservationByCode } = require('../services/stays');
 const { getChatGptFallbackReply, transcribeAudioBuffer } = require('../services/openai');
 const { downloadWhatsAppMedia, replyToGuest, markReadAndTyping } = require('../services/whatsapp');
-const { saveMessage, getContext, getProfile } = require('../services/crm');
+const { saveMessage, getContext, getProfile, updateProfile } = require('../services/crm');
 const { classifyMessage } = require('../services/classifier');
 const { sendEscalationAlert, sendFrigobarRestockNotification } = require('../services/dispatch');
 
@@ -77,14 +40,8 @@ function cleanupPendingConfirmations() {
   }
 }
 
-function rememberPendingConfirmation(phone) {
-  pendingConfirmations.set(phone, Date.now());
-}
-
-function isAwaitingCode(phone) {
-  cleanupPendingConfirmations();
-  return pendingConfirmations.has(phone);
-}
+function rememberPendingConfirmation(phone) { pendingConfirmations.set(phone, Date.now()); }
+function isAwaitingCode(phone) { cleanupPendingConfirmations(); return pendingConfirmations.has(phone); }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: responde ao hóspede E salva no CRM de uma vez (Fase 1 — memória completa)
@@ -131,13 +88,11 @@ async function maybeHandleReservationConfirmation({ rawText, normalizedText, fro
     if (expectingCode) pendingConfirmations.delete(from);
     return false;
   }
-
   if (!code) {
     rememberPendingConfirmation(from);
     await replyAndSave(from, CONFIRMATION_PROMPT, { alsoSendAudio: camFromAudio });
     return true;
   }
-
   const reservation = await fetchReservationByCode(code);
   if (reservation) {
     pendingConfirmations.delete(from);
@@ -158,7 +113,6 @@ async function handleIncoming(payload) {
   for (const entry of payload.entry) {
     for (const change of (entry.changes || [])) {
       if (change.field !== 'messages') continue;
-
       const value = change.value || {};
       const messages = value.messages || [];
       const contactName = value.contacts?.[0]?.profile?.name || '';
@@ -205,8 +159,11 @@ async function handleIncoming(payload) {
         const language = detectLanguage(body);
         console.log('[incoming]', { from, body, normalized, language });
 
-        // ── Salvar mensagem do usuário no CRM (fire-and-forget, Fase 1) ──
+        // ── Fase 1: salvar mensagem do usuário no CRM (fire-and-forget) ──
         saveMessage(from, 'user', body).catch(() => {});
+
+        // ── Fase 2: salvar nome do WhatsApp no perfil (fire-and-forget) ──
+        if (contactName) updateProfile(from, { name: contactName }).catch(() => {});
 
         // ---- escalation classifier (prioridade máxima) ------------------
         const escalation = classifyMessage(body);
