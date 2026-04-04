@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TorresGuest â HÃ³spedes</title>
+<title>TorresGuest — Hóspedes</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
@@ -59,7 +59,7 @@
   #api-key-input:focus { border-color: #58a6ff; }
   #key-prompt button { background: #238636; border: none; color: #fff; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
 
-  /* âââ PAINEL LATERAL DE MENSAGENS âââ */
+  /* ─── PAINEL LATERAL DE MENSAGENS ─── */
   #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; }
   #panel { position: fixed; top: 0; right: -520px; width: 500px; max-width: 95vw; height: 100vh; background: #161b22; border-left: 1px solid #30363d; z-index: 201; display: flex; flex-direction: column; transition: right 0.28s cubic-bezier(.4,0,.2,1); }
   #panel.open { right: 0; }
@@ -106,10 +106,10 @@
 <body>
 
 <div class="header">
-  <div class="header-icon">ð¨</div>
+  <div class="header-icon">🏨</div>
   <div>
-    <div class="header-title">TorresGuest â HÃ³spedes</div>
-    <div class="header-sub">Painel de pesquisa Â· CRM</div>
+    <div class="header-title">TorresGuest — Hóspedes</div>
+    <div class="header-sub">Painel de pesquisa · CRM</div>
   </div>
 </div>
 
@@ -117,8 +117,8 @@
 
 <div class="search-wrap">
   <div class="search-input-wrap">
-    <input id="q" type="text" placeholder="Pesquisar por nome do hÃ³spede..." autocomplete="off">
-    <span class="search-icon">ð<span>
+    <input id="q" type="text" placeholder="Pesquisar por nome do hóspede..." autocomplete="off">
+    <span class="search-icon">🔍<span>
   </div>
 </div>
 
@@ -138,17 +138,17 @@
 <!-- Painel lateral -->
 <div id="panel">
   <div class="panel-header">
-    <button class="panel-close" onclick="closePanel()">â</button>
+    <button class="panel-close" onclick="closePanel()">✕</button>
     <div style="flex:1">
-      <div class="panel-guest-name" id="panel-name">â</div>
-      <div class="panel-phone" id="panel-phone">â</div>
+      <div class="panel-guest-name" id="panel-name">—</div>
+      <div class="panel-phone" id="panel-phone">—</div>
     </div>
     <span id="panel-badge"></span>
   </div>
 
   <div class="panel-tabs">
-    <button class="tab-btn active" id="btn-profile" onclick="switchTab('profile')">ð¤¤ Perfil</button>
-    <button class="tab-btn" id="btn-messages" onclick="switchTab('messages')">ð¬ Mensagens</button>
+    <button class="tab-btn active" id="btn-profile" onclick="switchTab('profile')">🤤 Perfil</button>
+    <button class="tab-btn" id="btn-messages" onclick="switchTab('messages')">🐬 Mensagens</button>
   </div>
 
   <div id="tab-profile" class="active"></div>
@@ -178,7 +178,7 @@ async function loadStats() {
     const bar = document.getElementById('stats-bar');
     bar.style.display = 'flex';
     bar.innerHTML = `
-      <div class="stat"><span>${d.total||0}</span>HÃ³spedes</div>
+      <div class="stat"><span>${d.total||0}</span>Hóspedes</div>
       <div class="stat"><span style="color:#e3b341">${d.Embaixador||0}</span>Embaixadores</div>
       <div class="stat"><span style="color:#d2a8ff">${d.VIP||0}</span>VIPs</div>
       <div class="stat"><span style="color:#58a6ff">${d.Frequente||0}</span>Frequentes</div>
@@ -194,20 +194,20 @@ function levelBadge(level) {
 }
 
 function renderCard(g) {
-  const apts = (g.apartments||[]).join(', ') || g.preferredApartment || 'â';
-  const checkout = g.lastCheckout ? new Date(g.lastCheckout).toLocaleDateString('pt-BR') : 'â';
+  const apts = (g.apartments||[]).join(', ') || g.preferredApartment || '-';
+  const checkout = g.lastCheckout ? new Date(g.lastCheckout).toLocaleDateString('pt-BR') : '-';
   const channel = g.mainChannel ? `<span class="tag">${g.mainChannel}</span>` : '';
-  const phone = g.phone ? `<a href="https://wa.me/${g.phone}" target="_blank" onclick="event.stopPropagation()" style="color:#58a6ff;text-decoration:none">${g.phone}</a>` : 'â';
+  const phone = g.phone ? `<a href="https://wa.me/${g.phone}" target="_blank" onclick="event.stopPropagation()" style="color:#58a6ff;text-decoration:none">${g.phone}</a>` : '-';
   return `
     <div class="card" onclick="openPanel(${JSON.stringify(g).replace(/"/g,'&quot;')})">
       <div class="card-left">
         <div class="card-name">${g.name||'Sem nome'}</div>
         <div class="card-phone">${phone}</div>
         <div class="card-meta">
-          <span class="tag">ð  <strong>${apts}</strong></span>
-          <span class="tag">ðÆ¼strong>${g.totalStays||0}</strong> estadia${(g.totalStays||0)!==1?'s':''}</span>
-          <span class="tag">ð<strong>${g.totalNights||0}</strong> noite${(d.totalNights||0)!==1?'s':''}</span>
-          <span class="tag">ð¤ Ãltimo checkout: <strong>${checkout}</strong></span>
+          <span class="tag">Apt: <strong>${apts}</strong></span>
+          <span class="tag">Estadias: <strong>${g.totalStays||0}</strong></span>
+          <span class="tag">Noites: <strong>${g.totalNights||0}</strong></span>
+          <span class="tag">Checkout: <strong>${checkout}</strong></span>
           ${channel}
         </div>
       </div>
@@ -236,50 +236,46 @@ async function search(q) {
   try {
     const r = await fetch(`${BASE}/guests/search?q=${encodeURIComponent(q)}`, { headers: { 'x-api-key': apiKey } });
     if (r.status === 401) {
-      res.innerHTML = '<div class="empty"><div class="icon">ð</div>Informe a API Key abaixo</div>';
+      res.innerHTML = '<div class="empty"><div class="icon">Key</div>Informe a API Key abaixo</div>';
       document.getElementById('key-prompt').style.display='flex';
       return;
     }
     const guests = await r.json();
     if (!guests.length) {
-      res.innerHTML = '<div class="empty"><div class="icon">ð>/div>Nenhum hÃ³spede encontrado</div>';
+      res.innerHTML = '<div class="empty"><div class="icon">?</div>Nenhum hospede encontrado</div>';
       return;
     }
     res.innerHTML = guests.map(renderCard).join('');
-  } catch(e) {
-    res.innerHTML = '<div class="empty"><div class="icon">â ï¸</div>Erro ao conectar ao CRM</div>';
+  } catch(ez) {
+    res.innerHTML = '<div class="empty"><div class="icon">!</div>Erro ao conectar ao CRM</div>';
   }
 }
 
-// âââ PAINEL LATERAL âââ
+// PAINEL LATEGAL
 
 function openPanel(guest) {
   currentPhone = guest.phone;
   document.getElementById('panel-name').textContent = guest.name || 'Sem nome';
-  document.getElementById('panel-phone').textContent = guest.phone || 'â';
+  document.getElementById('panel-phone').textContent = guest.phone || '-';
   document.getElementById('panel-badge').innerHTML = levelBadge(guest.level);
 
-  // Preenche aba Perfil
-  const apts = (guest.apartments||[]).join(', ') || guest.preferredApartment || 'â';
-  const checkout = guest.lastCheckout ? new Date(guest.lastCheckout).toLocaleDateString('pt-BR') : 'â';
-  const checkin  = guest.firstCheckin  ? new Date(guest.firstCheckin).toLocaleDateString('pt-BR')  : 'â';
+  const apts = (guest.apartments||[]).join(', ') || guest.preferredApartment || '-';
+  const checkout = guest.lastCheckout ? new Date(guest.lastCheckout).toLocaleDateString('pt-BR') : '-';
+  const checkin  = guest.firstCheckin  ? new Date(guest.firstCheckin).toLocaleDateString('pt-BR')  : '-';
   document.getElementById('tab-profile').innerHTML = `
-    <div class="profile-row"><span class="profile-label">ð¾ Telefone</span><span class="profile-value">${guest.phone||'â'}</span></div>
-    <div class="profile-row"><span class="profile-label">ð  Apartamentos</span><span class="profile-value">${apts}</span></div>
-    <div class="profile-row"><span class="profile-label">ð Total de estadias</span><span class="profile-value">${guest.totalStays||0}</span></div>
-    <div class="profile-row"><span class="profile-label">ð Total de noites</span><span class="profile-value">${guest.totalNights||0}</span></div>
-    <div class="profile-row"><span class="profile-label">ð Primeiro check-in</span><span class="profile-value">${checkin}</span></div>
-    <div class="profile-row"><span class="profile-label">ð Ãltimo checkout</span><span class="profile-value">${checkout}</span></div>
-    <div class="profile-row"><span class="profile-label">ð¦ NÃ­vel</span><span class="profile-value">${guest.level||'Visitante'}</span></div>
-    <div class="profile-row"><span class="profile-label">ð¥ Canal</span><span class="profile-value">${guest.mainChannel||'WhatsApp'}</span></div>
-    ${guest.notes ? `<div class="profile-row"><span class="profile-label">ð Notas</span><span class="profile-value">${guest.notes}</span></div>` : ''}
+    <div class="profile-row"><span class="profile-label">Telefone</span><span class="profile-value">${guest.phone||'-'}</span></div>
+    <div class="profile-row"><span class="profile-label">Apartamentos</span><span class="profile-value">${apts}</span></div>
+    <div class="profile-row"><span class="profile-label">Total Estadias</span><span class="profile-value">${guest.totalStays||0}</span></div>
+    <div class="profile-row"><span class="profile-label">Noites</span><span class="profile-value">${guest.totalNights||0}</span></div>
+    <div class="profile-row"><span class="profile-label">Primeiro Check-in</span><span class="profile-value">${checkin}</span></div>
+    <div class="profile-row"><span class="profile-label">Checkout</span><span class="profile-value">${checkout}</span></div>
+    <div class="profile-row"><span class="profile-label">Nlevel</span><span class="profile-value">${guest.level||'Visitante'}</span></div>
+    <div class="profile-row"><span class="profile-label">Canal</span><span class="profile-value">${guest.mainChannel||'WhatsApp'}</span></div>
+    ${guest.notes ? `<div class="profile-row"><span class="profile-label">Notas</span><span class="profile-value">${guest.notes}</span></div>` : ''}
   `;
 
-  // Mostra painel
   document.getElementById('overlay').style.display = 'block';
   document.getElementById('panel').classList.add('open');
-
-  // ComeÃ§a na aba perfil
   switchTab('profile');
 }
 
@@ -294,7 +290,6 @@ function switchTab(tab) {
   document.getElementById('btn-messages').classList.toggle('active', tab === 'messages');
   document.getElementById('tab-profile').classList.toggle('active', tab === 'profile');
   document.getElementById('tab-messages').classList.toggle('active', tab === 'messages');
-
   if (tab === 'messages' && currentPhone) {
     loadMessages(currentPhone);
   }
@@ -306,14 +301,13 @@ async function loadMessages(phone) {
   try {
     const r = await fetch(`${BASE}/guest/${phone}/context`, { headers: { 'x-api-key': apiKey } });
     if (!r.ok) {
-      container.innerHTML = '<div class="no-msgs">â ï¸ Erro ao carregar mensagens</div>';
+      container.innerHTML = '<div class="no-msgs">Erro ao carregar mensagens</span>';
       return;
     }
     const data = await r.json();
-    // data pode ser array direto ou { messages: [...] }
     const msgs = Array.isArray(data) ? data : (data.messages || data.context || []);
     if (!msgs.length) {
-      container.innerHTML = '<div class="no-msgs">ð¬ Nenhuma mensagem registrada ainda</div>';
+      container.innerHTML = '<div class="no-msgs">Nenhuma mensagem registrada ainda</div>';
       return;
     }
     container.innerHTML = msgs.map(msg => {
@@ -323,16 +317,15 @@ async function loadMessages(phone) {
       const timeStr = ts ? new Date(ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
       return `
         <div style="display:flex; flex-direction:column; align-items:${isBot?'flex-end':'flex-start'}">
-          <span class="msg-role ${isBot?'bot':'guest'}">${isBot?'ð¦ Bñ¿op':'ð¤¤ HÃ³spede'}</span>
+          <span class="msg-role ${isBot?'bot':'guest'}">${isBot?'Bot':'Hospede'}</span>
           <div class="msg-bubble ${isBot?'msg-bot':'msg-guest'}">${escapeHtml(text)}</div>
           ${timeStr ? `<span class="msg-time" style="text-align:${isBot?'right':'left'}">${timeStr}</span>` : ''}
         </div>
       `;
     }).join('');
-    // Scroll para Ãºltima mensagem
     container.scrollTop = container.scrollHeight;
   } catch(e) {
-    container.innerHTML = '<div class="no-msgs">â ï¸ Erro de conexão</div>';
+    container.innerHTML = '<div class="no-msgs">Erro de conexao</div>';
   }
 }
 
