@@ -4,10 +4,14 @@
  * Thin wrapper around the CRM API running on the VPS (CRM_API_URL).
  */
 const { CRM_API_URL, CRM_API_KEY } = require('../config');
+const CRM_BASIC_AUTH = process.env.CRM_BASIC_AUTH; // Basic auth for nginx proxy (port 80)
 
 function crmHeaders() {
-  const h = { 'Content-Type': 'application/json' };
+  const h = {
+    'Content-Type': 'application/json',
+  };
   if (CRM_API_KEY) h['x-api-key'] = CRM_API_KEY;
+  if (CRM_BASIC_AUTH) h['Authorization'] = CRM_BASIC_AUTH;
   return h;
 }
 
