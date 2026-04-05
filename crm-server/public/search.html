@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TorresGuest â HÃ³spedes</title>
+  <title>TorresGuest &mdash; H&oacute;spedes</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -14,7 +14,7 @@
       min-height: 100vh;
     }
 
-    /* ââ HEADER ââ */
+    /* &#9472;&#9472; HEADER &#9472;&#9472; */
     .header {
       background: #1a1a1a;
       border-bottom: 1px solid #2a2a2a;
@@ -35,7 +35,7 @@
       color: #888;
     }
 
-    /* ââ STATS BAR ââ */
+    /* &#9472;&#9472; STATS BAR &#9472;&#9472; */
     .stats-bar {
       background: #161616;
       border-bottom: 1px solid #222;
@@ -69,14 +69,14 @@
     .stat-chip.frequente .stat-num { color: #3498db; }
     .stat-chip.visitante .stat-num { color: #27ae60; }
 
-    /* ââ MAIN CONTAINER ââ */
+    /* &#9472;&#9472; MAIN CONTAINER &#9472;&#9472; */
     .container {
       max-width: 600px;
       margin: 0 auto;
       padding: 16px;
     }
 
-    /* ââ SEARCH BOX ââ */
+    /* &#9472;&#9472; SEARCH BOX &#9472;&#9472; */
     .search-wrap {
       position: relative;
       margin-bottom: 16px;
@@ -103,10 +103,10 @@
       pointer-events: none;
     }
 
-    /* ââ RESULTS LIST ââ */
+    /* &#9472;&#9472; RESULTS LIST &#9472;&#9472; */
     #results { display: flex; flex-direction: column; gap: 10px; }
 
-    /* ââ GUEST CARD ââ */
+    /* &#9472;&#9472; GUEST CARD &#9472;&#9472; */
     .guest-card {
       background: #1a1a1a;
       border: 1px solid #2a2a2a;
@@ -189,7 +189,7 @@
     .card-close:hover { color: #e74c3c; background: #2a0000; }
     .guest-card.selected .card-close { display: block; }
 
-    /* ââ DETAIL PANEL ââ */
+    /* &#9472;&#9472; DETAIL PANEL &#9472;&#9472; */
     #detail {
       margin-top: 12px;
       background: #161616;
@@ -200,7 +200,7 @@
     }
     #detail.visible { display: block; }
 
-    /* ââ TABS ââ */
+    /* &#9472;&#9472; TABS &#9472;&#9472; */
     .tabs {
       display: flex;
       border-bottom: 1px solid #2a2a2a;
@@ -231,7 +231,7 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* ââ PROFILE TAB ââ */
+    /* &#9472;&#9472; PROFILE TAB &#9472;&#9472; */
     .profile-grid {
       display: grid;
       grid-template-columns: auto 1fr;
@@ -287,7 +287,7 @@
       border-top: 1px solid #1e1e1e;
     }
 
-    /* ââ MESSAGES TAB ââ */
+    /* &#9472;&#9472; MESSAGES TAB &#9472;&#9472; */
     .messages-wrap {
       padding: 12px;
       display: flex;
@@ -345,7 +345,7 @@
       padding: 32px 16px;
     }
 
-    /* ââ KEY PROMPT (hidden by default) ââ */
+    /* &#9472;&#9472; KEY PROMPT (hidden by default) &#9472;&#9472; */
     #key-prompt {
       display: none;
       position: fixed;
@@ -388,7 +388,7 @@
     }
     .key-box button:hover { background: #c49010; }
 
-    /* ââ LOADING ââ */
+    /* &#9472;&#9472; LOADING &#9472;&#9472; */
     .loading {
       text-align: center;
       color: #555;
@@ -396,7 +396,7 @@
       padding: 20px;
     }
 
-    /* ââ EMPTY STATE ââ */
+    /* &#9472;&#9472; EMPTY STATE &#9472;&#9472; */
     .empty {
       text-align: center;
       color: #555;
@@ -409,33 +409,33 @@
 
   <!-- HEADER -->
   <div class="header">
-    <div class="header-icon">ð¨</div>
+    <div class="header-icon">&#127976;</div>
     <div class="header-text">
-      <h1>TorresGuest â HÃ³spedes</h1>
-      <p>Painel de pesquisa Â· CRM</p>
+      <h1>TorresGuest &mdash; H&oacute;spedes</h1>
+      <p>Painel de pesquisa &middot; CRM</p>
     </div>
   </div>
 
   <!-- STATS BAR -->
   <div class="stats-bar" id="stats-bar">
     <div class="stat-chip total">
-      <span class="stat-num" id="stat-total">â</span>
-      <span class="stat-label">HÃ³spedes</span>
+      <span class="stat-num" id="stat-total">&mdash;</span>
+      <span class="stat-label">H&oacute;spedes</span>
     </div>
     <div class="stat-chip embaixador">
-      <span class="stat-num" id="stat-embaixador">â</span>
+      <span class="stat-num" id="stat-embaixador">&mdash;</span>
       <span class="stat-label">Embaixadores</span>
     </div>
     <div class="stat-chip vip">
-      <span class="stat-num" id="stat-vip">â</span>
+      <span class="stat-num" id="stat-vip">&mdash;</span>
       <span class="stat-label">VIPs</span>
     </div>
     <div class="stat-chip frequente">
-      <span class="stat-num" id="stat-frequente">â</span>
+      <span class="stat-num" id="stat-frequente">&mdash;</span>
       <span class="stat-label">Frequentes</span>
     </div>
     <div class="stat-chip visitante">
-      <span class="stat-num" id="stat-visitante">â</span>
+      <span class="stat-num" id="stat-visitante">&mdash;</span>
       <span class="stat-label">Visitantes</span>
     </div>
   </div>
@@ -445,8 +445,8 @@
 
     <!-- SEARCH -->
     <div class="search-wrap">
-      <input type="text" id="search-input" placeholder="Buscar hÃ³spede por nome ou telefone..." autocomplete="off">
-      <span class="search-icon">ð</span>
+      <input type="text" id="search-input" placeholder="Buscar h&oacute;spede por nome ou telefone..." autocomplete="off">
+      <span class="search-icon">&#128269;</span>
     </div>
 
     <!-- RESULTS -->
@@ -455,8 +455,8 @@
     <!-- DETAIL PANEL -->
     <div id="detail">
       <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('profile')" id="tab-profile">ð Perfil</button>
-        <button class="tab-btn" onclick="switchTab('messages')" id="tab-messages">ð¬ Mensagens</button>
+        <button class="tab-btn active" onclick="switchTab('profile')" id="tab-profile">&#128522; Perfil</button>
+        <button class="tab-btn" onclick="switchTab('messages')" id="tab-messages">&#128172; Mensagens</button>
       </div>
       <div class="tab-content active" id="pane-profile">
         <div class="loading">Carregando...</div>
@@ -471,7 +471,7 @@
   <!-- API KEY PROMPT (fallback) -->
   <div id="key-prompt">
     <div class="key-box">
-      <h2>ð API Key</h2>
+      <h2>&#128273; API Key</h2>
       <p>Insira a chave de acesso ao CRM:</p>
       <input type="password" id="key-input" placeholder="API Key">
       <button onclick="saveKey()">Entrar</button>
@@ -486,7 +486,7 @@
 
   const headers = () => ({ 'x-api-key': apiKey });
 
-  // ââ API KEY ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // &#9472;&#9472; API KEY &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
   if (!apiKey) {
     document.getElementById('key-prompt').style.display = 'flex';
   } else {
@@ -502,7 +502,7 @@
     init();
   }
 
-  // ââ INIT ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // &#9472;&#9472; INIT &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
   function init() {
     loadStats();
     document.getElementById('search-input').addEventListener('input', e => {
@@ -511,7 +511,7 @@
     });
   }
 
-  // ââ STATS âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // &#9472;&#9472; STATS &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
   async function loadStats() {
     try {
       const r = await fetch(BASE + '/guests/stats', { headers: headers() });
@@ -528,7 +528,7 @@
     }
   }
 
-  // ââ SEARCH ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // &#9472;&#9472; SEARCH &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
   async function doSearch(q) {
     const el = document.getElementById('results');
     if (!q || q.length < 2) {
@@ -541,35 +541,35 @@
       const r = await fetch(`${BASE}/guests/search?q=${encodeURIComponent(q)}`, { headers: headers() });
       const guests = await r.json();
       if (!Array.isArray(guests) || guests.length === 0) {
-        el.innerHTML = '<div class="empty">Nenhum hÃ³spede encontrado.</div>';
+        el.innerHTML = '<div class="empty">Nenhum h&oacute;spede encontrado.</div>';
         return;
       }
       el.innerHTML = guests.map(g => buildCard(g)).join('');
     } catch(e) {
-      el.innerHTML = '<div class="empty">Erro ao buscar hÃ³spedes.</div>';
+      el.innerHTML = '<div class="empty">Erro ao buscar h&oacute;spedes.</div>';
     }
   }
 
-  // ââ BUILD CARD ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // &#9472;&#9472; BUILD CARD &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
   function buildCard(g) {
     const phone   = g.phone || '';
     const name    = g.name || phone;
-    const apt     = g.preferredApartment || g.apartment || g.apt || 'â';
-    const stays   = g.totalStays ?? g.stays ?? 'â';
-    const nights  = g.totalNights ?? g.nights ?? 'â';
-    const checkout= g.lastCheckout || g.checkout || 'â';
+    const apt     = g.preferredApartment || g.apartment || g.apt || '&mdash;';
+    const stays   = g.totalStays ?? g.stays ?? '&mdash;';
+    const nights  = g.totalNights ?? g.nights ?? '&mdash;';
+    const checkout= g.lastCheckout || g.checkout || '&mdash;';
     const level   = g.level || 'Visitante';
     const levelClass = 'level-' + level;
 
     return `
       <div class="guest-card" id="card-${phone}" onclick="selectGuest('${phone}', event)">
-        <button class="card-close" onclick="closeCard(event)" title="Fechar">â</button>
+        <button class="card-close" onclick="closeCard(event)" title="Fechar">&#10005;</button>
         <div class="card-top">
           <span class="card-name">${esc(name)}</span>
           <span class="card-level ${levelClass}">${esc(level)}</span>
         </div>
         <a class="card-phone" href="https://wa.me/${phone}" target="_blank" onclick="event.stopPropagation()">
-          ð ${formatPhone(phone)}
+          &#128222; ${formatPhone(phone)}
         </a>
         <div class="card-meta">
           <div class="meta-item">
@@ -585,14 +585,14 @@
             <span class="meta-value">${nights}</span>
           </div>
           <div class="meta-item">
-            <span class="meta-label">Ãltimo checkout</span>
+            <span class="meta-label">&Uacute;ltimo checkout</span>
             <span class="meta-value">${esc(checkout)}</span>
           </div>
         </div>
       </div>`;
   }
 
-  // ââ SELECT GUEST ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // &#9472;&#9472; SELECT GUEST &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
   async function selectGuest(phone, event) {
     if (event && event.target.classList.contains('card-close')) return;
     if (selectedPhone === phone) return;
@@ -639,7 +639,7 @@
     document.getElementById('detail').classList.remove('visible');
   }
 
-  // ââ TABS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // &#9472;&#9472; TABS &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
   function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(p => p.classList.remove('active'));
@@ -647,12 +647,12 @@
     document.getElementById('pane-' + tab).classList.add('active');
   }
 
-  // ââ PROFILE âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // &#9472;&#9472; PROFILE &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
   async function loadProfile(phone) {
     try {
       const r = await fetch(`${BASE}/guest/${phone}/profile`, { headers: headers() });
       if (!r.ok) {
-        document.getElementById('pane-profile').innerHTML = '<div class="empty">Perfil nÃ£o encontrado.</div>';
+        document.getElementById('pane-profile').innerHTML = '<div class="empty">Perfil n&atilde;o encontrado.</div>';
         return;
       }
       const p = await r.json();
@@ -667,13 +667,13 @@
     const levelClass = 'level-' + level;
     const rows = [
       ['Telefone',        formatPhone(p.phone || phone)],
-      ['Nome',            p.name || 'â'],
-      ['Apartamento',     p.preferredApartment || p.apartment || 'â'],
-      ['Total Estadias',  p.totalStays ?? 'â'],
-      ['Noites',          p.totalNights ?? 'â'],
-      ['Primeiro Check-in', p.firstCheckin || 'â'],
-      ['Ãltimo Checkout', p.lastCheckout || p.checkout || 'â'],
-      ['NÃ­vel',           `<span class="card-level ${levelClass}">${esc(level)}</span>`],
+      ['Nome',            p.name || '&mdash;'],
+      ['Apartamento',     p.preferredApartment || p.apartment || '&mdash;'],
+      ['Total Estadias',  p.totalStays ?? '&mdash;'],
+      ['Noites',          p.totalNights ?? '&mdash;'],
+      ['Primeiro Check-in', p.firstCheckin || '&mdash;'],
+      ['&Uacute;ltimo Checkout', p.lastCheckout || p.checkout || '&mdash;'],
+      ['N&iacute;vel',           `<span class="card-level ${levelClass}">${esc(level)}</span>`],
       ['Canal',           p.channel || 'WhatsApp'],
     ];
 
@@ -694,13 +694,13 @@
 
     // Notes
     if (p.notes) {
-      html += `<div class="notes-box">ð ${esc(p.notes)}</div>`;
+      html += `<div class="notes-box">&#128221; ${esc(p.notes)}</div>`;
     }
 
     document.getElementById('pane-profile').innerHTML = html;
   }
 
-  // ââ MESSAGES ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // &#9472;&#9472; MESSAGES &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#94772;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
   async function loadMessages(phone) {
     try {
       const r = await fetch(`${BASE}/guest/${phone}/context`, { headers: headers() });
@@ -726,7 +726,7 @@
       // Normalize roles
       const isBot = role === 'assistant' || role === 'bot' || role === 'Bot';
       const cssRole = isBot ? 'assistant' : 'user';
-      const roleLabel = isBot ? 'ð¤ Bot' : 'ð¤ HÃ³spede';
+      const roleLabel = isBot ? '&#129302; Bot' : '&#128100; H&oacute;spede';
       const content = m.content || m.text || '';
 
       return `<div class="msg ${cssRole}">
@@ -742,7 +742,7 @@
     if (wrap) wrap.scrollTop = wrap.scrollHeight;
   }
 
-  // ââ HELPERS âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // &#9472;&#9472; HELPERS &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
   function esc(s) {
     return String(s)
       .replace(/&/g, '&amp;')
