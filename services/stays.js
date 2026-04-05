@@ -163,6 +163,14 @@ async function fetchTodayCheckinReservations() {
   return fetchReservations({ from: today, to: today, dateType: 'arrival' });
 }
 
+async function fetchYesterdayCheckoutReservations() {
+  const today = getCurrentISODateBRT();
+  const d = new Date(today + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() - 1);
+  const yesterday = d.toISOString().slice(0, 10);
+  return fetchReservations({ from: yesterday, to: yesterday, dateType: 'departure' });
+}
+
 async function fetchTodayCheckoutReservations() {
   const today = getCurrentISODateBRT();
   return fetchReservations({ from: today, to: today, dateType: 'departure' });
@@ -176,4 +184,5 @@ module.exports = {
   fetchTodayAllActiveGuests,
   fetchTodayCheckinReservations,
   fetchTodayCheckoutReservations,
+  fetchYesterdayCheckoutReservations,
 };
