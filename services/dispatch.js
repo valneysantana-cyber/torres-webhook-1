@@ -52,12 +52,13 @@ async function dailyCheckinDispatch() {
       `🏨 *TorresGuest — Relatório Diário*`,
       `📅 ${today}`,
       ``,
-      `🛎 *Check-ins de hoje:*`,
+      `🛎 *Check-ins de hoje (${checkinsHoje.length}):*`,
       fmtCheckins,
       ``,
-      `🏠 *Em estadia:*`,
+      `🏠 *Em estadia (${emEstadia.length}):*`,
       fmtEstadia,
       ``,
+      `📊 *Total de hóspedes: ${checkinsHoje.length + emEstadia.length}*`,
       `✅ Relatório gerado automaticamente.`,
     ].join('\n');
 
