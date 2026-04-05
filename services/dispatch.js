@@ -35,7 +35,7 @@ async function dailyCheckinDispatch() {
           const apt = resolveApartmentName(r, listingsMap);
                   const rawDate = r.checkOutDate || r.checkoutDate || r.endDate || '?';
         const checkout = rawDate !== '?' ? rawDate.split('-').reverse().join('/') : '?';
-          return `  • ${name} → ${apt} (saída: ${checkout})`;
+          return `  • ${name} → ${apt} — ${r.guests || (r.guestsDetails && r.guestsDetails.length) || 1} hóspede${(r.guests || (r.guestsDetails && r.guestsDetails.length) || 1) !== 1 ? 's' : ''} (saída: ${checkout})`;
         }).join('\n');
 
     const fmtEstadia = emEstadia.length === 0
@@ -45,7 +45,7 @@ async function dailyCheckinDispatch() {
           const apt = resolveApartmentName(r, listingsMap);
                   const rawDate = r.checkOutDate || r.checkoutDate || r.endDate || '?';
         const checkout = rawDate !== '?' ? rawDate.split('-').reverse().join('/') : '?';
-          return `  • ${name} → ${apt} (saída: ${checkout})`;
+          return `  • ${name} → ${apt} — ${r.guests || (r.guestsDetails && r.guestsDetails.length) || 1} hóspede${(r.guests || (r.guestsDetails && r.guestsDetails.length) || 1) !== 1 ? 's' : ''} (saída: ${checkout})`;
         }).join('\n');
 
     const mensagem = [
