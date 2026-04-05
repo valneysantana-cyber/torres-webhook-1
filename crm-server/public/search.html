@@ -1,348 +1,764 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TorresGuest — Hóspedes</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TorresGuest â HÃ³spedes</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* HEADER */
-  .header { background: #161b22; border-bottom: 1px solid #30363d; padding: 14px 24px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
-  .header-icon { font-size: 28px; 
-  .header-title { font-size: 18px; font-weight: 700; color: #f0f6fc; }
-  .header-sub { font-size: 12px; color: #8b909e; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f0f;
+      color: #e8e8e8;
+      min-height: 100vh;
+    }
 
-  /* STATS BAR */
-  #stats-bar { display: none; gap: 24px; padding: 12px 24px; background: #0d1117; border-bottom: 1px solid #21262d; }
-  .stat { text-align: center; font-size: 12px; color: #8b949e; }
-  .stat span { display: block; font-size: 22px; font-weight: 700; color: #f0f6fc; }
+    /* ââ HEADER ââ */
+    .header {
+      background: #1a1a1a;
+      border-bottom: 1px solid #2a2a2a;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-icon { font-size: 28px; }
+    .header-text h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f0f0f0;
+      line-height: 1.2;
+    }
+    .header-text p {
+      font-size: 12px;
+      color: #888;
+    }
 
-  /* SEARCH */
-  .search-wrap { max-width: 780px; margin: 32px auto 0; padding: 0 16px; }
-  .search-input-wrap { position: relative; }
-  #q { width: 100%; padding: 14px 48px 14px 18px; font-size: 16px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; color: #f0f6fc; outline: none; transition: border 0.2s; }
-  #q:focus { border-color: #58a6ff; box-shadow: 0 0 0 3px rgba(88,166,255,0.15); }
-  .search-icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #8b949e; font-size: 18px; pointer-events: none; }
+    /* ââ STATS BAR ââ */
+    .stats-bar {
+      background: #161616;
+      border-bottom: 1px solid #222;
+      padding: 10px 20px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .stat-chip .stat-num {
+      font-weight: 700;
+      font-size: 14px;
+      color: #d4a017;
+    }
+    .stat-chip .stat-label { color: #aaa; }
+    .stat-chip.total { border-color: #d4a017; }
+    .stat-chip.total .stat-num { color: #d4a017; }
+    .stat-chip.embaixador .stat-num { color: #9b59b6; }
+    .stat-chip.vip .stat-num { color: #e74c3c; }
+    .stat-chip.frequente .stat-num { color: #3498db; }
+    .stat-chip.visitante .stat-num { color: #27ae60; }
 
-  #hint { text-align: center; color: #8b949e; margin-top: 24px; font-size: 14px; }
+    /* ââ MAIN CONTAINER ââ */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 16px;
+    }
 
-  /* CARDS */
-  #results { max-width: 780px; margin: 16px auto 80px; padding: 0 16px; display: flex; flex-direction: column; gap: 12px; }
-  .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px 20px; display: flex; justify-content: space-between; align-items: flex-start; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
-  .card:hover { border-color: #58a6ff; background: #1c2230; }
-  .card-name { font-size: 17px; font-weight: 600; color: #f0f6fc; margin-bottom: 4px; }
-  .card-phone { font-size: 13px; margin-bottom: 10px; }
-  .card-phone a { color: #58a6ff; text-decoration: none; }
-  .card-meta { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tag { background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 3px 8px; font-size: 12px; color: #8b949e; }
-  .card-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-  .card-nights { font-size: 28px; font-weight: 700; color: #f0f6fc; line-height: 1; }
-  .card-nights-label { font-size: 11px; color: #8b949e; }
+    /* ââ SEARCH BOX ââ */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 16px;
+    }
+    .search-wrap input {
+      width: 100%;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 10px;
+      color: #e8e8e8;
+      font-size: 15px;
+      padding: 12px 44px 12px 16px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .search-wrap input:focus { border-color: #d4a017; }
+    .search-wrap input::placeholder { color: #555; }
+    .search-icon {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+      pointer-events: none;
+    }
 
-  /* BADGES */
-  .badge { border-radius: 20px; padding: 3px 12px; font-size: 11px; font-weight: 700; letter-spacing: .5px; }
-  .badge-visitante  { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
-  .badge-frequente  { background: #1a3a5c; color: #58a6ff; border: 1px solid #1f6feb; }
-  .badge-vip        { background: #2d1d4e; color: #d2a8ff; border: 1px solid #6e40c9; }
-  .badge-embaixador { background: #3d2000; color: #e3b341; border: 1px solid #9e6a03; }
+    /* ââ RESULTS LIST ââ */
+    #results { display: flex; flex-direction: column; gap: 10px; }
 
-  .loading { text-align: center; color: #8b949e; padding: 40px; }
-  .empty { text-align: center; color: #8b949e; padding: 60px 20px; }
-  .empty .icon { font-size: 40px; margin-bottom: 12px; }
+    /* ââ GUEST CARD ââ */
+    .guest-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    .guest-card:hover { border-color: #444; background: #1f1f1f; }
+    .guest-card.selected { border-color: #d4a017; background: #1d1a0f; }
 
-  /* API KEY PROMPT */
-  #key-prompt { display: none; position: fixed; bottom: 20px; right: 20px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 14px 16px; z-index: 100; display: none; align-items: center; gap: 10px; }
-  #key-prompt label { font-size: 13px; color: #8b949e; white-space: nowrap; }
-  #api-key-input { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #f0f6fc; padding: 6px 10px; font-size: 13px; width: 160px; outline: none; }
-  #api-key-input:focus { border-color: #58a6ff; }
-  #key-prompt button { background: #238636; border: none; color: #fff; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+    .card-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f0f0f0;
+    }
+    .card-level {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+    .level-Embaixador { background: #2d1a3d; color: #c39bd3; border: 1px solid #7d3c98; }
+    .level-VIP        { background: #3d1a1a; color: #f1948a; border: 1px solid #cb4335; }
+    .level-Frequente  { background: #1a2a3d; color: #7fb3d3; border: 1px solid #2874a6; }
+    .level-Visitante  { background: #1a2d1a; color: #7dcea0; border: 1px solid #1e8449; }
 
-  /* ─── PAINEL LATERAL DE MENSAGENS ─── */
-  #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; }
-  #panel { position: fixed; top: 0; right: -520px; width: 500px; max-width: 95vw; height: 100vh; background: #161b22; border-left: 1px solid #30363d; z-index: 201; display: flex; flex-direction: column; transition: right 0.28s cubic-bezier(.4,0,.2,1); }
-  #panel.open { right: 0; }
+    .card-phone {
+      font-size: 13px;
+      color: #d4a017;
+      margin-bottom: 8px;
+      text-decoration: none;
+    }
+    .card-phone:hover { text-decoration: underline; }
 
-  .panel-header { padding: 18px 20px; border-bottom: 1px solid #30363d; display: flex; align-items: center; gap: 12px; }
-  .panel-close { background: none; border: none; color: #8b949e; font-size: 22px; cursor: pointer; line-height: 1; padding: 0 4px; }
-  .panel-close:hover { color: #f0f6fc; }
-  .panel-guest-name { font-size: 16px; font-weight: 700; color: #f0f6fc; flex: 1; }
-  .panel-phone { font-size: 12px; color: #8b949e; }
+    .card-meta {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .meta-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .meta-value {
+      font-size: 13px;
+      font-weight: 500;
+      color: #ccc;
+    }
 
-  .panel-tabs { display: flex; border-bottom: 1px solid #30363d; }
-  .tab-btn { flex: 1; padding: 11px; background: none; border: none; color: #8b949e; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
-  .tab-btn.active { color: #58a6ff; border-bottom-color: #58a6ff; }
-  .tab-btn:hover { color: #c9d1d9; }
+    .card-close {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 4px;
+      display: none;
+    }
+    .card-close:hover { color: #e74c3c; background: #2a0000; }
+    .guest-card.selected .card-close { display: block; }
 
-  /* Tab: Perfil */
-  #tab-profile { flex: 1; overflow-y: auto; padding: 20px; display: none; flex-direction: column; gap: 14px; }
-  #tab-profile.active { display: flex; }
-  .profile-row { display: flex; justify-content: space-between; wadding: 10px 0; border-bottom: 1px solid #21262d; }
-  .profile-label { font-size: 13px; color: #8b949e; }
-  .profile-value { font-size: 13px; color: #f0f6fc; font-weight: 600; text-align: right; }
+    /* ââ DETAIL PANEL ââ */
+    #detail {
+      margin-top: 12px;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      overflow: hidden;
+      display: none;
+    }
+    #detail.visible { display: block; }
 
-  /* Tab: Mensagens */
-  #tab-messages { flex: 1; overflow-y: auto; padding: 16px; display: none; flex-direction: column; gap: 10px; }
-  #tab-messages.active { display: flex; }
+    /* ââ TABS ââ */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #2a2a2a;
+      background: #1a1a1a;
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .tab-btn:hover { color: #ccc; }
+    .tab-btn.active {
+      color: #d4a017;
+      border-bottom-color: #d4a017;
+    }
 
-  .msg-bubble { max-width: 82%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.5; word-break: break-word; }
-  .msg-guest { align-self: flex-start; background: #21262d; border: 1px solid #30363d; color: #c9d1d9; border-bottom-left-radius: 4px; }
-  .msg-bot { align-self: flex-end; background: #1a3a5c; border: 1px solid #1f6feb; color: #cde7ff; border-bottom-right-radius: 4px; }
-  .msg-time { font-size: 10px; color: #8b949e; margin-top: 4px; display: block; }
-  .msg-role { font-size: 10px; font-weight: 700; margin-bottom: 4px; display: block; }
-  .msg-role.guest { color: #8b949e; }
-  .msg-role.bot { color: #58a6ff; text-align: right; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-  .no-msgs { text-align: center; color: #8b949e; padding: 60px 20px; font-size: 14px; }
-  .panel-loading { text-align: center; color: #8b949e; padding: 40px; font-size: 14px; }
+    /* ââ PROFILE TAB ââ */
+    .profile-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0;
+      padding: 4px 0;
+    }
+    .profile-row {
+      display: contents;
+    }
+    .profile-row .pf-label,
+    .profile-row .pf-value {
+      padding: 9px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid #1e1e1e;
+    }
+    .profile-row:last-child .pf-label,
+    .profile-row:last-child .pf-value {
+      border-bottom: none;
+    }
+    .pf-label {
+      color: #777;
+      font-weight: 500;
+      white-space: nowrap;
+      padding-right: 24px;
+    }
+    .pf-value {
+      color: #e0e0e0;
+      word-break: break-word;
+    }
+    .pf-value.level-badge {
+      display: flex;
+      align-items: center;
+    }
+    .pf-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 12px 16px;
+    }
+    .tag {
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 12px;
+      color: #aaa;
+    }
+    .notes-box {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #ccc;
+      line-height: 1.5;
+      border-top: 1px solid #1e1e1e;
+    }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
-</style>
+    /* ââ MESSAGES TAB ââ */
+    .messages-wrap {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+    .messages-wrap::-webkit-scrollbar { width: 4px; }
+    .messages-wrap::-webkit-scrollbar-track { background: transparent; }
+    .messages-wrap::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+    }
+    .msg.user { align-self: flex-start; }
+    .msg.assistant { align-self: flex-end; }
+
+    .msg-role {
+      font-size: 10px;
+      color: #666;
+      margin-bottom: 3px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .msg.user .msg-role { padding-left: 4px; }
+    .msg.assistant .msg-role { text-align: right; padding-right: 4px; color: #c9a227; }
+
+    .msg-bubble {
+      padding: 9px 13px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .msg.user .msg-bubble {
+      background: #222;
+      border: 1px solid #333;
+      border-bottom-left-radius: 4px;
+      color: #ddd;
+    }
+    .msg.assistant .msg-bubble {
+      background: #1d2a1a;
+      border: 1px solid #2a4020;
+      border-bottom-right-radius: 4px;
+      color: #d4e8c8;
+    }
+
+    .no-msgs {
+      text-align: center;
+      color: #555;
+      font-size: 13px;
+      padding: 32px 16px;
+    }
+
+    /* ââ KEY PROMPT (hidden by default) ââ */
+    #key-prompt {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.85);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+    .key-box {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 14px;
+      padding: 28px;
+      width: 320px;
+    }
+    .key-box h2 { font-size: 16px; margin-bottom: 8px; }
+    .key-box p  { font-size: 13px; color: #888; margin-bottom: 16px; }
+    .key-box input {
+      width: 100%;
+      background: #111;
+      border: 1px solid #444;
+      border-radius: 8px;
+      color: #e8e8e8;
+      font-size: 13px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    .key-box button {
+      width: 100%;
+      background: #d4a017;
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px;
+      cursor: pointer;
+    }
+    .key-box button:hover { background: #c49010; }
+
+    /* ââ LOADING ââ */
+    .loading {
+      text-align: center;
+      color: #555;
+      font-size: 13px;
+      padding: 20px;
+    }
+
+    /* ââ EMPTY STATE ââ */
+    .empty {
+      text-align: center;
+      color: #555;
+      font-size: 13px;
+      padding: 32px 16px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-icon">🏨</div>
-  <div>
-    <div class="header-title">TorresGuest — Hóspedes</div>
-    <div class="header-sub">Painel de pesquisa · CRM</div>
-  </div>
-</div>
-
-<div id="stats-bar"></div>
-
-<div class="search-wrap">
-  <div class="search-input-wrap">
-    <input id="q" type="text" placeholder="Pesquisar por nome do hóspede..." autocomplete="off">
-    <span class="search-icon">🔍<span>
-  </div>
-</div>
-
-<div id="hint">Digite pelo menos 2 letras para pesquisar</div>
-<div id="results"></div>
-
-<!-- API Key prompt -->
-<div id="key-prompt" style="display:none; position:fixed; bottom:20px; right:20px; background:#161b22; border:1px solid #30363d; border-radius:10px; padding:14px 16px; z-index:100; align-items:center; gap:10px;">
-  <label>API Key:</label>
-  <input id="api-key-input" type="text" placeholder="x-api-key">
-  <button onclick="saveKey()">OK</button>
-</div>
-
-<!-- Overlay -->
-<div id="overlay" onclick="closePanel()"></div>
-
-<!-- Painel lateral -->
-<div id="panel">
-  <div class="panel-header">
-    <button class="panel-close" onclick="closePanel()">✕</button>
-    <div style="flex:1">
-      <div class="panel-guest-name" id="panel-name">—</div>
-      <div class="panel-phone" id="panel-phone">—</div>
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-icon">ð¨</div>
+    <div class="header-text">
+      <h1>TorresGuest â HÃ³spedes</h1>
+      <p>Painel de pesquisa Â· CRM</p>
     </div>
-    <span id="panel-badge"></span>
   </div>
 
-  <div class="panel-tabs">
-    <button class="tab-btn active" id="btn-profile" onclick="switchTab('profile')">🤤 Perfil</button>
-    <button class="tab-btn" id="btn-messages" onclick="switchTab('messages')">🐬 Mensagens</button>
+  <!-- STATS BAR -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-chip total">
+      <span class="stat-num" id="stat-total">â</span>
+      <span class="stat-label">HÃ³spedes</span>
+    </div>
+    <div class="stat-chip embaixador">
+      <span class="stat-num" id="stat-embaixador">â</span>
+      <span class="stat-label">Embaixadores</span>
+    </div>
+    <div class="stat-chip vip">
+      <span class="stat-num" id="stat-vip">â</span>
+      <span class="stat-label">VIPs</span>
+    </div>
+    <div class="stat-chip frequente">
+      <span class="stat-num" id="stat-frequente">â</span>
+      <span class="stat-label">Frequentes</span>
+    </div>
+    <div class="stat-chip visitante">
+      <span class="stat-num" id="stat-visitante">â</span>
+      <span class="stat-label">Visitantes</span>
+    </div>
   </div>
 
-  <div id="tab-profile" class="active"></div>
-  <div id="tab-messages"></div>
-</div>
+  <!-- MAIN -->
+  <div class="container">
+
+    <!-- SEARCH -->
+    <div class="search-wrap">
+      <input type="text" id="search-input" placeholder="Buscar hÃ³spede por nome ou telefone..." autocomplete="off">
+      <span class="search-icon">ð</span>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results"></div>
+
+    <!-- DETAIL PANEL -->
+    <div id="detail">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('profile')" id="tab-profile">ð Perfil</button>
+        <button class="tab-btn" onclick="switchTab('messages')" id="tab-messages">ð¬ Mensagens</button>
+      </div>
+      <div class="tab-content active" id="pane-profile">
+        <div class="loading">Carregando...</div>
+      </div>
+      <div class="tab-content" id="pane-messages">
+        <div class="loading">Carregando...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- API KEY PROMPT (fallback) -->
+  <div id="key-prompt">
+    <div class="key-box">
+      <h2>ð API Key</h2>
+      <p>Insira a chave de acesso ao CRM:</p>
+      <input type="password" id="key-input" placeholder="API Key">
+      <button onclick="saveKey()">Entrar</button>
+    </div>
+  </div>
 
 <script>
-const BASE = window.location.origin;
-let apiKey = localStorage.getItem('crm_api_key') || '34e8ff412a7dc1bd47acf66ef24e968bec585ff589024d99';
-let timer = null;
-let currentPhone = null;
+  const BASE = window.location.origin;
+  let apiKey = localStorage.getItem('crm_api_key') || '34e8ff412a7dc1bd47acf66ef24e968bec585ff589024d99';
+  let selectedPhone = null;
+  let searchTimer = null;
 
-if (!apiKey) document.getElementById('key-prompt').style.display = 'flex';
+  const headers = () => ({ 'x-api-key': apiKey });
 
-function saveKey() {
-  apiKey = document.getElementById('api-key-input').value.trim();
-  localStorage.setItem('crm_api_key', apiKey);
-  document.getElementById('key-prompt').style.display = 'none';
-  loadStats();
-}
+  // ââ API KEY ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  if (!apiKey) {
+    document.getElementById('key-prompt').style.display = 'flex';
+  } else {
+    init();
+  }
 
-async function loadStats() {
-  try {
-    const r = await fetch(BASE + '/guests/stats', { headers: { 'x-api-key': apiKey } });
-    if (!r.ok) return;
-    const d = await r.json();
-    const bar = document.getElementById('stats-bar');
-    bar.style.display = 'flex';
-    bar.innerHTML = `
-      <div class="stat"><span>${d.total||0}</span>Hóspedes</div>
-      <div class="stat"><span style="color:#e3b341">${d.Embaixador||0}</span>Embaixadores</div>
-      <div class="stat"><span style="color:#d2a8ff">${d.VIP||0}</span>VIPs</div>
-      <div class="stat"><span style="color:#58a6ff">${d.Frequente||0}</span>Frequentes</div>
-      <div class="stat"><span>${d.Visitante||0}</span>Visitantes</div>
-    `;
-  } catch(e) {}
-}
+  function saveKey() {
+    const val = document.getElementById('key-input').value.trim();
+    if (!val) return;
+    apiKey = val;
+    localStorage.setItem('crm_api_key', val);
+    document.getElementById('key-prompt').style.display = 'none';
+    init();
+  }
 
-function levelBadge(level) {
-  const map = { Visitante:'visitante', Frequente:'frequente', VIP:'vip', Embaixador:'embaixador' };
-  const cls = map[level] || 'visitante';
-  return `<span class="badge badge-${cls}">${level||'Visitante'}</span>`;
-}
+  // ââ INIT ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  function init() {
+    loadStats();
+    document.getElementById('search-input').addEventListener('input', e => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => doSearch(e.target.value.trim()), 350);
+    });
+  }
 
-function renderCard(g) {
-  const apts = (g.apartments||[]).join(', ') || g.preferredApartment || '-';
-  const checkout = g.lastCheckout ? new Date(g.lastCheckout).toLocaleDateString('pt-BR') : '-';
-  const channel = g.mainChannel ? `<span class="tag">${g.mainChannel}</span>` : '';
-  const phone = g.phone ? `<a href="https://wa.me/${g.phone}" target="_blank" onclick="event.stopPropagation()" style="color:#58a6ff;text-decoration:none">${g.phone}</a>` : '-';
-  return `
-    <div class="card" onclick="openPanel(${JSON.stringify(g).replace(/"/g,'&quot;')})">
-      <div class="card-left">
-        <div class="card-name">${g.name||'Sem nome'}</div>
-        <div class="card-phone">${phone}</div>
+  // ââ STATS âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  async function loadStats() {
+    try {
+      const r = await fetch(BASE + '/guests/stats', { headers: headers() });
+      if (!r.ok) return;
+      const d = await r.json();
+      // Support multiple field name conventions
+      document.getElementById('stat-total').textContent     = d.total ?? d.Total ?? '0';
+      document.getElementById('stat-embaixador').textContent = d.Embaixador ?? d.embaixador ?? d.ambassador ?? '0';
+      document.getElementById('stat-vip').textContent        = d.VIP ?? d.vip ?? '0';
+      document.getElementById('stat-frequente').textContent  = d.Frequente ?? d.frequente ?? '0';
+      document.getElementById('stat-visitante').textContent  = d.Visitante ?? d.visitante ?? '0';
+    } catch(e) {
+      console.warn('Stats error:', e);
+    }
+  }
+
+  // ââ SEARCH ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  async function doSearch(q) {
+    const el = document.getElementById('results');
+    if (!q || q.length < 2) {
+      el.innerHTML = '';
+      closeDetail();
+      return;
+    }
+    el.innerHTML = '<div class="loading">Buscando...</div>';
+    try {
+      const r = await fetch(`${BASE}/guests/search?q=${encodeURIComponent(q)}`, { headers: headers() });
+      const guests = await r.json();
+      if (!Array.isArray(guests) || guests.length === 0) {
+        el.innerHTML = '<div class="empty">Nenhum hÃ³spede encontrado.</div>';
+        return;
+      }
+      el.innerHTML = guests.map(g => buildCard(g)).join('');
+    } catch(e) {
+      el.innerHTML = '<div class="empty">Erro ao buscar hÃ³spedes.</div>';
+    }
+  }
+
+  // ââ BUILD CARD ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  function buildCard(g) {
+    const phone   = g.phone || '';
+    const name    = g.name || phone;
+    const apt     = g.preferredApartment || g.apartment || g.apt || 'â';
+    const stays   = g.totalStays ?? g.stays ?? 'â';
+    const nights  = g.totalNights ?? g.nights ?? 'â';
+    const checkout= g.lastCheckout || g.checkout || 'â';
+    const level   = g.level || 'Visitante';
+    const levelClass = 'level-' + level;
+
+    return `
+      <div class="guest-card" id="card-${phone}" onclick="selectGuest('${phone}', event)">
+        <button class="card-close" onclick="closeCard(event)" title="Fechar">â</button>
+        <div class="card-top">
+          <span class="card-name">${esc(name)}</span>
+          <span class="card-level ${levelClass}">${esc(level)}</span>
+        </div>
+        <a class="card-phone" href="https://wa.me/${phone}" target="_blank" onclick="event.stopPropagation()">
+          ð ${formatPhone(phone)}
+        </a>
         <div class="card-meta">
-          <span class="tag">Apt: <strong>${apts}</strong></span>
-          <span class="tag">Estadias: <strong>${g.totalStays||0}</strong></span>
-          <span class="tag">Noites: <strong>${g.totalNights||0}</strong></span>
-          <span class="tag">Checkout: <strong>${checkout}</strong></span>
-          ${channel}
+          <div class="meta-item">
+            <span class="meta-label">Apartamento</span>
+            <span class="meta-value">${esc(apt)}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Estadias</span>
+            <span class="meta-value">${stays}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Noites</span>
+            <span class="meta-value">${nights}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Ãltimo checkout</span>
+            <span class="meta-value">${esc(checkout)}</span>
+          </div>
         </div>
-      </div>
-      <div class="card-right">
-        ${levelBadge(g.level)}
-        <div>
-          <div class="card-nights">${g.totalNights||0}</div>
-          <div class="card-nights-label">noites</div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-async function search(q) {
-  const res = document.getElementById('results');
-  const hint = document.getElementById('hint');
-  if (q.length < 2) {
-    res.innerHTML = '';
-    hint.textContent = 'Digite pelo menos 2 letras para pesquisar';
-    hint.style.display = 'block';
-    return;
+      </div>`;
   }
-  hint.style.display = 'none';
-  res.innerHTML = '<div class="loading">Buscando...</div>';
-  try {
-    const r = await fetch(`${BASE}/guests/search?q=${encodeURIComponent(q)}`, { headers: { 'x-api-key': apiKey } });
-    if (r.status === 401) {
-      res.innerHTML = '<div class="empty"><div class="icon">Key</div>Informe a API Key abaixo</div>';
-      document.getElementById('key-prompt').style.display='flex';
-      return;
+
+  // ââ SELECT GUEST ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  async function selectGuest(phone, event) {
+    if (event && event.target.classList.contains('card-close')) return;
+    if (selectedPhone === phone) return;
+
+    // Deselect previous
+    if (selectedPhone) {
+      const prev = document.getElementById('card-' + selectedPhone);
+      if (prev) prev.classList.remove('selected');
     }
-    const guests = await r.json();
-    if (!guests.length) {
-      res.innerHTML = '<div class="empty"><div class="icon">?</div>Nenhum hospede encontrado</div>';
-      return;
-    }
-    res.innerHTML = guests.map(renderCard).join('');
-  } catch(ez) {
-    res.innerHTML = '<div class="empty"><div class="icon">!</div>Erro ao conectar ao CRM</div>';
+    selectedPhone = phone;
+    const card = document.getElementById('card-' + phone);
+    if (card) card.classList.add('selected');
+
+    // Show detail panel
+    const detail = document.getElementById('detail');
+    detail.classList.add('visible');
+
+    // Set loading state
+    document.getElementById('pane-profile').innerHTML  = '<div class="loading">Carregando perfil...</div>';
+    document.getElementById('pane-messages').innerHTML = '<div class="loading">Carregando mensagens...</div>';
+
+    // Switch to profile tab
+    switchTab('profile');
+
+    // Fetch in parallel
+    loadProfile(phone);
+    loadMessages(phone);
+
+    // Scroll to detail
+    setTimeout(() => detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
   }
-}
 
-// PAINEL LATEGAL
-
-function openPanel(guest) {
-  currentPhone = guest.phone;
-  document.getElementById('panel-name').textContent = guest.name || 'Sem nome';
-  document.getElementById('panel-phone').textContent = guest.phone || '-';
-  document.getElementById('panel-badge').innerHTML = levelBadge(guest.level);
-
-  const apts = (guest.apartments||[]).join(', ') || guest.preferredApartment || '-';
-  const checkout = guest.lastCheckout ? new Date(guest.lastCheckout).toLocaleDateString('pt-BR') : '-';
-  const checkin  = guest.firstCheckin  ? new Date(guest.firstCheckin).toLocaleDateString('pt-BR')  : '-';
-  document.getElementById('tab-profile').innerHTML = `
-    <div class="profile-row"><span class="profile-label">Telefone</span><span class="profile-value">${guest.phone||'-'}</span></div>
-    <div class="profile-row"><span class="profile-label">Apartamentos</span><span class="profile-value">${apts}</span></div>
-    <div class="profile-row"><span class="profile-label">Total Estadias</span><span class="profile-value">${guest.totalStays||0}</span></div>
-    <div class="profile-row"><span class="profile-label">Noites</span><span class="profile-value">${guest.totalNights||0}</span></div>
-    <div class="profile-row"><span class="profile-label">Primeiro Check-in</span><span class="profile-value">${checkin}</span></div>
-    <div class="profile-row"><span class="profile-label">Checkout</span><span class="profile-value">${checkout}</span></div>
-    <div class="profile-row"><span class="profile-label">Nlevel</span><span class="profile-value">${guest.level||'Visitante'}</span></div>
-    <div class="profile-row"><span class="profile-label">Canal</span><span class="profile-value">${guest.mainChannel||'WhatsApp'}</span></div>
-    ${guest.notes ? `<div class="profile-row"><span class="profile-label">Notas</span><span class="profile-value">${guest.notes}</span></div>` : ''}
-  `;
-
-  document.getElementById('overlay').style.display = 'block';
-  document.getElementById('panel').classList.add('open');
-  switchTab('profile');
-}
-
-function closePanel() {
-  document.getElementById('overlay').style.display = 'none';
-  document.getElementById('panel').classList.remove('open');
-  currentPhone = null;
-}
-
-function switchTab(tab) {
-  document.getElementById('btn-profile').classList.toggle('active', tab === 'profile');
-  document.getElementById('btn-messages').classList.toggle('active', tab === 'messages');
-  document.getElementById('tab-profile').classList.toggle('active', tab === 'profile');
-  document.getElementById('tab-messages').classList.toggle('active', tab === 'messages');
-  if (tab === 'messages' && currentPhone) {
-    loadMessages(currentPhone);
+  function closeCard(event) {
+    event.stopPropagation();
+    closeDetail();
   }
-}
 
-async function loadMessages(phone) {
-  const container = document.getElementById('tab-messages');
-  container.innerHTML = '<div class="panel-loading">Carregando mensagens...</div>';
-  try {
-    const r = await fetch(`${BASE}/guest/${phone}/context`, { headers: { 'x-api-key': apiKey } });
-    if (!r.ok) {
-      container.innerHTML = '<div class="no-msgs">Erro ao carregar mensagens</span>';
+  function closeDetail() {
+    if (selectedPhone) {
+      const card = document.getElementById('card-' + selectedPhone);
+      if (card) card.classList.remove('selected');
+      selectedPhone = null;
+    }
+    document.getElementById('detail').classList.remove('visible');
+  }
+
+  // ââ TABS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('pane-' + tab).classList.add('active');
+  }
+
+  // ââ PROFILE âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  async function loadProfile(phone) {
+    try {
+      const r = await fetch(`${BASE}/guest/${phone}/profile`, { headers: headers() });
+      if (!r.ok) {
+        document.getElementById('pane-profile').innerHTML = '<div class="empty">Perfil nÃ£o encontrado.</div>';
+        return;
+      }
+      const p = await r.json();
+      renderProfile(p, phone);
+    } catch(e) {
+      document.getElementById('pane-profile').innerHTML = '<div class="empty">Erro ao carregar perfil.</div>';
+    }
+  }
+
+  function renderProfile(p, phone) {
+    const level   = p.level || 'Visitante';
+    const levelClass = 'level-' + level;
+    const rows = [
+      ['Telefone',        formatPhone(p.phone || phone)],
+      ['Nome',            p.name || 'â'],
+      ['Apartamento',     p.preferredApartment || p.apartment || 'â'],
+      ['Total Estadias',  p.totalStays ?? 'â'],
+      ['Noites',          p.totalNights ?? 'â'],
+      ['Primeiro Check-in', p.firstCheckin || 'â'],
+      ['Ãltimo Checkout', p.lastCheckout || p.checkout || 'â'],
+      ['NÃ­vel',           `<span class="card-level ${levelClass}">${esc(level)}</span>`],
+      ['Canal',           p.channel || 'WhatsApp'],
+    ];
+
+    let html = '<div class="profile-grid">';
+    rows.forEach(([label, value]) => {
+      html += `<div class="profile-row">
+        <div class="pf-label">${label}</div>
+        <div class="pf-value">${typeof value === 'string' && value.startsWith('<') ? value : esc(String(value))}</div>
+      </div>`;
+    });
+    html += '</div>';
+
+    // Tags
+    const tags = p.tags || [];
+    if (tags.length > 0) {
+      html += `<div class="pf-tags">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>`;
+    }
+
+    // Notes
+    if (p.notes) {
+      html += `<div class="notes-box">ð ${esc(p.notes)}</div>`;
+    }
+
+    document.getElementById('pane-profile').innerHTML = html;
+  }
+
+  // ââ MESSAGES ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  async function loadMessages(phone) {
+    try {
+      const r = await fetch(`${BASE}/guest/${phone}/context`, { headers: headers() });
+      if (!r.ok) {
+        document.getElementById('pane-messages').innerHTML = '<div class="no-msgs">Sem mensagens registradas.</div>';
+        return;
+      }
+      const msgs = await r.json();
+      renderMessages(msgs);
+    } catch(e) {
+      document.getElementById('pane-messages').innerHTML = '<div class="no-msgs">Erro ao carregar mensagens.</div>';
+    }
+  }
+
+  function renderMessages(msgs) {
+    if (!Array.isArray(msgs) || msgs.length === 0) {
+      document.getElementById('pane-messages').innerHTML = '<div class="no-msgs">Sem mensagens registradas.</div>';
       return;
     }
-    const data = await r.json();
-    const msgs = Array.isArray(data) ? data : (data.messages || data.context || []);
-    if (!msgs.length) {
-      container.innerHTML = '<div class="no-msgs">Nenhuma mensagem registrada ainda</div>';
-      return;
-    }
-    container.innerHTML = msgs.map(msg => {
-      const isBot = msg.role === 'assistant' || msg.role === 'bot' || msg.sender === 'bot';
-      const text = msg.content || msg.text || msg.message || '';
-      const ts = msg.timestamp || msg.createdAt || msg.date;
-      const timeStr = ts ? new Date(ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
-      return `
-        <div style="display:flex; flex-direction:column; align-items:${isBot?'flex-end':'flex-start'}">
-          <span class="msg-role ${isBot?'bot':'guest'}">${isBot?'Bot':'Hospede'}</span>
-          <div class="msg-bubble ${isBot?'msg-bot':'msg-guest'}">${escapeHtml(text)}</div>
-          ${timeStr ? `<span class="msg-time" style="text-align:${isBot?'right':'left'}">${timeStr}</span>` : ''}
-        </div>
-      `;
+
+    const html = msgs.map(m => {
+      const role = m.role || 'user';
+      // Normalize roles
+      const isBot = role === 'assistant' || role === 'bot' || role === 'Bot';
+      const cssRole = isBot ? 'assistant' : 'user';
+      const roleLabel = isBot ? 'ð¤ Bot' : 'ð¤ HÃ³spede';
+      const content = m.content || m.text || '';
+
+      return `<div class="msg ${cssRole}">
+        <div class="msg-role">${roleLabel}</div>
+        <div class="msg-bubble">${esc(content)}</div>
+      </div>`;
     }).join('');
-    container.scrollTop = container.scrollHeight;
-  } catch(e) {
-    container.innerHTML = '<div class="no-msgs">Erro de conexao</div>';
+
+    document.getElementById('pane-messages').innerHTML = `<div class="messages-wrap">${html}</div>`;
+
+    // Scroll to bottom
+    const wrap = document.querySelector('.messages-wrap');
+    if (wrap) wrap.scrollTop = wrap.scrollHeight;
   }
-}
 
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/\n/g,'<br>');
-}
+  // ââ HELPERS âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
-document.getElementById('q').addEventListener('input', e => {
-  clearTimeout(timer);
-  timer = setTimeout(() => search(e.target.value.trim()), 350);
-});
-
-if (apiKey) loadStats();
+  function formatPhone(phone) {
+    const p = String(phone).replace(/\D/g, '');
+    if (p.length === 13) {
+      // 55 + 2-digit DDD + 9-digit number
+      return `+${p.slice(0,2)} (${p.slice(2,4)}) ${p.slice(4,9)}-${p.slice(9)}`;
+    }
+    return phone;
+  }
 </script>
 </body>
 </html>
