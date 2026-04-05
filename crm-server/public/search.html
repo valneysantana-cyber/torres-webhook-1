@@ -554,10 +554,10 @@
   function buildCard(g) {
     const phone   = g.phone || '';
     const name    = g.name || phone;
-    const apt     = g.preferredApartment || g.apartment || g.apt || '&mdash;';
-    const stays   = g.totalStays ?? g.stays ?? '&mdash;';
-    const nights  = g.totalNights ?? g.nights ?? '&mdash;';
-    const checkout= g.lastCheckout || g.checkout || '&mdash;';
+    const apt     = g.preferredApartment || g.apartment || g.apt || '—';
+    const stays   = g.totalStays ?? g.stays ?? '—';
+    const nights  = g.totalNights ?? g.nights ?? '—';
+    const checkout= g.lastCheckout || g.checkout || '—';
     const level   = g.level || 'Visitante';
     const levelClass = 'level-' + level;
 
@@ -667,12 +667,12 @@
     const levelClass = 'level-' + level;
     const rows = [
       ['Telefone',        formatPhone(p.phone || phone)],
-      ['Nome',            p.name || '&mdash;'],
-      ['Apartamento',     p.preferredApartment || p.apartment || '&mdash;'],
-      ['Total Estadias',  p.totalStays ?? '&mdash;'],
-      ['Noites',          p.totalNights ?? '&mdash;'],
-      ['Primeiro Check-in', p.firstCheckin || '&mdash;'],
-      ['&Uacute;ltimo Checkout', p.lastCheckout || p.checkout || '&mdash;'],
+      ['Nome',            p.name || '—'],
+      ['Apartamento',     p.preferredApartment || p.apartment || '—'],
+      ['Total Estadias',  p.totalStays ?? '—'],
+      ['Noites',          p.totalNights ?? '—'],
+      ['Primeiro Check-in', p.firstCheckin || '—'],
+      ['&Uacute;ltimo Checkout', p.lastCheckout || p.checkout || '—'],
       ['N&iacute;vel',           `<span class="card-level ${levelClass}">${esc(level)}</span>`],
       ['Canal',           p.channel || 'WhatsApp'],
     ];
