@@ -4,18 +4,20 @@
  * torres-webhook — entry point
  *
  * Responsibilities:
- *   - Boot Express server
- *   - Register WhatsApp webhook routes (GET verify + POST receive)
- *   - Schedule dailyCheckinDispatch at 08:00 BRT every day
- *   - Expose POST /internal/dispatch for manual triggers (protected by DISPATCH_SECRET)
+ * - Boot Express server
+ * - Register WhatsApp webhook routes (GET verify + POST receive)
+ * - Schedule dailyCheckinDispatch at 08:00 BRT every day
+ * - Schedule dailyCheckoutSync at 10:00 BRT every day
+ * - Expose POST /internal/dispatch for manual triggers (protected by DISPATCH_SECRET)
  */
 
 const express    = require('express');
 const bodyParser = require('body-parser');
 
 const { PORT, VERIFY_TOKEN, DISPATCH_SECRET } = require('./config');
-const { handleIncoming }     = require('./handlers/whatsapp');
+const { handleIncoming }       = require('./handlers/whatsapp');
 const { dailyCheckinDispatch } = require('./services/dispatch');
+const { dailyCheckoutSync }    = require('./services/checkout');
 
 const app = express();
 app.use(bodyParser.json());
@@ -92,10 +94,36 @@ function scheduleDailyDispatch() {
   }, delayMs);
 }
 
+function scheduleCheckoutSync() {
+  const now  = new Date();
+  // next 10:00 BRT — runs after checkin dispatch so stays data is fresh
+  const next = new Date();
+  next.setHours(10, 0, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+
+  const delayMs = next - now;
+  console.log(
+    `[checkout] Pr\u00f3xima sincroniza\u00e7\u00e3o agendada: ${
+      next.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    } (em ${Math.round(delayMs / 60000)} min)`
+  );
+
+  setTimeout(async () => {
+    try {
+      await dailyCheckoutSync();
+    } catch (err) {
+      console.error('[checkout] Erro na sincroniza\u00e7\u00e3o agendada', err);
+    } finally {
+      scheduleCheckoutSync();
+    }
+  }, delayMs);
+}
+
 // ---- start ----------------------------------------------------------------
 const server = app.listen(PORT, () => {
   console.log(`WhatsApp webhook server listening on port ${PORT}`);
   scheduleDailyDispatch();
+  scheduleCheckoutSync();
 });
 
 server.on('close', () => console.log('Webhook server closed'));
