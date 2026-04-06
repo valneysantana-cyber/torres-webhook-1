@@ -20,6 +20,7 @@
 require('dotenv').config();
 const express = require('express');
 const { MongoClient } = require('mongodb');
+const { dailyCampaignRun } = require('./campaigns');
 const path = require('path');
 
 const app = express();
@@ -196,6 +197,25 @@ app.get('/guests/stats', async (req, res) => {
 });
 
 // ─── Boot ─────────────────────────────────────────────────────────────────
+function scheduleCampaigns() {
+    const now  = new Date();
+    const next = new Date();
+    next.setHours(10, 30, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    const delayMs = next - now;
+    console.log('[campaign] Proxima execucao agendada: ' +
+                next.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) +
+                ' (em ' + Math.round(delayMs / 60000) + ' min)');
+    setTimeout(async function() {
+          try {
+                  await dailyCampaignRun(db);
+          } catch (err) {
+                  console.error('[campaign] Erro na execucao agendada', err);
+          } finally {
+                  scheduleCampaigns();
+          }
+    }, delayMs);
+}
 async function start() {
   const client = new MongoClient(MONGO_URI);
   await client.connect();
@@ -205,5 +225,6 @@ async function start() {
   await db.collection('guests').createIndex({ name: 1 });
   console.log('[crm-server] MongoDB conectado');
   app.listen(PORT, () => console.log(`[crm-server] Porta ${PORT}`));
+    scheduleCampaigns();
 }
 start().catch(err => { console.error('[crm-server] Falha:', err.message); process.exit(1); });
