@@ -18,6 +18,7 @@ const { PORT, VERIFY_TOKEN, DISPATCH_SECRET } = require('./config');
 const { handleIncoming }       = require('./handlers/whatsapp');
 const { dailyCheckinDispatch } = require('./services/dispatch');
 const { dailyCheckoutSync }    = require('./services/checkout');
+const { sendWhatsAppText }      = require('./services/whatsapp');
 
 const app = express();
 app.use(bodyParser.json());
@@ -64,6 +65,25 @@ app.post('/internal/dispatch', async (req, res) => {
   } catch (err) {
     console.error('[dispatch] Manual trigger error', err);
   }
+});
+
+// ---- campaign send endpoint (called by VPS campaigns.js) ----------------
+app.post('/internal/send-campaign', async (req, res) => {
+    const secret = req.headers['x-dispatch-secret'] || req.query.secret;
+    if (DISPATCH_SECRET && secret !== DISPATCH_SECRET) {
+          return res.sendStatus(401);
+    }
+    const { to, message } = req.body;
+    if (!to || !message) {
+          return res.status(400).json({ error: 'to e message obrigatorios' });
+    }
+    res.status(200).json({ status: 'sending' });
+    try {
+          await sendWhatsAppText(to, message);
+          console.log('[campaign] Mensagem enviada para ' + to);
+    } catch (err) {
+          console.error('[campaign] Erro ao enviar mensagem', err);
+    }
 });
 
 // ---- daily cron scheduler (pure Node — no extra deps) ---------------------
