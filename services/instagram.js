@@ -1,20 +1,20 @@
 'use strict';
 
 /**
- * services/instagram.js — Fase 4: Instagram Integration
+ * services/instagram.js â Fase 4: Instagram Integration
  *
  * Funcionalidades:
  * - Publicar fotos/imagens no Instagram Business (@torresguest)
  * - Enviar e receber Direct Messages (DMs) do Instagram
  * - Verificar disponibilidade de quartos (via Stays.net) antes de postar
- * - Gerar conteúdo automático via GPT-4o-mini + DALL-E 3
+ * - Gerar conteÃºdo automÃ¡tico via GPT-4o-mini + DALL-E 3
  * - Trocar/renovar token de acesso (long-lived, 60 dias)
  *
- * Env vars necessárias no Render:
- *   IG_ACCESS_TOKEN           — token gerado no portal Meta (Instagram Business Login)
- *   IG_APP_ID                 — ID do app OpenClaw-IG (padrão: 1667526337778117)
- *   IG_APP_SECRET             — Chave secreta do OpenClaw-IG (do portal Meta)
- *   IG_BUSINESS_ACCOUNT_ID    — ID da conta IG (@torresguest, padrão: 26082124804742800)
+ * Env vars necessÃ¡rias no Render:
+ *   IG_ACCESS_TOKEN           â token gerado no portal Meta (Instagram Business Login)
+ *   IG_APP_ID                 â ID do app OpenClaw-IG (padrÃ£o: 1667526337778117)
+ *   IG_APP_SECRET             â Chave secreta do OpenClaw-IG (do portal Meta)
+ *   IG_BUSINESS_ACCOUNT_ID    â ID da conta IG (@torresguest, padrÃ£o: 26082124804742800)
  */
 
 const { OPENAI_API_KEY } = require('../config');
@@ -32,12 +32,12 @@ const FB_BASE                 = `https://graph.facebook.com/${IG_API_VERSION}`;
 // ---------------------------------------------------------------------------
 
 async function exchangeForLongLivedToken(shortToken) {
-  if (!IG_APP_SECRET) throw new Error('[instagram] IG_APP_SECRET não configurado');
+  if (!IG_APP_SECRET) throw new Error('[instagram] IG_APP_SECRET nÃ£o configurado');
   const url = `${IG_BASE}/access_token?grant_type=ig_exchange_token&client_id=${IG_APP_ID}&client_secret=${IG_APP_SECRET}&access_token=${shortToken}`;
   const res = await fetch(url);
   const data = await res.json();
   if (data.error) throw new Error(`[instagram] Token exchange falhou: ${JSON.stringify(data.error)}`);
-  console.log(`[instagram] Token trocado — expira em ${Math.round(data.expires_in / 86400)} dias`);
+  console.log(`[instagram] Token trocado â expira em ${Math.round(data.expires_in / 86400)} dias`);
   return { access_token: data.access_token, expires_in: data.expires_in };
 }
 
@@ -46,7 +46,7 @@ async function refreshLongLivedToken(token) {
   const res = await fetch(url);
   const data = await res.json();
   if (data.error) throw new Error(`[instagram] Token refresh falhou: ${JSON.stringify(data.error)}`);
-  console.log(`[instagram] Token renovado — expira em ${Math.round(data.expires_in / 86400)} dias`);
+  console.log(`[instagram] Token renovado â expira em ${Math.round(data.expires_in / 86400)} dias`);
   return { access_token: data.access_token, expires_in: data.expires_in };
 }
 
@@ -65,17 +65,17 @@ async function waitForContainer(containerId, token, maxAttempts = 15) {
     if (data.status_code === 'ERROR' || data.status_code === 'EXPIRED') {
       throw new Error(`[instagram] Container ${containerId} com erro: ${data.status}`);
     }
-    console.log(`[instagram] Container ${containerId} status: ${data.status_code} — aguardando...`);
+    console.log(`[instagram] Container ${containerId} status: ${data.status_code} â aguardando...`);
     await new Promise(r => setTimeout(r, 4000));
   }
-  throw new Error(`[instagram] Container ${containerId} timeout após ${maxAttempts} tentativas`);
+  throw new Error(`[instagram] Container ${containerId} timeout apÃ³s ${maxAttempts} tentativas`);
 }
 
 async function publishPost(imageUrl, caption) {
   const token = IG_ACCESS_TOKEN;
-  if (!token) throw new Error('[instagram] IG_ACCESS_TOKEN não configurado');
+  if (!token) throw new Error('[instagram] IG_ACCESS_TOKEN nÃ£o configurado');
 
-  console.log('[instagram] Criando container de mídia...');
+  console.log('[instagram] Criando container de mÃ­dia...');
   const containerRes = await fetch(`${IG_BASE}/${IG_BUSINESS_ACCOUNT_ID}/media`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -96,9 +96,9 @@ async function publishPost(imageUrl, caption) {
     body: new URLSearchParams({ creation_id: containerId, access_token: token })
   });
   const publishData = await publishRes.json();
-  if (!publishData.id) throw new Error(`[instagram] Publicação falhou: ${JSON.stringify(publishData)}`);
+  if (!publishData.id) throw new Error(`[instagram] PublicaÃ§Ã£o falhou: ${JSON.stringify(publishData)}`);
 
-  console.log(`[instagram] ✅ Post publicado! ID: ${publishData.id}`);
+  console.log(`[instagram] â Post publicado! ID: ${publishData.id}`);
   return publishData.id;
 }
 
@@ -108,7 +108,7 @@ async function publishPost(imageUrl, caption) {
 
 async function sendDM(recipientIgsid, text) {
   const token = IG_ACCESS_TOKEN;
-  if (!token) throw new Error('[instagram] IG_ACCESS_TOKEN não configurado');
+  if (!token) throw new Error('[instagram] IG_ACCESS_TOKEN nÃ£o configurado');
 
   const res = await fetch(`${IG_BASE}/me/messages`, {
     method: 'POST',
@@ -127,7 +127,7 @@ async function sendDM(recipientIgsid, text) {
 
 async function handleInstagramWebhook(body) {
   if (body.object !== 'instagram') {
-    console.log('[instagram] Webhook ignorado — object não é instagram:', body.object);
+    console.log('[instagram] Webhook ignorado â object nÃ£o Ã© instagram:', body.object);
     return;
   }
 
@@ -145,15 +145,15 @@ async function handleInstagramWebhook(body) {
       } catch (err) {
         console.error('[instagram] Erro ao responder DM:', err.message);
         await sendDM(senderId,
-          '🏨 Olá! Obrigado por entrar em contato com o TorresGuest. ' +
-          'Para informações e reservas, também pode nos chamar no WhatsApp: +55 11 99907-3135'
+          'ð¨ OlÃ¡! Obrigado por entrar em contato com o TorresGuest. ' +
+          'Para informaÃ§Ãµes e reservas, tambÃ©m pode nos chamar no WhatsApp: +55 11 99907-3135'
         ).catch(() => {});
       }
     }
 
     for (const change of entry.changes || []) {
       if (change.field === 'comments') {
-        console.log(`[instagram] Comentário novo:`, JSON.stringify(change.value).substring(0, 100));
+        console.log(`[instagram] ComentÃ¡rio novo:`, JSON.stringify(change.value).substring(0, 100));
       }
     }
   }
@@ -165,12 +165,11 @@ async function handleInstagramWebhook(body) {
 
 async function generateDMReply(userMessage, senderId) {
   const { OpenAI } = require('openai');
-  const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
-  const systemPrompt = `Você é o assistente virtual do TorresGuest, um hotel boutique em São Paulo (SP), Brasil.
-Responda perguntas sobre reservas, localização, preços e comodidades de forma simpática e profissional.
-Se o hóspede quiser reservar ou tiver dúvidas complexas, direcione para o WhatsApp: +55 11 99907-3135
-Respostas devem ser curtas (máx 3 linhas) e em português.`;
+  const systemPrompt = `VocÃª Ã© o assistente virtual do TorresGuest, um hotel boutique em SÃ£o Paulo (SP), Brasil.
+Responda perguntas sobre reservas, localizaÃ§Ã£o, preÃ§os e comodidades de forma simpÃ¡tica e profissional.
+Se o hÃ³spede quiser reservar ou tiver dÃºvidas complexas, direcione para o WhatsApp: +55 11 99907-3135
+Respostas devem ser curtas (mÃ¡x 3 linhas) e em portuguÃªs.`;
 
   const response = await openai.chat.completions.create({
     model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
@@ -186,11 +185,10 @@ Respostas devem ser curtas (máx 3 linhas) e em português.`;
 
 async function generatePostImage(eventHint) {
   const { OpenAI } = require('openai');
-  const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
-  const prompt = `Professional hotel promotional photo for TorresGuest, a modern boutique hotel in São Paulo, Brazil.
+  const prompt = `Professional hotel promotional photo for TorresGuest, a modern boutique hotel in SÃ£o Paulo, Brazil.
 Theme: ${eventHint}.
-Style: warm lighting, elegant interior or São Paulo cityscape, inviting atmosphere.
+Style: warm lighting, elegant interior or SÃ£o Paulo cityscape, inviting atmosphere.
 No text overlays. Instagram square format. High quality photography style.`;
 
   const response = await openai.images.generate({
@@ -208,17 +206,16 @@ No text overlays. Instagram square format. High quality photography style.`;
 
 async function generatePostCaption(eventHint, availableRooms) {
   const { OpenAI } = require('openai');
-  const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
   const roomsText = availableRooms !== null
-    ? `Temos ${availableRooms} quarto${availableRooms !== 1 ? 's' : ''} disponível${availableRooms !== 1 ? 'is' : ''} agora!`
+    ? `Temos ${availableRooms} quarto${availableRooms !== 1 ? 's' : ''} disponÃ­vel${availableRooms !== 1 ? 'is' : ''} agora!`
     : 'Consulte disponibilidade!';
 
-  const prompt = `Crie uma legenda envolvente para o Instagram do @torresguest hotel boutique em São Paulo sobre: ${eventHint}.
+  const prompt = `Crie uma legenda envolvente para o Instagram do @torresguest hotel boutique em SÃ£o Paulo sobre: ${eventHint}.
 ${roomsText}
 Regras:
-- Tom amigável e convidativo, em português brasileiro
-- Máximo 220 caracteres (sem contar hashtags)
+- Tom amigÃ¡vel e convidativo, em portuguÃªs brasileiro
+- MÃ¡ximo 220 caracteres (sem contar hashtags)
 - Inclua call-to-action (link na bio ou WhatsApp)
 - Termine com 5-7 hashtags relevantes sobre SP e hospedagem
 - Use 2-3 emojis adequados`;
@@ -254,12 +251,12 @@ async function getAvailableRooms() {
 // Auto-post
 // ---------------------------------------------------------------------------
 
-async function autoPost(eventHint = 'weekend in São Paulo, cultural events and gastronomy') {
+async function autoPost(eventHint = 'weekend in SÃ£o Paulo, cultural events and gastronomy') {
   console.log('[instagram] Iniciando auto-post...');
 
   const available = await getAvailableRooms();
   if (available === 0) {
-    console.log('[instagram] Hotel lotado hoje — post cancelado');
+    console.log('[instagram] Hotel lotado hoje â post cancelado');
     return null;
   }
 
@@ -270,10 +267,10 @@ async function autoPost(eventHint = 'weekend in São Paulo, cultural events and 
     ]);
 
     const postId = await publishPost(imageUrl, caption);
-    console.log(`[instagram] ✅ Auto-post concluído. ID: ${postId}`);
+    console.log(`[instagram] â Auto-post concluÃ­do. ID: ${postId}`);
     return postId;
   } catch (err) {
-    console.error('[instagram] ❌ Erro no auto-post:', err.message);
+    console.error('[instagram] â Erro no auto-post:', err.message);
     throw err;
   }
 }
