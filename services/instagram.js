@@ -3,10 +3,10 @@
 /**
  * services/instagram.js â Fase 4: Instagram Integration
  *
- * Funcionalidades:
+ * Funcionalidades
  * - Publicar fotos/imagens no Instagram Business (@torresguest)
  * - Enviar e receber Direct Messages (DMs) do Instagram
- * - Verificar disponibilidade de quartos (via Stays.net) antes de postar
+ * - Verificar disponibilidade de quartos (via Stays.net) antes depostar
  * - Gerar conteÃºdo automÃ¡tico via GPT-4o-mini + DALL-E 3
  * - Trocar/renovar token de acesso (long-lived, 60 dias)
  *
@@ -18,6 +18,8 @@
  */
 
 const { OPENAI_API_KEY } = require('../config');
+const { OpenAI } = require('openai');
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 const IG_ACCESS_TOKEN         = process.env.IG_ACCESS_TOKEN;
 const IG_APP_ID               = process.env.IG_APP_ID || '1667526337778117';
@@ -164,7 +166,6 @@ async function handleInstagramWebhook(body) {
 // ---------------------------------------------------------------------------
 
 async function generateDMReply(userMessage, senderId) {
-  const { OpenAI } = require('openai');
 
   const systemPrompt = `VocÃª Ã© o assistente virtual do TorresGuest, um hotel boutique em SÃ£o Paulo (SP), Brasil.
 Responda perguntas sobre reservas, localizaÃ§Ã£o, preÃ§os e comodidades de forma simpÃ¡tica e profissional.
@@ -184,7 +185,6 @@ Respostas devem ser curtas (mÃ¡x 3 linhas) e em portuguÃªs.`;
 }
 
 async function generatePostImage(eventHint) {
-  const { OpenAI } = require('openai');
 
   const prompt = `Professional hotel promotional photo for TorresGuest, a modern boutique hotel in SÃ£o Paulo, Brazil.
 Theme: ${eventHint}.
@@ -205,7 +205,6 @@ No text overlays. Instagram square format. High quality photography style.`;
 }
 
 async function generatePostCaption(eventHint, availableRooms) {
-  const { OpenAI } = require('openai');
 
   const roomsText = availableRooms !== null
     ? `Temos ${availableRooms} quarto${availableRooms !== 1 ? 's' : ''} disponÃ­vel${availableRooms !== 1 ? 'is' : ''} agora!`
