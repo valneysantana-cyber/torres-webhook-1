@@ -184,10 +184,6 @@ async function runSocialMediaPost(eventHint) {
   console.log(`[social] Iniciando post automático: "${hint}"`);
 
   const available = await getAvailableRooms();
-  if (available === 0) {
-    console.log('[social] Hotel lotado — post cancelado');
-    return;
-  }
 
   try {
     // Gera imagem + legendas em paralelo
