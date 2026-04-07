@@ -27,9 +27,12 @@ function msgStayAnniversary(name, years) {
 
 // ---- deduplication ----------------------------------------------------------
 function alreadySent(guest, type) {
-    if (!Array.isArray(guest.campaignsSent)) return false;
-  const today = new Date().toISOString().slice(0, 10);
-  return guest.campaignsSent.some(function(c) { return c.type === type && c.date === today; });
+  if (!Array.isArray(guest.campaignsSent)) return false;
+  // Cooldown: no_visit_3m=90d, post_checkout/birthday/stay_anniversary=365d
+  const cooldownDays = { 'no_visit_3m': 90, 'post_checkout': 365, 'birthday': 365, 'stay_anniversary': 365 };
+  const days = cooldownDays[type] || 90;
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  return guest.campaignsSent.some(function(c) { return c.type === type && c.date >= cutoff; });
 }
 
 async function markSent(db, phone, type) {
