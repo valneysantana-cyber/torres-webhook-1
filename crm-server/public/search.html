@@ -403,7 +403,64 @@
       font-size: 13px;
       padding: 32px 16px;
     }
-  </style>
+  
+    /* ── CAMPAIGNS PANEL ─────────────────────────────────────────────────── */
+    .campaign-toggle-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: #1e293b; border: 1.5px solid #334155;
+      color: #94a3b8; padding: 8px 18px; border-radius: 999px;
+      font-size: 13px; cursor: pointer; transition: all .2s;
+      margin: 0 auto 0 0;
+    }
+    .campaign-toggle-btn.active { background: #7c3aed22; border-color: #7c3aed; color: #a78bfa; }
+    .campaign-toggle-btn:hover { border-color: #7c3aed; color: #a78bfa; }
+
+    #campaigns-panel {
+      display: none; width: 100%; margin-bottom: 16px;
+      background: #161b22; border: 1px solid #21262d; border-radius: 14px; overflow: hidden;
+    }
+    #campaigns-panel.visible { display: block; }
+
+    .camp-header {
+      padding: 16px 20px 12px; border-bottom: 1px solid #21262d;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .camp-header span { font-size: 15px; font-weight: 600; color: #e8e8e8; margin-right: auto; }
+
+    .camp-type-btn {
+      padding: 5px 14px; border-radius: 999px; font-size: 12px; cursor: pointer;
+      border: 1.5px solid #334155; background: #0d1117; color: #8b949e; transition: all .2s;
+    }
+    .camp-type-btn.active { border-color: #7c3aed; background: #7c3aed22; color: #a78bfa; }
+    .camp-type-btn:hover { border-color: #a78bfa; color: #a78bfa; }
+
+    .camp-results { padding: 0 8px 12px; max-height: 440px; overflow-y: auto; }
+
+    .camp-row {
+      display: grid; grid-template-columns: 1fr 120px 80px 90px;
+      gap: 8px; align-items: center; padding: 10px 12px; border-radius: 10px;
+      margin: 4px 0; background: #0d1117; border: 1px solid #21262d; transition: background .15s;
+    }
+    .camp-row:hover { background: #161b22; }
+    .camp-row-name { font-weight: 600; font-size: 14px; color: #e8e8e8; }
+    .camp-row-phone { font-size: 12px; color: #58a6ff; }
+    .camp-row-date { font-size: 12px; color: #8b949e; text-align: center; }
+    .camp-row-type { font-size: 11px; color: #8b949e; }
+    .camp-badge-resp { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+      background: #16a34a22; color: #4ade80; border: 1px solid #16a34a55; text-align: center; }
+    .camp-badge-no { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+      background: #1e293b; color: #8b949e; border: 1px solid #334155; text-align: center; }
+    .camp-row-reply { font-size: 11px; color: #8b949e; font-style: italic; grid-column: 1/-1; padding-top: 2px; }
+
+    .camp-empty { text-align: center; color: #8b949e; padding: 32px; font-size: 14px; }
+    .camp-loading { text-align: center; color: #8b949e; padding: 24px; font-size: 13px; }
+    .camp-summary { padding: 10px 20px 0; font-size: 12px; color: #8b949e; }
+
+    .type-label-post_checkout   { color: #38bdf8; }
+    .type-label-birthday        { color: #fb923c; }
+    .type-label-no_visit        { color: #f472b6; }
+    .type-label-stay_anniversary { color: #a78bfa; }
+</style>
 </head>
 <body>
 
@@ -439,6 +496,32 @@
       <span class="stat-label">Visitantes</span>
     </div>
   </div>
+
+
+  <!-- CAMPAIGNS PANEL -->
+  <div class="container" style="padding-top:0; padding-bottom:0; margin-bottom:-8px;">
+    <button class="campaign-toggle-btn" id="camp-toggle-btn" onclick="toggleCampaigns()">
+      📢 Campanhas
+    </button>
+  </div>
+
+  <div class="container" style="padding-top:8px;">
+    <div id="campaigns-panel">
+      <div class="camp-header">
+        <span>📢 Hóspedes por Campanha</span>
+        <button class="camp-type-btn active" data-type="" onclick="loadCampaigns(this, '')">Todas</button>
+        <button class="camp-type-btn" data-type="post_checkout" onclick="loadCampaigns(this, 'post_checkout')">✅ Pós-checkout</button>
+        <button class="camp-type-btn" data-type="birthday" onclick="loadCampaigns(this, 'birthday')">🎂 Aniversário</button>
+        <button class="camp-type-btn" data-type="no_visit" onclick="loadCampaigns(this, 'no_visit')">📅 Sem visita</button>
+        <button class="camp-type-btn" data-type="stay_anniversary" onclick="loadCampaigns(this, 'stay_anniversary')">🎉 Aniv. estadia</button>
+      </div>
+      <div class="camp-summary" id="camp-summary"></div>
+      <div class="camp-results" id="camp-results">
+        <div class="camp-loading">Clique em uma campanha para ver os resultados...</div>
+      </div>
+    </div>
+  </div>
+
 
   <!-- MAIN -->
   <div class="container">
@@ -554,10 +637,10 @@
   function buildCard(g) {
     const phone   = g.phone || '';
     const name    = g.name || phone;
-    const apt     = g.preferredApartment || g.apartment || g.apt || '—';
-    const stays   = g.totalStays ?? g.stays ?? '—';
-    const nights  = g.totalNights ?? g.nights ?? '—';
-    const checkout= g.lastCheckout || g.checkout || '—';
+    const apt     = g.preferredApartment || g.apartment || g.apt || 'â';
+    const stays   = g.totalStays ?? g.stays ?? 'â';
+    const nights  = g.totalNights ?? g.nights ?? 'â';
+    const checkout= g.lastCheckout || g.checkout || 'â';
     const level   = g.level || 'Visitante';
     const levelClass = 'level-' + level;
 
@@ -667,12 +750,12 @@
     const levelClass = 'level-' + level;
     const rows = [
       ['Telefone',        formatPhone(p.phone || phone)],
-      ['Nome',            p.name || '—'],
-      ['Apartamento',     p.preferredApartment || p.apartment || '—'],
-      ['Total Estadias',  p.totalStays ?? '—'],
-      ['Noites',          p.totalNights ?? '—'],
-      ['Primeiro Check-in', p.firstCheckin || '—'],
-      ['&Uacute;ltimo Checkout', p.lastCheckout || p.checkout || '—'],
+      ['Nome',            p.name || 'â'],
+      ['Apartamento',     p.preferredApartment || p.apartment || 'â'],
+      ['Total Estadias',  p.totalStays ?? 'â'],
+      ['Noites',          p.totalNights ?? 'â'],
+      ['Primeiro Check-in', p.firstCheckin || 'â'],
+      ['&Uacute;ltimo Checkout', p.lastCheckout || p.checkout || 'â'],
       ['N&iacute;vel',           `<span class="card-level ${levelClass}">${esc(level)}</span>`],
       ['Canal',           p.channel || 'WhatsApp'],
     ];
@@ -759,6 +842,91 @@
     }
     return phone;
   }
+
+  // ── CAMPAIGNS ──────────────────────────────────────────────────────────────
+  let campPanelOpen = false;
+  let campCurrentType = '';
+
+  const TYPE_LABELS = {
+    post_checkout: '✅ Pós-checkout D+1',
+    birthday: '🎂 Aniversário',
+    no_visit: '📅 Sem visita 3m',
+    stay_anniversary: '🎉 Aniv. estadia'
+  };
+
+  function toggleCampaigns() {
+    campPanelOpen = !campPanelOpen;
+    const panel = document.getElementById('campaigns-panel');
+    const btn   = document.getElementById('camp-toggle-btn');
+    panel.classList.toggle('visible', campPanelOpen);
+    btn.classList.toggle('active', campPanelOpen);
+    if (campPanelOpen && document.getElementById('camp-results').children.length <= 1) {
+      loadCampaigns(document.querySelector('.camp-type-btn'), '');
+    }
+  }
+
+  async function loadCampaigns(btnEl, type) {
+    campCurrentType = type;
+    // update active button
+    document.querySelectorAll('.camp-type-btn').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+
+    const resultsEl = document.getElementById('camp-results');
+    const summaryEl = document.getElementById('camp-summary');
+    resultsEl.innerHTML = '<div class="camp-loading">🔍 Buscando campanhas...</div>';
+    summaryEl.innerHTML = '';
+
+    try {
+      const url = BASE + '/campaigns' + (type ? '?type=' + type : '');
+      const r = await fetch(url, { headers: headers() });
+      if (!r.ok) { resultsEl.innerHTML = '<div class="camp-empty">Erro ao carregar campanhas.</div>'; return; }
+      const data = await r.json();
+
+      if (!data.length) {
+        resultsEl.innerHTML = '<div class="camp-empty">Nenhuma campanha enviada nos últimos 90 dias.</div>';
+        return;
+      }
+
+      const total = data.length;
+      const responded = data.filter(d => d.responded).length;
+      const rate = total > 0 ? Math.round(responded / total * 100) : 0;
+      summaryEl.innerHTML = `<strong>${total}</strong> envios — <span style="color:#4ade80">${responded} responderam</span> (${rate}% de retorno)`;
+
+      resultsEl.innerHTML = data.map(d => {
+        const typeLabel = TYPE_LABELS[d.type] || d.type;
+        const typeClass = 'type-label-' + d.type;
+        const badge = d.responded
+          ? '<span class="camp-badge-resp">Respondeu</span>'
+          : '<span class="camp-badge-no">Sem resposta</span>';
+        const replyRow = d.responded && d.responseSnippet
+          ? `<div class="camp-row-reply">💬 "${esc(d.responseSnippet)}${d.responseSnippet.length >= 80 ? '…' : ''}"</div>`
+          : '';
+        return `
+          <div class="camp-row" onclick="openGuest('${d.phone}')" style="cursor:pointer">
+            <div>
+              <div class="camp-row-name">${esc(d.name)}</div>
+              <div class="camp-row-phone">+${d.phone}</div>
+            </div>
+            <div class="camp-row-type ${typeClass}">${typeLabel}</div>
+            <div class="camp-row-date">${d.date}</div>
+            ${badge}
+            ${replyRow}
+          </div>`;
+      }).join('');
+    } catch(e) {
+      resultsEl.innerHTML = '<div class="camp-empty">Erro: ' + e.message + '</div>';
+    }
+  }
+
+  function openGuest(phone) {
+    // Search for the guest and open their profile
+    const input = document.getElementById('search-input');
+    input.value = phone;
+    doSearch(phone);
+    // Scroll to search results
+    input.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
 </script>
 </body>
 </html>
