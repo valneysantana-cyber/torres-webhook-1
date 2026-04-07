@@ -18,8 +18,6 @@
  */
 
 const { OPENAI_API_KEY } = require('../config');
-const { OpenAI } = require('openai');
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 const IG_ACCESS_TOKEN        = process.env.IG_ACCESS_TOKEN;
 const IG_APP_ID              = process.env.IG_APP_ID || '1667526337778117';
