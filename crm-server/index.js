@@ -1,11 +1,11 @@
 'use strict';
 /**
- * crm-server/index.js — TorresGuest CRM API
- * Express + MongoDB · Porta 3001 · VPS Hostgator
+ * crm-server/index.js â TorresGuest CRM API
+ * Express + MongoDB Â· Porta 3001 Â· VPS Hostgator
  *
- * Rotas públicas (sem auth):
- *   GET  /              → Dashboard HTML
- *   GET  /search.html   → Painel de pesquisa de hóspedes
+ * Rotas pÃºblicas (sem auth):
+ *   GET  /              â Dashboard HTML
+ *   GET  /search.html   â Painel de pesquisa de hÃ³spedes
  *   GET  /health
  *
  * Rotas protegidas (x-api-key):
@@ -14,8 +14,8 @@
  *   GET    /guest/:phone/profile
  *   PUT    /guest/:phone/profile
  *   POST   /guest/:phone/checkout
- *   POST   /guests/import          ← importação em lote (Excel)
- *   GET    /guests/search?q=nome   ← busca por nome
+ *   POST   /guests/import          â importaÃ§Ã£o em lote (Excel)
+ *   GET    /guests/search?q=nome   â busca por nome
  */
 require('dotenv').config();
 const express = require('express');
@@ -31,7 +31,7 @@ const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/torresgu
 const API_KEY = process.env.CRM_API_KEY || '';
 let db;
 
-// ─── 1. STATIC (sem auth) ──────────────────────────────────────────────────
+// âââ 1. STATIC (sem auth) ââââââââââââââââââââââââââââââââââââââââââââââââââ
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (_req, res) =>
   res.sendFile(path.join(__dirname, 'public', 'index.html'), err => {
@@ -39,7 +39,7 @@ app.get('/', (_req, res) =>
   })
 );
 
-// ─── 2. AUTH MIDDLEWARE ───────────────────────────────────────────────────
+// âââ 2. AUTH MIDDLEWARE âââââââââââââââââââââââââââââââââââââââââââââââââââ
 app.use((req, res, next) => {
   if (API_KEY && req.headers['x-api-key'] !== API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -47,7 +47,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
+// âââ Helpers ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function calcLevel(n = 0) {
   if (n >= 20) return 'Embaixador';
   if (n >= 10) return 'VIP';
@@ -55,7 +55,7 @@ function calcLevel(n = 0) {
   return 'Visitante';
 }
 
-// ─── 3. ROTAS ─────────────────────────────────────────────────────────────
+// âââ 3. ROTAS âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 app.get('/health', (_req, res) => res.json({ ok: true, ts: new Date() }));
 
@@ -64,7 +64,7 @@ app.post('/guest/:phone/message', async (req, res) => {
   try {
     const { phone } = req.params;
     const { role, content } = req.body;
-    if (!role || !content) return res.status(400).json({ error: 'role e content obrigatórios' });
+    if (!role || !content) return res.status(400).json({ error: 'role e content obrigatÃ³rios' });
     await db.collection('messages').insertOne({ phone, role, content, ts: new Date() });
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -128,19 +128,19 @@ app.post('/guest/:phone/checkout', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /guests/import — importação em lote do Excel (Stays.net)
+// POST /guests/import â importaÃ§Ã£o em lote do Excel (Stays.net)
 app.post('/guests/import', async (req, res) => {
   try {
     const guests = req.body;
-    if (!Array.isArray(guests)) return res.status(400).json({ error: 'Esperado array de hóspedes' });
+    if (!Array.isArray(guests)) return res.status(400).json({ error: 'Esperado array de hÃ³spedes' });
     const col = db.collection('guests');
     let imported = 0, errors = 0;
     for (const g of guests) {
       if (!g.phone) { errors++; continue; }
       try {
         const existing = await col.findOne({ phone: g.phone }) || {};
-        // Só atualiza level/totalNights se os dados do Excel forem maiores
-        // (evita sobrescrever dados já incrementados pelo bot)
+        // SÃ³ atualiza level/totalNights se os dados do Excel forem maiores
+        // (evita sobrescrever dados jÃ¡ incrementados pelo bot)
         const totalNights = Math.max(existing.totalNights || 0, g.totalNights || 0);
         const totalStays  = Math.max(existing.totalStays  || 0, g.totalStays  || 0);
         const level = calcLevel(totalNights);
@@ -165,7 +165,7 @@ app.post('/guests/import', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /guests/search?q=nome — busca por nome para o painel
+// GET /guests/search?q=nome â busca por nome para o painel
 app.get('/guests/search', async (req, res) => {
   try {
     const q = (req.query.q || '').trim();
@@ -182,7 +182,7 @@ app.get('/guests/search', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /guests/stats — totais para o dashboard
+// GET /guests/stats â totais para o dashboard
 app.get('/guests/stats', async (req, res) => {
   try {
     const col = db.collection('guests');
@@ -196,7 +196,7 @@ app.get('/guests/stats', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ─── Boot ─────────────────────────────────────────────────────────────────
+// âââ Boot âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function scheduleCampaigns() {
     const now  = new Date();
     const next = new Date();
@@ -216,6 +216,58 @@ function scheduleCampaigns() {
           }
     }, delayMs);
 }
+
+// ---------------------------------------------------------------------------
+// GET /campaigns?type=TYPE&days=90 — lista hóspedes por campanha + quem respondeu
+// ---------------------------------------------------------------------------
+app.get('/campaigns', async (req, res) => {
+  try {
+    const type = req.query.type || null;
+    const days = parseInt(req.query.days) || 90;
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    const matchCond = type
+      ? { campaignsSent: { $elemMatch: { type, date: { $gte: cutoff } } } }
+      : { campaignsSent: { $elemMatch: { date: { $gte: cutoff } } } };
+
+    const guests = await db.collection('guests')
+      .find(matchCond, { projection: { phone: 1, name: 1, level: 1, campaignsSent: 1 } })
+      .toArray();
+
+    const results = [];
+    for (const g of guests) {
+      if (!Array.isArray(g.campaignsSent)) continue;
+      const entries = g.campaignsSent.filter(c =>
+        c.date >= cutoff && (!type || c.type === type)
+      );
+      for (const camp of entries) {
+        // Check if guest replied after the campaign was sent
+        const campTs = new Date(camp.date + 'T00:00:00Z').getTime();
+        const reply = await db.collection('messages').findOne(
+          { phone: g.phone, role: 'user', ts: { $gt: campTs } },
+          { sort: { ts: 1 }, projection: { text: 1, ts: 1 } }
+        );
+        results.push({
+          phone: g.phone,
+          name: g.name || g.phone,
+          level: g.level || 'Visitante',
+          type: camp.type,
+          date: camp.date,
+          responded: !!reply,
+          responseSnippet: reply ? (reply.text || '').substring(0, 80) : null,
+          responseAt: reply ? new Date(reply.ts).toISOString() : null
+        });
+      }
+    }
+
+    results.sort((a, b) => b.date.localeCompare(a.date));
+    res.json(results);
+  } catch (err) {
+    console.error('[/campaigns]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 async function start() {
   const client = new MongoClient(MONGO_URI);
   await client.connect();
