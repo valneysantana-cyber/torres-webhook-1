@@ -19,8 +19,6 @@
  */
 
 const { OPENAI_API_KEY } = require('../config');
-const { OpenAI } = require('openai');
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 const FB_PAGE_ACCESS_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
 const FB_PAGE_ID           = process.env.FB_PAGE_ID;
@@ -150,29 +148,35 @@ async function handleMessengerWebhook(body) {
  * Gera resposta de Messenger via GPT-4o-mini.
  */
 async function generateMessengerReply(userMessage, senderId) {
-
   const systemPrompt = `VocÃª Ã© o assistente virtual do TorresGuest, hotel boutique em SÃ£o Paulo (SP), Brasil.
 Responda perguntas sobre reservas, localizaÃ§Ã£o, preÃ§os e comodidades de forma simpÃ¡tica e profissional.
 Para reservas ou dÃºvidas complexas, direcione para o WhatsApp: +55 11 99907-3135
 Respostas curtas (mÃ¡x 3 linhas), em portuguÃªs.`;
 
-  const response = await openai.chat.completions.create({
-    model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage }
-    ],
-    max_tokens: 200
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ],
+      max_tokens: 200
+    })
   });
-
-  return response.choices[0].message.content.trim();
+  if (!res.ok) { const t = await res.text(); throw new Error(`[facebook] GPT Messenger reply falhou: ${t}`); }
+  const data = await res.json();
+  return data.choices[0].message.content.trim();
 }
 
 /**
  * Gera legenda para post no Facebook (similar ao Instagram, mas pode ser mais longa).
  */
 async function generateFBCaption(eventHint, availableRooms) {
-
   const roomsText = availableRooms !== null
     ? `Temos ${availableRooms} quarto${availableRooms !== 1 ? 's' : ''} disponÃ­vel${availableRooms !== 1 ? 'is' : ''} agora!`
     : 'Consulte disponibilidade!';
@@ -185,13 +189,21 @@ Regras:
 - Inclua call-to-action para contato via WhatsApp ou mensagem na pÃ¡gina
 - 3-5 hashtags no final`;
 
-  const response = await openai.chat.completions.create({
-    model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
-    messages: [{ role: 'user', content: prompt }],
-    max_tokens: 350
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 350
+    })
   });
-
-  return response.choices[0].message.content.trim();
+  if (!res.ok) { const t = await res.text(); throw new Error(`[facebook] GPT FB caption falhou: ${t}`); }
+  const data = await res.json();
+  return data.choices[0].message.content.trim();
 }
 
 // ---------------------------------------------------------------------------
