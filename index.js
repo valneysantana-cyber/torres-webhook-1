@@ -7,7 +7,7 @@
  * - Boot Express server
  * - Register WhatsApp webhook routes (GET verify + POST receive)
  * - Register Instagram webhook routes (GET verify + POST receive)
- * - Register Messenger webhook routes (GET verify + POST receive)
+ * - Register Messenger webhook routes (GET verify + POST receive
  * - Schedule dailyCheckinDispatch at 08:00 BRT every day
  * - Schedule dailyCheckoutSync at 10:00 BRT every day
  * - Schedule socialMediaPost at 11:00 BRT on Fridays (when rooms available)
@@ -159,7 +159,7 @@ app.post('/internal/send-campaign', async (req, res) => {
 // ---- manual social media post trigger (Instagram + Facebook) --------------
 app.post('/internal/social-post', async (req, res) => {
   if (!checkSecret(req, res)) return;
-  const { eventHint } = req.body;
+  const { eventHint } = req.body || {};
   res.status(200).json({ status: 'social post started' });
   try {
     await runSocialMediaPost(eventHint);
