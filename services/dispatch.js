@@ -9,6 +9,7 @@
  *
  * Trigger via cron — NOT on server boot.
  */
+
 const { DISPATCH_NUMBER } = require('../config')
 const { getCurrentDateBRT, resolveGuestName } = require('../utils/formatters');
 const { fetchTodayAllActiveGuests } = require('./stays');
@@ -29,23 +30,23 @@ async function dailyCheckinDispatch() {
     const { arrivals: checkinsHoje, midStay: emEstadia, listingsMap } = await fetchTodayAllActiveGuests();
 
     const fmtCheckins = checkinsHoje.length === 0
-      ? '  (nenhum check-in hoje)'
+      ? ' (nenhum check-in hoje)'
       : checkinsHoje.map(r => {
           const name = resolveGuestName(r);
           const apt = resolveApartmentName(r, listingsMap);
-                  const rawDate = r.checkOutDate || r.checkoutDate || r.endDate || '?';
-        const checkout = rawDate !== '?' ? rawDate.split('-').reverse().join('/') : '?';
-          return `  • ${name} → ${apt} — ${r.guests || (r.guestsDetails && r.guestsDetails.length) || 1} hóspede${(r.guests || (r.guestsDetails && r.guestsDetails.length) || 1) !== 1 ? 's' : ''} (saída: ${checkout})`;
+          const rawDate = r.checkOutDate || r.checkoutDate || r.endDate || '?';
+          const checkout = rawDate !== '?' ? rawDate.split('-').reverse().join('/') : '?';
+          return ` • ${name} → ${apt} — ${r.guests || (r.guestsDetails && r.guestsDetails.length) || 1} hóspede${(r.guests || (r.guestsDetails && r.guestsDetails.length) || 1) !== 1 ? 's' : ''} (saída: ${checkout})`;
         }).join('\n');
 
     const fmtEstadia = emEstadia.length === 0
-      ? '  (nenhum hóspede em estadia)'
+      ? ' (nenhum hóspede em estadia)'
       : emEstadia.map(r => {
           const name = resolveGuestName(r);
           const apt = resolveApartmentName(r, listingsMap);
-                  const rawDate = r.checkOutDate || r.checkoutDate || r.endDate || '?';
-        const checkout = rawDate !== '?' ? rawDate.split('-').reverse().join('/') : '?';
-          return `  • ${name} → ${apt} — ${r.guests || (r.guestsDetails && r.guestsDetails.length) || 1} hóspede${(r.guests || (r.guestsDetails && r.guestsDetails.length) || 1) !== 1 ? 's' : ''} (saída: ${checkout})`;
+          const rawDate = r.checkOutDate || r.checkoutDate || r.endDate || '?';
+          const checkout = rawDate !== '?' ? rawDate.split('-').reverse().join('/') : '?';
+          return ` • ${name} → ${apt} — ${r.guests || (r.guestsDetails && r.guestsDetails.length) || 1} hóspede${(r.guests || (r.guestsDetails && r.guestsDetails.length) || 1) !== 1 ? 's' : ''} (saída: ${checkout})`;
         }).join('\n');
 
     const mensagem = [
@@ -76,7 +77,6 @@ async function sendEscalationAlert(guestPhone, originalMessage, classification) 
   try {
     const { level, emoji, name } = classification;
     const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-
     const mensagem = [
       `${emoji} *TorresGuest — ALERTA ${level}*`,
       ``,
@@ -100,7 +100,6 @@ async function sendEscalationAlert(guestPhone, originalMessage, classification) 
   }
 }
 
-
 async function sendFrigobarRestockNotification(guestPhone, originalMessage) {
   try {
     const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
@@ -115,6 +114,7 @@ async function sendFrigobarRestockNotification(guestPhone, originalMessage) {
       '',
       '👉 Por favor, acionar a governança para reposição.',
     ].join('\n');
+
     const numbers = DISPATCH_NUMBER.split(',').map(n => n.trim()).filter(Boolean);
     for (const num of numbers) {
       await sendWhatsAppText(num, mensagem);
@@ -125,4 +125,73 @@ async function sendFrigobarRestockNotification(guestPhone, originalMessage) {
   }
 }
 
-module.exports = { dailyCheckinDispatch, sendEscalationAlert, sendFrigobarRestockNotification };
+/**
+ * Notifica o dispatch quando hóspede solicita táxi ou transfer com Robson/aeroporto.
+ * Acionado sempre que shouldSendTransfer() = true.
+ */
+async function sendTransferAlert(guestPhone, originalMessage) {
+  try {
+    const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    const mensagem = [
+      '🚕 *TorresGuest — Solicitação de Táxi / Transfer*',
+      '',
+      `📱 *Hóspede:* +${guestPhone}`,
+      `⏰ *Horário (BRT):* ${now}`,
+      '',
+      '💬 *Mensagem do hóspede:*',
+      `"${originalMessage}"`,
+      '',
+      '👉 Entrar em contato com o hóspede para organizar o transfer/táxi com Robson.',
+    ].join('\n');
+
+    const numbers = DISPATCH_NUMBER.split(',').map(n => n.trim()).filter(Boolean);
+    for (const num of numbers) {
+      await sendWhatsAppText(num, mensagem);
+    }
+    console.log('[dispatch] Alerta de táxi/transfer enviado para', numbers);
+  } catch (err) {
+    console.error('[dispatch] Erro no sendTransferAlert:', err.message);
+  }
+}
+
+/**
+ * Notifica o dispatch quando hóspede solicita algo para o quarto
+ * (toalhas, limpeza, snacks, itens de reposição, etc.).
+ * Acionado para qualquer pedido de serviço ao apartamento.
+ *
+ * @param {string} guestPhone - número do hóspede
+ * @param {string} originalMessage - mensagem original
+ * @param {string} requestType - tipo do pedido (ex: 'Toalhas', 'Limpeza', 'Snacks')
+ */
+async function sendRoomRequestNotification(guestPhone, originalMessage, requestType) {
+  try {
+    const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    const mensagem = [
+      `🛎 *TorresGuest — Pedido ao Quarto: ${requestType}*`,
+      '',
+      `📱 *Hóspede:* +${guestPhone}`,
+      `⏰ *Horário (BRT):* ${now}`,
+      '',
+      '💬 *Mensagem do hóspede:*',
+      `"${originalMessage}"`,
+      '',
+      `👉 Acionar a governança para atender: *${requestType}*.`,
+    ].join('\n');
+
+    const numbers = DISPATCH_NUMBER.split(',').map(n => n.trim()).filter(Boolean);
+    for (const num of numbers) {
+      await sendWhatsAppText(num, mensagem);
+    }
+    console.log(`[dispatch] Alerta de pedido ao quarto (${requestType}) enviado para`, numbers);
+  } catch (err) {
+    console.error('[dispatch] Erro no sendRoomRequestNotification:', err.message);
+  }
+}
+
+module.exports = {
+  dailyCheckinDispatch,
+  sendEscalationAlert,
+  sendFrigobarRestockNotification,
+  sendTransferAlert,
+  sendRoomRequestNotification,
+};
