@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TorresGuest â Bot WhatsApp IA para AnfitriÃµes Airbnb</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: Arial, sans-serif; background: #000; color: #fff; line-height: 1.6; }
+
+  /* ââ UTILITIES ââ */
+  .container { max-width: 600px; margin: 0 auto; padding: 0 20px; }
+  .green  { color: #2ECC71; }
+  .orange { color: #FF7043; }
+  .red    { color: #E74C3C; }
+  .gray   { color: #aaa; }
+  .strike { text-decoration: line-through; color: #E74C3C; }
+  .center { text-align: center; }
+
+  /* ââ LOGO BAR ââ */
+  .logo-bar { background: #111; padding: 14px 20px; text-align: center; border-bottom: 1px solid #222; }
+  .logo-bar .mark { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
+  .logo-bar .mark span { color: #2ECC71; }
+
+  /* ââ HERO ââ */
+  .hero { background: #000; padding: 44px 20px 36px; text-align: center; }
+  .hero .eyebrow { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #888; margin-bottom: 16px; }
+  .hero h1 { font-size: 30px; font-weight: 900; line-height: 1.2; margin-bottom: 20px; }
+  .hero .sub { font-size: 16px; color: #ccc; margin-bottom: 28px; }
+  .hero .video-wrap { background: #111; border-radius: 16px; overflow: hidden; border: 1px solid #222; margin-bottom: 16px; }
+  .hero .video-inner { padding: 56.25% 0 0; position: relative; background: linear-gradient(135deg,#0d0d0d,#1a1a1a); }
+  .hero .video-inner .play-btn { position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:64px; height:64px; background:#2ECC71; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .hero .video-inner .play-btn::after { content:''; border-left:22px solid #fff; border-top:13px solid transparent; border-bottom:13px solid transparent; margin-left:5px; }
+  .hero .video-inner .video-label { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); font-size:11px; color:#555; white-space:nowrap; }
+  .hero .social-proof { display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; color:#888; margin-top:12px; }
+  .hero .avatars { display:flex; }
+  .hero .avatars span { width:28px; height:28px; border-radius:50%; border:2px solid #000; background:#2ECC71; margin-left:-8px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; }
+  .hero .avatars span:first-child { margin-left:0; }
+
+  /* ââ CTA BUTTON ââ */
+  .btn-cta { display:block; width:100%; max-width:480px; margin:0 auto; background:#2ECC71; color:#000; font-size:18px; font-weight:900; text-align:center; padding:18px 24px; border-radius:50px; text-decoration:none; text-transform:uppercase; letter-spacing:0.5px; border:none; cursor:pointer; transition:transform .15s,filter .15s; }
+  .btn-cta:hover { filter:brightness(1.1); transform:translateY(-2px); }
+  .btn-cta.blue { background:#2563EB; color:#fff; }
+  .btn-cta.orange { background:#FF7043; color:#fff; }
+  .btn-cta-wrap { padding: 12px 20px 6px; text-align:center; }
+  .btn-cta-wrap .price-line { font-size:13px; color:#888; margin-top:8px; }
+
+  /* ââ SECTION ââ */
+  section { padding: 48px 0; }
+  section.dark { background: #000; }
+  section.gray-bg { background: #0d0d0d; }
+  section.white-bg { background: #fff; color: #1a1a1a; }
+  .section-title { font-size: 26px; font-weight: 900; text-align: center; margin-bottom: 8px; line-height: 1.2; }
+  .section-sub { font-size: 15px; color: #999; text-align: center; margin-bottom: 32px; }
+  .white-bg .section-sub { color: #666; }
+
+  /* ââ PROBLEM ââ */
+  .problem-list { display:grid; gap:14px; }
+  .problem-item { background:#111; border:1px solid #222; border-radius:12px; padding:16px 18px; display:flex; align-items:flex-start; gap:14px; }
+  .problem-item .icon { font-size:22px; flex-shrink:0; margin-top:2px; }
+  .problem-item .text strong { display:block; font-size:15px; margin-bottom:3px; }
+  .problem-item .text span { font-size:13px; color:#888; }
+
+  /* ââ IMAGINE ââ */
+  .imagine { background:#000; padding: 48px 20px; text-align:center; }
+  .imagine h2 { font-size:28px; font-weight:900; margin-bottom:16px; line-height:1.2; }
+  .imagine p { font-size:16px; color:#ccc; max-width:440px; margin:0 auto 28px; }
+  .chat-demo { background:#111; border-radius:16px; padding:20px; text-align:left; max-width:360px; margin:0 auto; border:1px solid #1a1a1a; }
+  .chat-demo .chat-time { font-size:11px; color:#555; text-align:center; margin-bottom:12px; }
+  .msg { display:flex; flex-direction:column; margin-bottom:10px; }
+  .msg.guest { align-items:flex-start; }
+  .msg.bot   { align-items:flex-end; }
+  .bubble { padding:10px 14px; border-radius:12px; font-size:14px; max-width:85%; line-height:1.4; }
+  .msg.guest .bubble { background:#1e1e1e; color:#ddd; border-bottom-left-radius:2px; }
+  .msg.bot .bubble   { background:#075E54; color:#fff; border-bottom-right-radius:2px; }
+  .msg .name { font-size:10px; color:#555; margin-bottom:4px; padding: 0 4px; }
+  .msg.bot .name { text-align:right; color:#2ECC71; }
+  .chat-typing { display:flex; align-items:center; gap:6px; font-size:12px; color:#555; margin-top:4px; }
+  .dots { display:flex; gap:3px; }
+  .dots span { width:5px; height:5px; background:#555; border-radius:50%; }
+
+  /* ââ HOW IT WORKS ââ */
+  .steps { display:grid; gap:20px; }
+  .step { display:flex; gap:16px; align-items:flex-start; }
+  .step .num { width:44px; height:44px; flex-shrink:0; border-radius:50%; background:#2ECC71; color:#000; font-size:20px; font-weight:900; display:flex; align-items:center; justify-content:center; }
+  .step .content strong { display:block; font-size:16px; margin-bottom:4px; }
+  .step .content span { font-size:14px; color:#999; }
+
+  /* ââ BENEFITS LIST ââ */
+  .benefits { display:grid; gap:0; }
+  .benefit-item { display:flex; align-items:center; gap:16px; padding:16px 0; border-bottom:1px solid #1a1a1a; }
+  .benefit-item:last-child { border-bottom:none; }
+  .benefit-icon { width:44px; height:44px; border-radius:50%; background:#2ECC71; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .benefit-icon.orange-bg { background:#FF7043; }
+  .benefit-icon.blue-bg { background:#3498DB; }
+  .benefit-item .text { font-size:16px; font-weight:600; }
+  .benefit-item .sub { font-size:13px; color:#888; margin-top:2px; }
+  .white-bg .benefit-item { border-bottom-color: #eee; }
+  .white-bg .benefit-item .text { color: #1a1a1a; }
+  .white-bg .benefit-item .sub { color: #666; }
+
+  /* ââ PRICING ââ */
+  .plans { display:grid; gap:16px; }
+  .plan { border-radius:16px; overflow:hidden; border:1px solid #222; }
+  .plan.featured { border-color:#2ECC71; }
+  .plan-header { padding:18px 20px 14px; background:#111; }
+  .plan.featured .plan-header { background:#1a3a2a; }
+  .plan-badge { font-size:11px; font-weight:700; background:#2ECC71; color:#000; padding:3px 10px; border-radius:20px; display:inline-block; margin-bottom:8px; }
+  .plan-name { font-size:20px; font-weight:900; margin-bottom:2px; }
+  .plan-price { font-size:36px; font-weight:900; line-height:1; margin:8px 0 4px; }
+  .plan-price span { font-size:16px; font-weight:400; color:#888; }
+  .plan-annual { font-size:13px; color:#888; }
+  .plan-body { padding:16px 20px 20px; background:#0d0d0d; }
+  .plan.featured .plan-body { background:#0a1a10; }
+  .plan-features { list-style:none; display:grid; gap:10px; margin-bottom:18px; }
+  .plan-features li { font-size:14px; color:#ccc; display:flex; align-items:center; gap:10px; }
+  .plan-features li::before { content:'â'; color:#2ECC71; font-weight:900; font-size:16px; flex-shrink:0; }
+  .plan-features li.no::before { content:'â'; color:#555; }
+  .plan-features li.no { color:#555; }
+
+  /* ââ FOUNDER ââ */
+  .founder { display:flex; flex-direction:column; align-items:center; gap:24px; }
+  .founder-img { width:140px; height:140px; border-radius:50%; background:linear-gradient(135deg,#1a3a2a,#27AE60); display:flex; align-items:center; justify-content:center; font-size:48px; border:3px solid #2ECC71; flex-shrink:0; }
+  .founder-text h3 { font-size:22px; font-weight:900; margin-bottom:4px; }
+  .founder-text .role { font-size:13px; color:#2ECC71; margin-bottom:14px; }
+  .founder-text p { font-size:15px; color:#ccc; line-height:1.7; margin-bottom:12px; }
+  .founder-stats { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px; }
+  .stat { background:#111; border-radius:10px; padding:12px 14px; text-align:center; border:1px solid #222; }
+  .stat .num { font-size:22px; font-weight:900; color:#2ECC71; }
+  .stat .label { font-size:11px; color:#888; margin-top:2px; }
+
+  /* ââ GUARANTEE ââ */
+  .guarantee { background:#000; padding:40px 20px; text-align:center; }
+  .guarantee-badge { width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,#B8860B,#FFD700,#B8860B); display:flex; flex-direction:column; align-items:center; justify-content:center; margin:0 auto 20px; border:3px solid #FFD700; box-shadow:0 0 30px rgba(255,215,0,0.3); }
+  .guarantee-badge .num { font-size:36px; font-weight:900; color:#000; line-height:1; }
+  .guarantee-badge .label { font-size:11px; font-weight:700; color:#000; letter-spacing:1px; }
+  .guarantee h2 { font-size:22px; font-weight:900; color:#FFD700; margin-bottom:10px; }
+  .guarantee p { font-size:15px; color:#ccc; max-width:420px; margin:0 auto; }
+
+  /* ââ TRUST BADGES ââ */
+  .trust-badges { display:grid; gap:10px; }
+  .trust-badge { background:#0d0d0d; border:1px solid #2ECC71; border-radius:12px; padding:14px 18px; display:flex; align-items:center; gap:14px; }
+  .trust-badge .icon { font-size:24px; color:#2ECC71; flex-shrink:0; }
+  .trust-badge strong { display:block; font-size:15px; }
+  .trust-badge span { font-size:13px; color:#888; }
+
+  /* ââ FAQ ââ */
+  .faq { background:#000; }
+  .faq-item { border-bottom:1px solid #1a1a1a; padding:20px 0; }
+  .faq-item:last-child { border-bottom:none; }
+  .faq-q { font-size:18px; font-weight:900; margin-bottom:8px; }
+  .faq-a { font-size:14px; color:#999; line-height:1.6; }
+
+  /* ââ STICKY CTA ââ */
+  .sticky-bar { position:fixed; bottom:0; left:0; right:0; background:#111; border-top:1px solid #222; padding:12px 20px; z-index:100; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .sticky-bar .price { font-size:13px; color:#888; line-height:1.3; }
+  .sticky-bar .price strong { display:block; font-size:17px; color:#2ECC71; }
+  .sticky-bar .btn-cta { max-width:200px; font-size:14px; padding:14px 20px; }
+
+  /* ââ FOOTER ââ */
+  footer { background:#0a0a0a; padding:28px 20px; text-align:center; font-size:12px; color:#444; border-top:1px solid #111; padding-bottom:80px; }
+  footer a { color:#555; text-decoration:none; }
+
+  /* ââ DIVIDER ââ */
+  .divider { height:1px; background:linear-gradient(to right,transparent,#2ECC71,transparent); margin:0; }
+
+  /* ââ COUNTDOWN ââ */
+  .countdown-bar { background:#E74C3C; padding:10px 20px; text-align:center; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:10px; }
+  .countdown-timer { background:rgba(0,0,0,0.3); border-radius:6px; padding:4px 10px; font-size:16px; letter-spacing:2px; }
+
+  @media (min-width: 600px) {
+    .hero h1 { font-size: 38px; }
+    .plans { grid-template-columns: 1fr; }
+    .founder { flex-direction: row; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COUNTDOWN BAR -->
+<div class="countdown-bar" id="countdownBar">
+  â° Oferta especial de lanÃ§amento â termina em: <span class="countdown-timer" id="timer">14:59</span>
+</div>
+
+<!-- LOGO BAR -->
+<div class="logo-bar">
+  <div class="mark">Torres<span>Guest</span></div>
+</div>
+
+<!-- ââ HERO ââ -->
+<section class="dark" style="padding-top:0">
+  <div class="container">
+    <div class="hero">
+      <div class="eyebrow">Bot WhatsApp IA para AnfitriÃµes</div>
+      <h1>Seu Airbnb responde hÃ³spedes sozinho <span class="green">24h por dia</span> â sem vocÃª tocar no celular.</h1>
+      <p class="sub">Assista o vÃ­deo abaixo e veja em 3 minutos como funciona na prÃ¡tica.</p>
+
+      <div class="video-wrap">
+        <div class="video-inner">
+          <div class="play-btn"></div>
+          <div class="video-label">â¶ DemonstraÃ§Ã£o ao vivo â TorresGuest respondendo hÃ³spedes</div>
+        </div>
+      </div>
+
+      <div class="social-proof">
+        <div class="avatars">
+          <span>A</span><span>M</span><span>R</span><span>J</span>
+        </div>
+        <span>+47 anfitriÃµes jÃ¡ automatizados</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-cta-wrap">
+    <a href="#planos" class="btn-cta">Quero automatizar meu Airbnb agora</a>
+    <div class="price-line">A partir de R$ 97/mÃªs Â· Cancele quando quiser</div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ââ O PROBLEMA ââ -->
+<section class="gray-bg">
+  <div class="container">
+    <h2 class="section-title">VocÃª reconhece isso?</h2>
+    <p class="section-sub">A realidade de quem gerencia Airbnb sem automaÃ§Ã£o</p>
+
+    <div class="problem-list">
+      <div class="problem-item">
+        <div class="icon">ð´</div>
+        <div class="text">
+          <strong>Acordando Ã s 3h da manhÃ£</strong>
+          <span>HÃ³spede perguntou a senha do Wi-Fi. VocÃª precisou responder na hora ou perder a avaliaÃ§Ã£o.</span>
+        </div>
+      </div>
+      <div class="problem-item">
+        <div class="icon">ð</div>
+        <div class="text">
+          <strong>Ranking caindo no Airbnb</strong>
+          <span>Cada minuto de atraso na resposta prejudica seu posicionamento na plataforma.</span>
+        </div>
+      </div>
+      <div class="problem-item">
+        <div class="icon">ð¤</div>
+        <div class="text">
+          <strong>Mesmas perguntas todo dia</strong>
+          <span>"Qual o horÃ¡rio de check-in?" "Tem estacionamento?" "Aceita pet?" â infinitas vezes.</span>
+        </div>
+      </div>
+      <div class="problem-item">
+        <div class="icon">ð¸</div>
+        <div class="text">
+          <strong>Perdendo reservas por demora</strong>
+          <span>HÃ³spede nÃ£o esperou sua resposta e reservou no concorrente. VocÃª nem soube.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ââ IMAGINE ââ -->
+<div class="imagine">
+  <div class="container">
+    <h2>Imagine seu hÃ³spede mandando mensagem <span class="green">Ã s 3h da manhÃ£...</span></h2>
+    <p>E receber uma resposta imediata, simpÃ¡tica, com todas as informaÃ§Ãµes do imÃ³vel â enquanto vocÃª dorme tranquilo.</p>
+
+    <div class="chat-demo">
+      <div class="chat-time">hoje, 03:17</div>
+
+      <div class="msg guest">
+        <div class="name">ð  HÃ³spede</div>
+        <div class="bubble">Oi! Qual a senha do Wi-Fi? Acabei de chegar</div>
+      </div>
+
+      <div class="msg bot">
+        <div class="name">TorresGuest IA â</div>
+        <div class="bubble">OlÃ¡! Bem-vindo! ð A senha do Wi-Fi Ã©: <strong>TorresApt2024</strong><br><br>Qualquer outra dÃºvida Ã© sÃ³ chamar. Boa estadia! â­</div>
+      </div>
+
+      <div class="msg guest">
+        <div class="name">ð  HÃ³spede</div>
+        <div class="bubble">Perfeito! Muito obrigado! ð</div>
+      </div>
+
+      <div class="chat-typing">
+        <span>TorresGuest respondeu automaticamente</span>
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+
+    <p style="margin-top:20px;font-size:14px;color:#666;">
+      â Isso Ã© real. Acontece no TorresGuest toda noite.
+    </p>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ââ COMO FUNCIONA ââ -->
+<section class="gray-bg">
+  <div class="container">
+    <h2 class="section-title">Como funciona</h2>
+    <p class="section-sub">Em 48h seu bot estÃ¡ no ar. Sem tÃ©cnico, sem complicaÃ§Ã£o.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <div class="content">
+          <strong>VocÃª nos manda as informaÃ§Ãµes do imÃ³vel</strong>
+          <span>Wi-Fi, regras, check-in, check-out, atraÃ§Ãµes prÃ³ximas â nÃ³s configuramos tudo.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <div class="content">
+          <strong>Ativamos o bot no seu WhatsApp Business</strong>
+          <span>NÃºmero dedicado ao imÃ³vel. A Meta fornece o acesso gratuitamente.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <div class="content">
+          <strong>A IA comeÃ§a a responder seus hÃ³spedes</strong>
+          <span>24h por dia, 7 dias por semana. VocÃª recebe um relatÃ³rio diÃ¡rio no WhatsApp.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ââ O QUE VOCÃ RECEBE ââ -->
+<section class="dark">
+  <div class="container">
+    <h2 class="section-title">O que vocÃª recebe</h2>
+    <p class="section-sub">Tudo incluso na sua assinatura</p>
+
+    <div class="benefits">
+      <div class="benefit-item">
+        <div class="benefit-icon">ð¬</div>
+        <div>
+          <div class="text">Bot WhatsApp IA 24h</div>
+          <div class="sub">Responde mensagens de texto e Ã¡udio automaticamente</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon">ð</div>
+        <div>
+          <div class="text">RelatÃ³rio diÃ¡rio no WhatsApp</div>
+          <div class="sub">Resumo de todas as conversas diretamente para vocÃª</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon orange-bg">ð</div>
+        <div>
+          <div class="text">TransferÃªncia inteligente</div>
+          <div class="sub">Quando o bot nÃ£o sabe, passa para vocÃª com o contexto completo</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon blue-bg">â­</div>
+        <div>
+          <div class="text">MemÃ³ria de hÃ³spedes (CRM)</div>
+          <div class="sub">Lembra preferÃªncias, histÃ³rico e personaliza o atendimento</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon">ð</div>
+        <div>
+          <div class="text">BÃ´nus: livro digital</div>
+          <div class="sub">"AnfitriÃ£o de Sucesso" â R$ 29,90 de valor, grÃ¡tis no plano anual</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon orange-bg">ð ï¸</div>
+        <div>
+          <div class="text">Onboarding completo incluso</div>
+          <div class="sub">Configuramos tudo por vocÃª. Pronto em atÃ© 48 horas.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ââ PRICING ââ -->
+<section class="gray-bg" id="planos">
+  <div class="container">
+    <h2 class="section-title">Escolha seu plano</h2>
+    <p class="section-sub">Sem fidelidade. Cancele quando quiser.</p>
+
+    <div class="plans">
+
+      <!-- BASIC -->
+      <div class="plan">
+        <div class="plan-header">
+          <div class="plan-name">BÃ¡sico</div>
+          <div class="plan-price">R$ 97<span>/mÃªs</span></div>
+          <div class="plan-annual gray">ou R$ 970/ano â 2 meses grÃ¡tis</div>
+        </div>
+        <div class="plan-body">
+          <ul class="plan-features">
+            <li>Bot WhatsApp IA 24h</li>
+            <li>Resposta a textos e Ã¡udios</li>
+            <li>RelatÃ³rio diÃ¡rio no WhatsApp</li>
+            <li>TransferÃªncia automÃ¡tica para vocÃª</li>
+            <li>Onboarding completo incluso</li>
+            <li class="no">MemÃ³ria de hÃ³spedes (CRM)</li>
+            <li class="no">Campanhas de fidelizaÃ§Ã£o</li>
+            <li class="no">Dashboard do anfitriÃ£o</li>
+          </ul>
+          <a href="#contato" class="btn-cta" style="background:#444;color:#fff;font-size:15px;padding:14px 20px">ComeÃ§ar com BÃ¡sico</a>
+        </div>
+      </div>
+
+      <!-- PROFESSIONAL -->
+      <div class="plan featured">
+        <div class="plan-header">
+          <div class="plan-badge">â¦ MAIS POPULAR</div>
+          <div class="plan-name">Profissional</div>
+          <div class="plan-price">R$ 197<span>/mÃªs</span></div>
+          <div class="plan-annual" style="color:#7ec8a0">ou R$ 1.970/ano â 2 meses grÃ¡tis</div>
+        </div>
+        <div class="plan-body">
+          <ul class="plan-features">
+            <li>Tudo do BÃ¡sico, mais:</li>
+            <li>MemÃ³ria de hÃ³spedes (CRM)</li>
+            <li>Campanhas proativas de fidelizaÃ§Ã£o</li>
+            <li>PersonalizaÃ§Ã£o avanÃ§ada de respostas</li>
+            <li>Suporte prioritÃ¡rio via WhatsApp</li>
+            <li>Livro digital grÃ¡tis no plano anual</li>
+            <li class="no">Instagram automÃ¡tico</li>
+            <li class="no">Dashboard visual</li>
+          </ul>
+          <a href="#contato" class="btn-cta" style="font-size:16px;padding:16px 24px">Quero o Profissional â</a>
+        </div>
+      </div>
+
+      <!-- PREMIUM -->
+      <div class="plan">
+        <div class="plan-header">
+          <div class="plan-name">Premium</div>
+          <div class="plan-price">R$ 397<span>/mÃªs</span></div>
+          <div class="plan-annual gray">ou R$ 3.970/ano â 2 meses grÃ¡tis</div>
+        </div>
+        <div class="plan-body">
+          <ul class="plan-features">
+            <li>Tudo do Profissional, mais:</li>
+            <li>Posts automÃ¡ticos no Instagram</li>
+            <li>DMs do Instagram respondidas por IA</li>
+            <li>Dashboard visual do anfitriÃ£o</li>
+            <li>RelatÃ³rios avanÃ§ados de desempenho</li>
+            <li>Livro digital grÃ¡tis em todos os planos</li>
+          </ul>
+          <a href="#contato" class="btn-cta" style="background:#FF7043;color:#fff;font-size:15px;padding:14px 20px">Conhecer o Premium</a>
+        </div>
+      </div>
+
+    </div>
+
+    <p style="text-align:center;font-size:13px;color:#666;margin-top:20px;">
+      NÃ£o tem cartÃ£o de crÃ©dito? Aceitamos Pix. Primeiros 7 dias com garantia total.
+    </p>
+  </div>
+</section>
+
+<!-- ââ GUARANTEE ââ -->
+<div class="guarantee">
+  <div class="container">
+    <div class="guarantee-badge">
+      <div class="num">7</div>
+      <div class="label">DIAS</div>
+    </div>
+    <h2>GARANTIA SEM RISCO</h2>
+    <p>Se em 7 dias o bot nÃ£o estiver funcionando perfeitamente ou vocÃª nÃ£o estiver satisfeito por qualquer motivo, devolvemos 100% do seu dinheiro. Sem perguntas.</p>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ââ TRUST BADGES ââ -->
+<section class="gray-bg">
+  <div class="container">
+    <div class="trust-badges">
+      <div class="trust-badge">
+        <div class="icon">ð</div>
+        <div>
+          <strong>Privacidade garantida</strong>
+          <span>Dados dos seus hÃ³spedes 100% seguros e privados</span>
+        </div>
+      </div>
+      <div class="trust-badge">
+        <div class="icon">â</div>
+        <div>
+          <strong>Tecnologia comprovada</strong>
+          <span>Sistema em produÃ§Ã£o hÃ¡ meses no TorresGuest</span>
+        </div>
+      </div>
+      <div class="trust-badge">
+        <div class="icon">ð±</div>
+        <div>
+          <strong>Sem app para instalar</strong>
+          <span>Funciona direto no seu WhatsApp Business atual</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ââ FOUNDER ââ -->
+<section class="dark" id="sobre">
+  <div class="container">
+    <h2 class="section-title">Quem criou o TorresGuest</h2>
+    <div style="height:24px"></div>
+    <div class="founder">
+      <div class="founder-img">ð </div>
+      <div class="founder-text">
+        <h3>Valney Santana</h3>
+        <div class="role">Fundador Â· AnfitriÃ£o Airbnb Â· Desenvolvedor</div>
+        <p>Fui anfitriÃ£o no Airbnb e senti na pele a dificuldade de responder hÃ³spedes 24h por dia. Em vez de contratar alguÃ©m, criei um bot com IA â e ele funciona melhor do que eu esperava.</p>
+        <p>Depois de meses usando no meu prÃ³prio Airbnb, decidi disponibilizar para outros anfitriÃµes. O TorresGuest jÃ¡ existe e estÃ¡ em produÃ§Ã£o. VocÃª nÃ£o estÃ¡ comprando uma promessa.</p>
+        <div class="founder-stats">
+          <div class="stat"><div class="num">100%</div><div class="label">Resposta automatizada</div></div>
+          <div class="stat"><div class="num">24/7</div><div class="label">Bot ativo</div></div>
+          <div class="stat"><div class="num">48h</div><div class="label">Para configurar</div></div>
+          <div class="stat"><div class="num">5â</div><div class="label">Meta de avaliaÃ§Ã£o</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ââ FAQ ââ -->
+<section class="dark" id="faq">
+  <div class="container">
+    <h2 class="section-title center">FAQ</h2>
+    <div style="height:28px"></div>
+
+    <div class="faq-item">
+      <div class="faq-q">Preciso entender de tecnologia?</div>
+      <div class="faq-a">NÃ£o. VocÃª nos manda o nÃºmero do WhatsApp e as informaÃ§Ãµes do imÃ³vel. Em 48h o bot estÃ¡ funcionando. NÃ³s cuidamos de tudo.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Preciso contratar a Meta ou WhatsApp Business?</div>
+      <div class="faq-a">NÃ£o. NÃ³s cuidamos da ativaÃ§Ã£o na Meta. VocÃª sÃ³ precisa de um nÃºmero de celular dedicado ao imÃ³vel. As primeiras 1.000 mensagens por mÃªs sÃ£o gratuitas.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">O bot responde igual a mim?</div>
+      <div class="faq-a">VocÃª personaliza o tom e as respostas. A IA aprende o jeito da sua hospedagem. E quando nÃ£o sabe algo, transfere automaticamente para vocÃª com o contexto da conversa.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">E se o hÃ³spede fizer uma pergunta difÃ­cil?</div>
+      <div class="faq-a">O bot transfere automaticamente para vocÃª, com todo o histÃ³rico da conversa. VocÃ© vÃª o contexto e responde sÃ³ quando realmente precisa.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Funciona no Booking.com e VRBO tambÃ©m?</div>
+      <div class="faq-a">Sim. O TorresGuest funciona para qualquer plataforma â o que importa Ã© o nÃºmero de WhatsApp do seu imÃ³vel, nÃ£o a plataforma de reserva.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Posso cancelar a qualquer momento?</div>
+      <div class="faq-a">Sim. Plano mensal sem fidelidade. Plano anual com desconto, mas pode cancelar com aviso prÃ©vio de 30 dias.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ââ FINAL CTA ââ -->
+<section class="gray-bg" id="contato">
+  <div class="container center">
+    <h2 class="section-title">Pronto para parar de responder Ã s 3h da manhÃ£?</h2>
+    <p class="section-sub">Teste por 7 dias. Se nÃ£o gostar, devolvemos tudo.</p>
+    <div style="height:16px"></div>
+    <a href="https://wa.me/5521999999999?text=Quero+conhecer+o+TorresGuest" class="btn-cta" style="font-size:18px;padding:20px 32px">
+      Falar com a equipe no WhatsApp â
+    </a>
+    <p style="font-size:12px;color:#555;margin-top:12px;">Resposta em atÃ© 2 horas Â· Seg a SÃ¡b, 9hâ20h</p>
+  </div>
+</section>
+
+<!-- ââ FOOTER ââ -->
+<footer>
+  <div class="container">
+    <div style="font-size:18px;font-weight:900;margin-bottom:6px;">Torres<span style="color:#2ECC71">Guest</span></div>
+    <p>Bot WhatsApp IA para AnfitriÃµes Airbnb Â· Booking.com Â· VRBO</p>
+    <p style="margin-top:8px;"><a href="#">PolÃ­tica de Privacidade</a> Â· <a href="#">Termos de Uso</a> Â· <a href="#">Contato</a></p>
+    <p style="margin-top:8px;">Â© 2026 TorresGuest Â· TorresGuest ServiÃ§os Ltda Â· CNPJ 62.169.624/0001-94</p>
+  </div>
+</footer>
+
+<!-- STICKY BAR -->
+<div class="sticky-bar">
+  <div class="price">
+    <span>A partir de</span>
+    <strong>R$ 97/mÃªs</strong>
+  </div>
+  <a href="#planos" class="btn-cta" style="font-size:13px;padding:12px 18px;max-width:none;flex-shrink:0">Ver planos â</a>
+</div>
+
+<script>
+  // Countdown timer
+  var secs = 14 * 60 + 59;
+  var el = document.getElementById('timer');
+  var interval = setInterval(function() {
+    secs--;
+    if (secs <= 0) { clearInterval(interval); document.getElementById('countdownBar').style.display='none'; return; }
+    var m = Math.floor(secs / 60);
+    var s = secs % 60;
+    el.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }, 1000);
+
+  // Smooth anchor scroll
+  document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      var target = document.querySelector(this.getAttribute('href'));
+      if (target) { e.preventDefault(); target.scrollIntoView({behavior:'smooth', block:'start'}); }
+    });
+  });
+</script>
+</body>
+</html>
