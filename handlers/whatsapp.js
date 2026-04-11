@@ -256,7 +256,8 @@ async function handleIncoming(payload) {
 
         // ---- greeting ---------------------------------------------------
         // Pure greeting only (no '?'). Greeting+question falls through to the AI.
-        const isJustGreeting = shouldSendGreeting(normalized) && !body.includes('?');
+        const words = normalized.trim().split(/\s+/);
+        const isJustGreeting = shouldSendGreeting(normalized) && !body.includes('?') && words.length <= 5;
         if (isJustGreeting) {
           await replyAndSave(from, GREETING_RESPONSE(contactName), { alsoSendAudio: camFromAudio });
           continue;
