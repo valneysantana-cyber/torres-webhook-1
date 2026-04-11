@@ -9,8 +9,9 @@ function stripAccents(t) {
 }
 
 function isNumericSelection(text, ...options) {
-  const digits = text.replace(/[^0-9]/g, '');
-  return digits && options.includes(digits);
+    // Fix: require the option to appear as a standalone number (word boundary).
+      // "5" → match; "PS5" or "PS5 na TV" → NO match (digit not isolated).
+        return options.some(opt => new RegExp('(?:^|\\s)' + opt + '(?:\\s|[.,!?]|$)').test(text.trim()));
 }
 
 function shouldSendMenu(text) {
