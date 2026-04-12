@@ -167,12 +167,15 @@ const FRIGOBAR_ITEMS_REGEX = /(agua com gas|agua sem gas|agua|refri|refrigerante
  */
 function shouldSendFrigobarPix(text) {
   const t = stripAccents(text);
-  // Only trigger for frigobar-specific payment/menu queries — NOT for reservation payment questions
-  const isPaymentOrMenu = /(como.*(pago?|pagar)|preciso.*pag|quanto.*(custa|vale|e)|pix|frigobar.*(preco|cardapio)|cardapio)/.test(t);
+  // Responde com cardapio + PIX para qualquer mencao ao frigobar que NAO seja
+  // pedido de reposicao nem contexto de reserva.
+  // Ex: "tem frigobar?", "o que tem no frigobar", "como eu pago o frigobar", "cardapio"
+  const isFrigobarMention = /frigobar|minibar|mini.?bar/.test(t);
+  const isPaymentOrMenu = /(como.*(pago?|pagar)|preciso.*pag|quanto.*(custa|vale|e)|pix|cardapio)/.test(t);
   const isReservationContext = /(reserva|hosped|estadia|diaria|apartamento|check.?in|check.?out|quarto|bilhete|booking)/.test(t);
-  return isPaymentOrMenu && !isReservationContext;
+  const isRestockIntent = /(repor|reposi|vazio|acabou?|esgotou?|faltou?|sem (bebida|item|agua|cerveja|refrigerante|estoque)|precis.*(repor|abastecer|encher|completar))/.test(t);
+  return (isFrigobarMention || isPaymentOrMenu) && !isReservationContext && !isRestockIntent;
 }
-
 function shouldRequestFrigobarRestock(text) {
   const t = stripAccents(text);
   // Only trigger when user explicitly asks to restock/refill the minibar
