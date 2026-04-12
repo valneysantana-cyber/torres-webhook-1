@@ -167,43 +167,19 @@ const FRIGOBAR_ITEMS_REGEX = /(agua com gas|agua sem gas|agua|refri|refrigerante
  */
 function shouldSendFrigobarPix(text) {
   const t = stripAccents(text);
-
-  const paymentIntent = /(pagar|pagamento|quanto custa|quanto fica|valor|conta|cobrar|cobrado|pago|devo|como pago|como pagar|pix|chave pix|quanto e|quanto eh|paga|preciso pagar|preciso de pagar|como eu pago|como vou pagar|como farei para pagar|vou pagar|tenho que pagar)/;
-  const frigobarRef = /(frigobar|frigebar|minibar|mini.?bar)/;
-
-  // Caso 1: menciona frigobar/minibar + intenção de pagamento
-  if (frigobarRef.test(t) && paymentIntent.test(t)) return true;
-
-  // Caso 2: menciona item específico + intenção de pagamento
-  if (FRIGOBAR_ITEMS_REGEX.test(t) && paymentIntent.test(t)) return true;
-
-  // Caso 3: menciona "consumo" + intenção de pagamento
-  // (ex: "como eu pago o consumo do frigobar", "pagar o consumo")
-  if (/(consumo)/.test(t) && paymentIntent.test(t)) return true;
-
-  // Caso 4: pergunta genérica sobre como pagar — sem contexto específico
-  // No bot do hotel, refere-se sempre ao consumo do quarto (frigobar/snacks)
-  if (/(como eu pago|preciso saber como pago|preciso saber como eu pago|como se paga|como pago aqui)/.test(t)) return true;
-
-  return false;
+  // Only trigger for frigobar-specific payment/menu queries — NOT for reservation payment questions
+  const isPaymentOrMenu = /(como.*(pago?|pagar)|preciso.*pag|quanto.*(custa|vale|e)|pix|frigobar.*(preco|cardapio)|cardapio)/.test(t);
+  const isReservationContext = /(reserva|hosped|estadia|diaria|apartamento|check.?in|check.?out|quarto|bilhete|booking)/.test(t);
+  return isPaymentOrMenu && !isReservationContext;
 }
 
-/**
- * Returns true if the guest wants to restock the frigobar.
- * Works even when the input has accented characters.
- */
 function shouldRequestFrigobarRestock(text) {
   const t = stripAccents(text);
-  const frigobarRef = /(frigobar|frigebar|minibar|mini.?bar|geladeira)/;
-  const restockIntent = /(abastecer|reabastecer|repor|reposicao|recarregar|pode repor|pode abastecer)/;
-  const requestItems = /(me traz|me manda|pode trazer|pode me trazer|traga|preciso de|precisamos de|quero mais|queria mais|faltou|acabou|tem mais|pode colocar)/;
-
-  if (frigobarRef.test(t) && restockIntent.test(t)) return true;
-  if (frigobarRef.test(t) && FRIGOBAR_ITEMS_REGEX.test(t) && !/(pagar|pagamento|pix)/.test(t)) return true;
-  if ((restockIntent.test(t) || requestItems.test(t)) && FRIGOBAR_ITEMS_REGEX.test(t)) return true;
-
-  return false;
+  // Only trigger when user explicitly asks to restock/refill the minibar
+  return /frigobar/.test(t) &&
+    /(repor|reposi|vazio|acabou?|esgotou?|faltou?|sem (bebida|item|agua|cerveja|refrigerante|estoque)|precis.*(repor|abastecer|encher|completar))/.test(t);
 }
+
 
 module.exports = {
   isNumericSelection,
