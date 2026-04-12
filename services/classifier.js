@@ -43,7 +43,7 @@ const CATEGORIES = [
       'sem energia','sem luz','queda de energia',
       'barulho alto','barulho excessivo','barulho demais',
       'nao funciona','n\u00e3o funciona','nao liga','n\u00e3o liga','nao acende','n\u00e3o acende',
-      'geladeira','frigobar','microondas',
+      'geladeira','microondas',
       'tomada','interruptor','lampada','l\u00e2mpada',
       'torneira','pia','entupid','vaso entupid','privada',
       'aquecedor','aquecimento','chuveiro frio','agua gelada','\u00e1gua gelada',
