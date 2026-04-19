@@ -23,8 +23,8 @@ const {
 // Domains we recognize as OTA relay emails
 const OTA_DOMAINS = [
   'guest.booking.com',      // Booking.com relay
-  'airbnb.com',             // Airbnb (TBD)
-  'expedia.com',            // Expedia (TBD)
+  'airbnb.com',             // Airbnb (TBD — awaiting sample)
+  'expedia.com',            // Expedia (TBD — awaiting sample)
   'messages.airbnb.com',    // Airbnb alternate
 ];
 
@@ -124,6 +124,7 @@ async function startEmailMonitor() {
   }
 
   console.log(`[email] Starting IMAP monitor for ${GMAIL_IMAP_USER}...`);
+  console.log(`[email] Password length: ${GMAIL_IMAP_PASSWORD?.length || 0} chars`);
 
   const client = new ImapFlow({
     host: 'imap.gmail.com',
@@ -212,6 +213,14 @@ async function startEmailMonitor() {
 
   } catch (err) {
     console.error('[email] Failed to start IMAP monitor:', err.message);
+    console.error('[email] Error details:', JSON.stringify({
+      code: err.code,
+      responseStatus: err.responseStatus,
+      responseText: err.responseText,
+      authenticationFailed: err.authenticationFailed,
+      command: err.command,
+    }));
+    console.error('[email] Stack:', err.stack?.split('\n').slice(0, 5).join('\n'));
     console.log('[email] Retrying in 60 seconds...');
     setTimeout(() => startEmailMonitor(), 60_000);
   }
