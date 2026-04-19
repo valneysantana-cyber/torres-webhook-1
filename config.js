@@ -1,3 +1,14 @@
+
+  // INSTAGRAM_ACCESS_TOKEN: process.env.INSTAGRAM_ACCESS_TOKEN,
+
+  // ---- Email Integration (IMAP/SMTP) ----------------------------------------
+  GMAIL_IMAP_USER:           process.env.GMAIL_IMAP_USER      || '',
+  GMAIL_IMAP_PASSWORD:       process.env.GMAIL_IMAP_PASSWORD   || '',
+  GMAIL_SMTP_USER:           process.env.GMAIL_SMTP_USER       || '',
+  GMAIL_SMTP_PASSWORD:       process.env.GMAIL_SMTP_PASSWORD   || '',
+  EMAIL_MONITOR_ENABLED:     process.env.EMAIL_MONITOR_ENABLED || 'false',
+  EMAIL_AUTO_REPLY:          process.env.EMAIL_AUTO_REPLY      || 'false',
+};
 'use strict';
 
 process.env.TZ = 'America/Sao_Paulo';
