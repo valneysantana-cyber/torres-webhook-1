@@ -1,10 +1,13 @@
 'use strict';
 
 /**
- * emailMonitor.js — IMAP listener for OTA guest emails
+ * emailMonitor.js â IMAP listener for OTA guest emails + Stays.net reservations
  *
  * Connects to Gmail via IMAP (imapflow), polls for new emails from OTAs
  * (Booking.com, Airbnb, Expedia), and routes them to the parser + responder.
+ *
+ * ALSO monitors Stays.net reservation notification emails (Gmail "AtualizaÃ§Ãµes" tab)
+ * to extract guest contact data (phone, email, dates) and store in MongoDB.
  *
  * Reuses the SAME response rules as WhatsApp (responses/strings.js + utils/matchers.js).
  */
@@ -13,6 +16,16 @@ const { ImapFlow } = require('imapflow');
 const { simpleParser } = require('mailparser');
 const { parseOtaEmail } = require('./emailParser');
 const { handleEmailResponse } = require('./emailResponder');
+
+// ââ Stays.net reservation parsing + MongoDB storage ââ
+const { isStaysEmail, parseStaysReservationEmail } = require('./reservationParser');
+const { isDBConnected } = require('./db');
+let Reservation;
+try {
+  Reservation = require('../models/Reservation');
+} catch (e) {
+  console.warn('[email] Reservation model not available:', e.message);
+}
 
 const {
   GMAIL_IMAP_USER,
@@ -23,8 +36,8 @@ const {
 // Domains we recognize as OTA relay emails
 const OTA_DOMAINS = [
   'guest.booking.com',      // Booking.com relay
-  'airbnb.com',             // Airbnb (TBD — awaiting sample)
-  'expedia.com',            // Expedia (TBD — awaiting sample)
+  'airbnb.com',             // Airbnb (TBD â awaiting sample)
+  'expedia.com',            // Expedia (TBD â awaiting sample)
   'messages.airbnb.com',    // Airbnb alternate
 ];
 
@@ -47,7 +60,53 @@ function classifyOta(fromAddress) {
 }
 
 /**
+ * Process a Stays.net reservation notification email.
+ * Extracts guest data and stores/updates in MongoDB.
+ * @param {Object} parsed - Parsed email from mailparser
+ */
+async function processStaysEmail(parsed) {
+  const subject = parsed.subject || '';
+  const text = parsed.text || '';
+  const html = parsed.html || '';
+
+  console.log('[email] Processing Stays.net reservation email:', subject);
+
+  const reservationData = parseStaysReservationEmail({ subject, text, html });
+
+  if (!reservationData) {
+    console.log('[email] Could not parse Stays.net reservation data');
+    return;
+  }
+
+  console.log('[email] Stays.net reservation parsed:', {
+    guest: reservationData.guestName,
+    phone: reservationData.guestPhoneClean,
+    email: reservationData.guestEmail,
+    booking: reservationData.bookingNumber,
+    staysId: reservationData.staysReservationId,
+    checkin: reservationData.checkin,
+    checkout: reservationData.checkout,
+    accommodation: reservationData.accommodation,
+    totalValue: reservationData.totalValue,
+  });
+
+  // Save to MongoDB
+  if (Reservation && isDBConnected()) {
+    try {
+      const saved = await Reservation.upsertReservation(reservationData);
+      console.log('[email] â Reservation saved to MongoDB:', saved._id);
+    } catch (err) {
+      console.error('[email] â Failed to save reservation to MongoDB:', err.message);
+    }
+  } else {
+    console.log('[email] MongoDB not available â reservation data NOT persisted');
+    console.log('[email] Reservation data (in-memory):', JSON.stringify(reservationData, null, 2));
+  }
+}
+
+/**
  * Process a single email message.
+ * Routes to either Stays.net handler or OTA guest message handler.
  * @param {Object} parsed - Parsed email from mailparser
  */
 async function processEmail(parsed) {
@@ -72,10 +131,17 @@ async function processEmail(parsed) {
 
   console.log('[email] New message:', { from: fromAddress, subject, replyTo });
 
-  // Classify OTA
+  // ââ Route 1: Stays.net reservation notification ââ
+  if (isStaysEmail(fromAddress)) {
+    console.log('[email] Stays.net email detected â routing to reservation parser');
+    await processStaysEmail(parsed);
+    return; // Don't process as OTA guest message
+  }
+
+  // ââ Route 2: OTA guest message (Booking, Airbnb, Expedia) ââ
   const ota = classifyOta(fromAddress);
   if (!ota) {
-    console.log('[email] Not an OTA email, skipping:', fromAddress);
+    console.log('[email] Not an OTA or Stays.net email, skipping:', fromAddress);
     return;
   }
 
@@ -103,6 +169,42 @@ async function processEmail(parsed) {
     bookingNumber: otaData.bookingNumber,
     replyTo: otaData.replyTo,
   });
+
+  // ââ Enrich OTA data with reservation info from MongoDB ââ
+  if (Reservation && isDBConnected()) {
+    try {
+      let reservation = null;
+
+      // Try lookup by guest email first (most reliable for Booking.com relay emails)
+      if (otaData.replyTo) {
+        reservation = await Reservation.findByGuestEmail(otaData.replyTo);
+      }
+      // Fallback: lookup by guest name
+      if (!reservation && otaData.guestName) {
+        reservation = await Reservation.findByGuestName(otaData.guestName);
+      }
+      // Fallback: lookup by booking number
+      if (!reservation && otaData.bookingNumber) {
+        reservation = await Reservation.findByBookingNumber(otaData.bookingNumber);
+      }
+
+      if (reservation) {
+        console.log('[email] â Reservation found in MongoDB:', {
+          guest: reservation.guestName,
+          phone: reservation.guestPhoneClean,
+          checkin: reservation.checkin,
+          checkout: reservation.checkout,
+          property: reservation.property,
+        });
+        // Attach reservation data to otaData for use in responder
+        otaData.reservation = reservation;
+      } else {
+        console.log('[email] No reservation found in MongoDB for this guest');
+      }
+    } catch (err) {
+      console.error('[email] Error looking up reservation:', err.message);
+    }
+  }
 
   // Attach original email threading data for proper reply headers
   otaData.originalMessageId = parsed.messageId || null;
@@ -146,12 +248,12 @@ async function startEmailMonitor() {
 
     // Open INBOX
     const mailbox = await client.mailboxOpen('INBOX');
-    console.log(`[email] INBOX opened — ${mailbox.exists} messages`);
+    console.log(`[email] INBOX opened â ${mailbox.exists} messages`);
 
     // Process new emails function
     async function checkNewEmails() {
       try {
-        // Search for UNSEEN messages from OTA domains
+        // Search for UNSEEN messages
         const uids = await client.search({ seen: false });
         if (!uids.length) return;
 
@@ -170,9 +272,9 @@ async function startEmailMonitor() {
             const buffer = Buffer.concat(chunks);
             const parsed = await simpleParser(buffer);
 
-            // Only process OTA emails
+            // Process OTA emails AND Stays.net reservation emails
             const fromAddress = parsed.from?.value?.[0]?.address || '';
-            if (classifyOta(fromAddress)) {
+            if (classifyOta(fromAddress) || isStaysEmail(fromAddress)) {
               await processEmail(parsed);
               // Mark as seen after processing
               await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true });
