@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * emailResponder.js — AI response + email reply + WhatsApp notification
+ * emailResponder.js â AI response + email reply + WhatsApp notification
  *
  * CORE PRINCIPLE: Reuses the EXACT SAME response rules as WhatsApp.
  * The guest message goes through the same matchers (shouldSendParking,
@@ -12,10 +12,11 @@
  * Flow:
  * 1. Normalize guest message (same as WhatsApp)
  * 2. Run through PT_DISPATCH matchers (same as WhatsApp)
- * 3. If no match → GPT fallback (same prompt as WhatsApp)
+ * 3. If no match â GPT fallback (same prompt as WhatsApp)
  * 4. Send reply email via SMTP to OTA relay address
- * 5. Notify owner via WhatsApp
- * 6. Log to MongoDB
+ * 5. Send WhatsApp directly to guest (if phone available from Stays.net data)
+ * 6. Notify owner via WhatsApp
+ * 7. Log to MongoDB
  */
 
 const nodemailer = require('nodemailer');
@@ -23,7 +24,7 @@ const { normalizeText } = require('../utils/formatters');
 const { getChatGptFallbackReply } = require('../services/openai');
 const { sendWhatsAppText } = require('../services/whatsapp');
 
-// ── Import the EXACT SAME matchers and responses from WhatsApp ──
+// ââ Import the EXACT SAME matchers and responses from WhatsApp ââ
 const {
   shouldSendWifi,
   shouldSendBreakfast,
@@ -67,11 +68,12 @@ const {
   GMAIL_SMTP_PASSWORD,
   EMAIL_AUTO_REPLY,
   HUMAN_NUMBER_PRIMARY,
+  WHATSAPP_GUEST_REPLY,
 } = require('../config');
 
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // EMAIL DISPATCH TABLE (mirrors PT_DISPATCH from handlers/whatsapp.js)
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const EMAIL_DISPATCH = [
   { check: shouldSendWifi,       reply: () => WIFI_RESPONSE },
   { check: shouldSendBreakfast,  reply: () => BREAKFAST_RESPONSE },
@@ -91,9 +93,9 @@ const EMAIL_DISPATCH = [
   { check: shouldSendFrigobarPix, reply: () => FRIGOBAR_PIX_RESPONSE },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Clean response for email (remove WhatsApp-specific emojis/formatting)
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 /**
  * Adapt a WhatsApp response for email format.
@@ -106,9 +108,9 @@ function adaptForEmail(text) {
   return text.replace(/\*([^*]+)\*/g, '$1');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // SMTP Transport (Gmail)
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 let transporter = null;
 
@@ -127,9 +129,9 @@ function getTransporter() {
   return transporter;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Send reply email to OTA relay
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 /**
  * Send an email reply to the OTA relay address.
@@ -168,7 +170,7 @@ async function sendEmailReply(replyTo, responseText, guestName, threading = {}) 
       <p>${responseText.replace(/\n/g, '<br>')}</p>
       <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
       <p style="font-size: 12px; color: #999;">TorresGuest Concierge<br>
-      Hotel em Perdizes - São Paulo/SP</p>
+      Hotel em Perdizes - SÃ£o Paulo/SP</p>
     </div>`,
   };
 
@@ -176,41 +178,85 @@ async function sendEmailReply(replyTo, responseText, guestName, threading = {}) 
   if (originalMessageId) {
     mailOptions.inReplyTo = originalMessageId;
     mailOptions.references = originalMessageId;
-    console.log(`[email] Threading headers set — In-Reply-To: ${originalMessageId}`);
+    console.log(`[email] Threading headers set â In-Reply-To: ${originalMessageId}`);
   }
 
   const info = await smtp.sendMail(mailOptions);
-  console.log(`[email] Reply sent to ${replyTo} — messageId: ${info.messageId}`);
+  console.log(`[email] Reply sent to ${replyTo} â messageId: ${info.messageId}`);
   return info;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// Send WhatsApp directly to guest (using phone from Stays.net reservation data)
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+
+/**
+ * Send a WhatsApp message directly to the guest's phone number.
+ * Phone number comes from Stays.net reservation data stored in MongoDB.
+ *
+ * @param {string} guestPhone - Clean phone number (e.g., "5511999073135")
+ * @param {string} guestName - Guest name for logging
+ * @param {string} responseText - The response to send
+ * @returns {boolean} Whether the message was sent successfully
+ */
+async function sendWhatsAppToGuest(guestPhone, guestName, responseText) {
+  if (!guestPhone) {
+    console.log('[email] No guest phone available â WhatsApp to guest skipped');
+    return false;
+  }
+
+  try {
+    // Add greeting prefix for WhatsApp (more personal than email)
+    const whatsappMessage = `OlÃ¡ ${guestName}! ð\n\n${responseText}\n\n` +
+      `â TorresGuest Concierge\n` +
+      `Hotel em Perdizes - SÃ£o Paulo/SP`;
+
+    await sendWhatsAppText(guestPhone, whatsappMessage);
+    console.log(`[email] â WhatsApp sent to guest ${guestName} (${guestPhone})`);
+    return true;
+  } catch (err) {
+    console.error(`[email] â Failed to send WhatsApp to guest ${guestName}:`, err.message);
+    return false;
+  }
+}
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Notify owner via WhatsApp
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 /**
  * Send a WhatsApp notification to the property owner about the email interaction.
  * @param {Object} otaData - Parsed OTA data
  * @param {string} response - The response that was (or would be) sent
  * @param {boolean} autoReplied - Whether the response was auto-sent
+ * @param {boolean} whatsappSent - Whether WhatsApp was sent to guest
  */
-async function notifyOwner(otaData, response, autoReplied) {
-  const status = autoReplied ? '✅ RESPONDIDO AUTOMATICAMENTE' : '⏳ AGUARDANDO SUA RESPOSTA';
+async function notifyOwner(otaData, response, autoReplied, whatsappSent = false) {
+  const statusParts = [];
+  if (autoReplied) statusParts.push('ð§ Email respondido');
+  if (whatsappSent) statusParts.push('ð± WhatsApp enviado');
+  if (!autoReplied && !whatsappSent) statusParts.push('â³ AGUARDANDO SUA RESPOSTA');
+  const status = statusParts.length > 0
+    ? `â ${statusParts.join(' + ')}`
+    : 'â³ AGUARDANDO SUA RESPOSTA';
+
   const reservaInfo = otaData.bookingNumber
-    ? `\n📋 Reserva: ${otaData.bookingNumber}`
+    ? `\nð Reserva: ${otaData.bookingNumber}`
     : '';
   const dates = otaData.reservation?.checkin
-    ? `\n📅 ${otaData.reservation.checkin} → ${otaData.reservation.checkout}`
+    ? `\nð ${otaData.reservation.checkin} â ${otaData.reservation.checkout}`
     : '';
   const property = otaData.reservation?.property
-    ? `\n🏨 ${otaData.reservation.property}`
+    ? `\nð¨ ${otaData.reservation.property}`
+    : '';
+  const phoneInfo = otaData.reservation?.guestPhoneClean
+    ? `\nð± WhatsApp: +${otaData.reservation.guestPhoneClean}`
     : '';
 
-  const message = `📧 *MENSAGEM VIA ${otaData.ota.toUpperCase()}*\n` +
+  const message = `ð§ *MENSAGEM VIA ${otaData.ota.toUpperCase()}*\n` +
     `${status}\n\n` +
-    `👤 Hóspede: ${otaData.guestName}${reservaInfo}${dates}${property}\n\n` +
-    `💬 Pergunta:\n"${otaData.guestMessage}"\n\n` +
-    `📤 Resposta:\n"${response}"`;
+    `ð¤ HÃ³spede: ${otaData.guestName}${reservaInfo}${dates}${property}${phoneInfo}\n\n` +
+    `ð¬ Pergunta:\n"${otaData.guestMessage}"\n\n` +
+    `ð¤ Resposta:\n"${response}"`;
 
   try {
     // Send to owner's WhatsApp (use HUMAN_NUMBER_PRIMARY without +55 prefix)
@@ -224,12 +270,13 @@ async function notifyOwner(otaData, response, autoReplied) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Main handler: process OTA email and generate response
-// ─────────────────────────────────────────────────────────────────────────────
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 /**
  * Handle an incoming OTA email using the SAME rules as WhatsApp.
+ * Now also sends WhatsApp to guest if phone is available from reservation data.
  * @param {Object} otaData - Parsed OTA data from emailParser
  */
 async function handleEmailResponse(otaData) {
@@ -240,11 +287,11 @@ async function handleEmailResponse(otaData) {
     return;
   }
 
-  // ── Step 1: Normalize (same as WhatsApp handler) ──
+  // ââ Step 1: Normalize (same as WhatsApp handler) ââ
   const normalized = normalizeText(guestMessage);
-  console.log(`[email] Processing: "${guestMessage}" → normalized: "${normalized}"`);
+  console.log(`[email] Processing: "${guestMessage}" â normalized: "${normalized}"`);
 
-  // ── Step 2: Check canned responses (SAME matchers as WhatsApp) ──
+  // ââ Step 2: Check canned responses (SAME matchers as WhatsApp) ââ
   let response = null;
   let matchedRule = null;
 
@@ -256,25 +303,37 @@ async function handleEmailResponse(otaData) {
     }
   }
 
-  // ── Step 3: GPT fallback if no match (SAME prompt as WhatsApp) ──
+  // ââ Step 3: GPT fallback if no match (SAME prompt as WhatsApp) ââ
   if (!response) {
     console.log('[email] No canned match, using GPT fallback...');
-    response = await getChatGptFallbackReply(guestMessage, `email-${ota}`, [], null);
+    // Pass reservation context to GPT for richer responses
+    const reservationContext = otaData.reservation
+      ? `\nContexto da reserva: HÃ³spede ${otaData.reservation.guestName}, ` +
+        `check-in ${otaData.reservation.checkin}, check-out ${otaData.reservation.checkout}, ` +
+        `acomodaÃ§Ã£o ${otaData.reservation.accommodation || 'N/A'}, ` +
+        `${otaData.reservation.numGuests || 1} hÃ³spede(s).`
+      : '';
+    response = await getChatGptFallbackReply(
+      guestMessage + reservationContext,
+      `email-${ota}`,
+      [],
+      null
+    );
     matchedRule = 'gpt-fallback';
   }
 
   if (!response) {
     console.log('[email] No response generated (GPT also failed)');
-    response = 'Obrigado pela sua mensagem! Nossa equipe irá responder em breve.';
+    response = 'Obrigado pela sua mensagem! Nossa equipe irÃ¡ responder em breve.';
     matchedRule = 'default-fallback';
   }
 
-  // ── Adapt for email format ──
+  // ââ Adapt for email format ââ
   const emailResponse = adaptForEmail(response);
 
   console.log(`[email] Response generated (${matchedRule}):`, emailResponse.substring(0, 100));
 
-  // ── Step 4: Auto-reply or just notify ──
+  // ââ Step 4: Auto-reply via email ââ
   const autoReplyEnabled = EMAIL_AUTO_REPLY === 'true';
 
   if (autoReplyEnabled && replyTo) {
@@ -283,23 +342,41 @@ async function handleEmailResponse(otaData) {
           originalMessageId,
           originalSubject,
         });
-      console.log(`[email] ✅ Auto-reply sent to ${replyTo}`);
+      console.log(`[email] â Auto-reply sent to ${replyTo}`);
     } catch (err) {
-      console.error('[email] ❌ Failed to send auto-reply:', err.message);
+      console.error('[email] â Failed to send auto-reply:', err.message);
     }
   } else {
-    console.log('[email] Auto-reply DISABLED — notification only');
+    console.log('[email] Auto-reply DISABLED â uotification only');
   }
 
-  // ── Step 5: Notify owner via WhatsApp ──
-  await notifyOwner(otaData, emailResponse, autoReplyEnabled);
+  // ââ Step 5: Send WhatsApp directly to guest (NEW!) ââ
+  let whatsappSent = false;
+  const whatsappGuestEnabled = WHATSAPP_GUEST_REPLY !== 'false'; // enabled by default
 
-  // ── Step 6: Log to MongoDB (TODO: implement EmailInteraction model) ──
+  if (whatsappGuestEnabled && otaData.reservation?.guestPhoneClean) {
+    whatsappSent = await sendWhatsAppToGuest(
+      otaData.reservation.guestPhoneClean,
+      guestName,
+      response // Use original response (with WhatsApp formatting) for WhatsApp
+    );
+  } else if (!otaData.reservation?.guestPhoneClean) {
+    console.log('[email] No guest phone in reservation data â WhatsApp to guest skipped');
+  } else {
+    console.log('[email] WhatsApp to guest DISABLED (WHATSAPP_GUEST_REPLY=false)');
+  }
+
+  // ââ Step 6: Notify owner via WhatsApp ââ
+  await notifyOwner(otaData, emailResponse, autoReplyEnabled, whatsappSent);
+
+  // ââ Step 7: Log interaction ââ
   console.log('[email] Interaction logged:', {
     ota,
     guestName,
     rule: matchedRule,
     autoReplied: autoReplyEnabled,
+    whatsappSentToGuest: whatsappSent,
+    guestPhone: otaData.reservation?.guestPhoneClean || 'N/A',
     timestamp: new Date().toISOString(),
   });
 }
