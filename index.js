@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * torres-webhook â entry point
+ * torres-webhook Ã¢ÂÂ entry point
  *
  * Responsibilities:
  * - Boot Express server
@@ -28,6 +28,7 @@ const { handleInstagramWebhook, autoPost, getAvailableRooms } = require('./servi
 const { handleMessengerWebhook, generateFBCaption, autoPostToPage } = require('./services/facebook');
 const { generatePostImage, generatePostCaption } = require('./services/instagram');
 const { startEmailMonitor } = require('./services/emailMonitor');
+const { connectDB } = require('./services/db');
 
 const app = express();
 app.use(bodyParser.json());
@@ -122,7 +123,7 @@ app.post('/messenger-webhook', async (req, res) => {
 // INTERNAL ENDPOINTS (protected)
 // ===========================================================================
 
-// VerificaÃ§Ã£o de secret para endpoints internos
+// VerificaÃÂ§ÃÂ£o de secret para endpoints internos
 function checkSecret(req, res) {
   const secret = req.headers['x-dispatch-secret'] || req.query.secret;
   if (DISPATCH_SECRET && secret !== DISPATCH_SECRET) {
@@ -174,7 +175,7 @@ app.post('/internal/social-post', async (req, res) => {
 // ===========================================================================
 
 /**
- * Fluxo completo de post automÃ¡tico no Instagram + Facebook.
+ * Fluxo completo de post automÃÂ¡tico no Instagram + Facebook.
  * 1. Verifica disponibilidade (cancela se hotel lotado)
  * 2. Gera imagem via DALL-E 3
  * 3. Gera legenda via GPT para IG e FB
@@ -182,7 +183,7 @@ app.post('/internal/social-post', async (req, res) => {
  */
 async function runSocialMediaPost(eventHint) {
   const hint = eventHint || getSPEventHint();
-  console.log(`[social] Iniciando post automÃ¡tico: "${hint}"`);
+  console.log(`[social] Iniciando post automÃÂ¡tico: "${hint}"`);
 
   const available = await getAvailableRooms();
 
@@ -194,50 +195,50 @@ async function runSocialMediaPost(eventHint) {
       generateFBCaption(hint, available)
     ]);
 
-    // Publica no Instagram (primÃ¡rio) + Facebook (espelho)
+    // Publica no Instagram (primÃÂ¡rio) + Facebook (espelho)
     const [igPostId, fbPostId] = await Promise.all([
       require('./services/instagram').publishPost(imageUrl, igCaption),
       autoPostToPage(imageUrl, fbCaption)
     ]);
 
-    console.log(`[social] â Posts publicados â IG: ${igPostId} | FB: ${fbPostId || 'n/a'}`);
+    console.log(`[social] Ã¢ÂÂ Posts publicados Ã¢ÂÂ IG: ${igPostId} | FB: ${fbPostId || 'n/a'}`);
   } catch (err) {
-    console.error('[social] â Erro no post automÃ¡tico:', err.message);
+    console.error('[social] Ã¢ÂÂ Erro no post automÃÂ¡tico:', err.message);
     throw err;
   }
 }
 
 /**
- * Retorna um hint de evento/tema para posts automÃ¡ticos.
- * Baseado na Ã©poca do ano (sazonalidade em SÃ£o Paulo).
+ * Retorna um hint de evento/tema para posts automÃÂ¡ticos.
+ * Baseado na ÃÂ©poca do ano (sazonalidade em SÃÂ£o Paulo).
  */
 function getSPEventHint() {
   const month = new Date().getMonth() + 1; // 1-12
   const dayOfWeek = new Date().getDay(); // 0=Dom, 5=Sex
 
   const seasonalHints = {
-    1:  'verÃ£o em SÃ£o Paulo â piscina, praÃ§as e cultura',
-    2:  'Carnaval em SÃ£o Paulo â festas, blocos e agitaÃ§Ã£o',
-    3:  'outono chegando em SP â cultura e gastronomia',
-    4:  'SÃ£o Paulo em abril â museus, teatro e Semana Santa',
-    5:  'Dia das MÃ£es em SÃ£o Paulo â fim de semana especial',
-    6:  'inverno paulistano â conforto, gastronomia e cultura',
-    7:  'fÃ©rias de julho em SÃ£o Paulo â shows e eventos culturais',
-    8:  'agosto em SP â Virada Cultural e eventos na cidade',
-    9:  'primavera em SÃ£o Paulo â parques e vida ao ar livre',
-    10: 'outubro em SP â festivais gastronÃ´micos e eventos',
-    11: 'Black Friday e novembro em SP â compras e passeios',
-    12: 'Natal e RÃ©veillon em SÃ£o Paulo â decoraÃ§Ãµes e festas'
+    1:  'verÃÂ£o em SÃÂ£o Paulo Ã¢ÂÂ piscina, praÃÂ§as e cultura',
+    2:  'Carnaval em SÃÂ£o Paulo Ã¢ÂÂ festas, blocos e agitaÃÂ§ÃÂ£o',
+    3:  'outono chegando em SP Ã¢ÂÂ cultura e gastronomia',
+    4:  'SÃÂ£o Paulo em abril Ã¢ÂÂ museus, teatro e Semana Santa',
+    5:  'Dia das MÃÂ£es em SÃÂ£o Paulo Ã¢ÂÂ fim de semana especial',
+    6:  'inverno paulistano Ã¢ÂÂ conforto, gastronomia e cultura',
+    7:  'fÃÂ©rias de julho em SÃÂ£o Paulo Ã¢ÂÂ shows e eventos culturais',
+    8:  'agosto em SP Ã¢ÂÂ Virada Cultural e eventos na cidade',
+    9:  'primavera em SÃÂ£o Paulo Ã¢ÂÂ parques e vida ao ar livre',
+    10: 'outubro em SP Ã¢ÂÂ festivais gastronÃÂ´micos e eventos',
+    11: 'Black Friday e novembro em SP Ã¢ÂÂ compras e passeios',
+    12: 'Natal e RÃÂ©veillon em SÃÂ£o Paulo Ã¢ÂÂ decoraÃÂ§ÃÂµes e festas'
   };
 
-  return seasonalHints[month] || 'fim de semana em SÃ£o Paulo â explore a cidade';
+  return seasonalHints[month] || 'fim de semana em SÃÂ£o Paulo Ã¢ÂÂ explore a cidade';
 }
 
 // ===========================================================================
 // SCHEDULERS
 // ===========================================================================
 
-/** Agenda relatÃ³rio diÃ¡rio Ã s 08:00 BRT */
+/** Agenda relatÃÂ³rio diÃÂ¡rio ÃÂ s 08:00 BRT */
 function scheduleDailyDispatch() {
   const now  = new Date();
   const next = new Date();
@@ -246,24 +247,24 @@ function scheduleDailyDispatch() {
   const delayMs = next - now;
 
   console.log(
-    `[dispatch] PrÃ³xima execuÃ§Ã£o agendada: ${
+    `[dispatch] PrÃÂ³xima execuÃÂ§ÃÂ£o agendada: ${
       next.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
     } (em ${Math.round(delayMs / 60000)} min)`
   );
 
   setTimeout(async () => {
     try {
-      console.log('[dispatch] Executando relatÃ³rio diÃ¡rio...');
+      console.log('[dispatch] Executando relatÃÂ³rio diÃÂ¡rio...');
       await dailyCheckinDispatch();
     } catch (err) {
-      console.error('[dispatch] Erro na execuÃ§Ã£o agendada', err);
+      console.error('[dispatch] Erro na execuÃÂ§ÃÂ£o agendada', err);
     } finally {
       scheduleDailyDispatch();
     }
   }, delayMs);
 }
 
-/** Agenda sincronizaÃ§Ã£o de checkouts Ã s 10:00 BRT */
+/** Agenda sincronizaÃÂ§ÃÂ£o de checkouts ÃÂ s 10:00 BRT */
 function scheduleCheckoutSync() {
   const now  = new Date();
   const next = new Date();
@@ -272,7 +273,7 @@ function scheduleCheckoutSync() {
   const delayMs = next - now;
 
   console.log(
-    `[checkout] PrÃ³xima sincronizaÃ§Ã£o agendada: ${
+    `[checkout] PrÃÂ³xima sincronizaÃÂ§ÃÂ£o agendada: ${
       next.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
     } (em ${Math.round(delayMs / 60000)} min)`
   );
@@ -281,7 +282,7 @@ function scheduleCheckoutSync() {
     try {
       await dailyCheckoutSync();
     } catch (err) {
-      console.error('[checkout] Erro na sincronizaÃ§Ã£o agendada', err);
+      console.error('[checkout] Erro na sincronizaÃÂ§ÃÂ£o agendada', err);
     } finally {
       scheduleCheckoutSync();
     }
@@ -289,20 +290,20 @@ function scheduleCheckoutSync() {
 }
 
 /**
- * Agenda posts automÃ¡ticos nas redes sociais Ã s 11:00 BRT, toda sexta-feira.
- * Publica sobre eventos/temas de fim de semana em SÃ£o Paulo.
+ * Agenda posts automÃÂ¡ticos nas redes sociais ÃÂ s 11:00 BRT, toda sexta-feira.
+ * Publica sobre eventos/temas de fim de semana em SÃÂ£o Paulo.
  */
 function scheduleSocialMediaPost() {
   const now    = new Date();
   const next   = new Date();
-  const dayOfWeek = next.getDay(); // 0=Dom ... 5=Sex ... 6=SÃ¡b
+  const dayOfWeek = next.getDay(); // 0=Dom ... 5=Sex ... 6=SÃÂ¡b
 
-  // PrÃ³xima sexta-feira Ã s 11:00
-  const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7; // 0 = hoje Ã© sexta â prÃ³xima semana
+  // PrÃÂ³xima sexta-feira ÃÂ s 11:00
+  const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7; // 0 = hoje ÃÂ© sexta Ã¢ÂÂ prÃÂ³xima semana
   next.setDate(next.getDate() + daysUntilFriday);
   next.setHours(11, 0, 0, 0);
 
-  // Se for sexta e ainda nÃ£o passou das 11h, agendar para hoje
+  // Se for sexta e ainda nÃÂ£o passou das 11h, agendar para hoje
   if (dayOfWeek === 5 && now.getHours() < 11) {
     next.setDate(now.getDate());
     next.setHours(11, 0, 0, 0);
@@ -311,19 +312,19 @@ function scheduleSocialMediaPost() {
   const delayMs = next - now;
 
   console.log(
-    `[social] PrÃ³ximo post agendado: ${
+    `[social] PrÃÂ³ximo post agendado: ${
       next.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
     } (em ${Math.round(delayMs / 60000)} min)`
   );
 
   setTimeout(async () => {
     try {
-      console.log('[social] Executando post automÃ¡tico de fim de semana...');
+      console.log('[social] Executando post automÃÂ¡tico de fim de semana...');
       await runSocialMediaPost();
     } catch (err) {
       console.error('[social] Erro no post agendado', err);
     } finally {
-      scheduleSocialMediaPost(); // reagenda para a prÃ³xima sexta
+      scheduleSocialMediaPost(); // reagenda para a prÃÂ³xima sexta
     }
   }, delayMs);
 }
@@ -334,6 +335,7 @@ function scheduleSocialMediaPost() {
 
 const server = app.listen(PORT, () => {
   console.log(`WhatsApp webhook server listening on port ${PORT}`);
+  connectDB();
   startEmailMonitor();
   scheduleDailyDispatch();
   scheduleCheckoutSync();
