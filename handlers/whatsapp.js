@@ -64,6 +64,7 @@ const {
 } = require('../utils/matchers');
 const { fetchReservationByCode } = require('../services/stays');
 const { getChatGptFallbackReply, transcribeAudioBuffer } = require('../services/openai');
+const { getTenantByPhoneId } = require('../services/tenant');
 const { downloadWhatsAppMedia, replyToGuest, markReadAndTyping } = require('../services/whatsapp');
 const { saveMessage, getContext, getProfile, updateProfile } = require('../services/crm');
 const { classifyMessage } = require('../services/classifier');
@@ -197,6 +198,13 @@ async function handleIncoming(payload) {
       const messages = value.messages || [];
       const contactName = value.contacts?.[0]?.profile?.name || '';
 
+      // Multi-tenant: identifica tenant pelo phone_number_id (Meta WhatsApp Business)
+      const phoneNumberId = value.metadata?.phone_number_id || null;
+      const tenant = await getTenantByPhoneId(phoneNumberId);
+      if (tenant && !tenant._isDefault) {
+        console.log(`[tenant] ${phoneNumberId} -> ${tenant.tenantId} (${tenant.name})`);
+      }
+
       for (const message of messages) {
         const from = message.from;
         if (!from) continue;
@@ -324,7 +332,7 @@ async function handleIncoming(payload) {
 
         // ---- AI fallback (contexto + perfil de fidelidade) -------------
         const [context, profile] = await Promise.all([getContext(from), getProfile(from)]);
-        const aiReply = await getChatGptFallbackReply(body, from, context, profile);
+        const aiReply = await getChatGptFallbackReply(body, from, context, profile, tenant);
         if (aiReply) {
           await replyAndSave(from, aiReply, { alsoSendAudio: camFromAudio });
           continue;
