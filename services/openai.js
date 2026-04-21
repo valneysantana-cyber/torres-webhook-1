@@ -105,12 +105,14 @@ function buildProfileBlock(profile) {
  * @param {Array} context Previous messages from CRM (oldest first)
  * @param {Object|null} profile Guest loyalty profile from CRM
  */
-async function getChatGptFallbackReply(userMessage, phone, context = [], profile = null) {
+async function getChatGptFallbackReply(userMessage, phone, context = [], profile = null, tenant = null) {
   if (!OPENAI_API_KEY) { console.error('Missing OPENAI_API_KEY'); return null; }
 
   const historyBlock = buildHistoryBlock(context);
   const profileBlock = buildProfileBlock(profile);
-  const systemContent = profileBlock ? `${SYSTEM_PROMPT}${profileBlock}` : SYSTEM_PROMPT;
+  // Multi-tenant: se tenant tiver systemPrompt customizado, usa-lo; senao fallback para Torres hardcoded
+  const basePrompt = (tenant && tenant.settings && tenant.settings.systemPrompt) || SYSTEM_PROMPT;
+  const systemContent = profileBlock ? `${basePrompt}${profileBlock}` : basePrompt;
   const userInput = `${historyBlock}Telefone: ${phone}\nMensagem: ${userMessage}`;
 
   const response = await fetch('https://api.openai.com/v1/responses', {
