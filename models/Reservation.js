@@ -47,6 +47,9 @@ const reservationSchema = new mongoose.Schema({
     default: 'reservado',
   },
 
+  // ── WhatsApp auto-send tracking (dedupe between emailMonitor and stays_sync) ──
+  autoCheckinSentAt: { type: Date, default: null },
+
   // ── Timestamps ──
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
