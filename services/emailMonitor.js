@@ -346,6 +346,15 @@ async function startEmailMonitor() {
         }
       } catch (err) {
         console.error('[email] Error checking new emails:', err.message);
+        // Zombie connection: imapflow sometimes keeps client.usable=true after
+        // Gmail silently drops the socket. Force-close so the 'close' handler
+        // can trigger a fresh reconnect.
+        if (/Connection not available|not connected|closed/i.test(err.message)) {
+          console.warn('[email] zombie connection detected, forcing close + reconnect');
+          if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
+          try { await client.logout(); } catch {}
+          try { await client.close(); } catch {}
+        }
       }
     }
 
