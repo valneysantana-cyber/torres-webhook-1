@@ -250,8 +250,16 @@ async function startEmailMonitor() {
     const mailbox = await client.mailboxOpen('INBOX');
     console.log(`[email] INBOX opened â ${mailbox.exists} messages`);
 
+    // Track the polling timer so we can cancel it on disconnect
+    let pollingTimer = null;
+
     // Process new emails function
     async function checkNewEmails() {
+      if (!client.usable) {
+        // Connection dropped — stop polling; the 'close' handler will reconnect
+        if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
+        return;
+      }
       try {
         // Search for UNSEEN messages
         const uids = await client.search({ seen: false });
@@ -298,7 +306,7 @@ async function startEmailMonitor() {
     });
 
     // Keep connection alive with periodic polling (fallback for IDLE issues)
-    setInterval(async () => {
+    pollingTimer = setInterval(async () => {
       try {
         await checkNewEmails();
       } catch (err) {
@@ -308,6 +316,7 @@ async function startEmailMonitor() {
 
     // Handle disconnects with auto-reconnect
     client.on('close', () => {
+      if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
       console.log('[email] IMAP connection closed, reconnecting in 30s...');
       setTimeout(() => startEmailMonitor(), 30_000);
     });
