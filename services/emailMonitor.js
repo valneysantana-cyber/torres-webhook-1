@@ -16,7 +16,7 @@ const { ImapFlow } = require('imapflow');
 const { simpleParser } = require('mailparser');
 const { parseOtaEmail } = require('./emailParser');
 const { handleEmailResponse } = require('./emailResponder');
-const { sendCheckinTemplate } = require('./whatsapp');
+const { sendCheckinTemplate, sendWelcomeKit } = require('./whatsapp');
 
 // ââ Stays.net reservation parsing + MongoDB storage ââ
 const { isStaysEmail, parseStaysReservationEmail } = require('./reservationParser');
@@ -146,14 +146,30 @@ async function maybeSendCheckinTemplate(saved, reservationData) {
 
   console.log(`[email][autosend] sending checkin template to ${firstName} (${phone})`);
   const result = await sendCheckinTemplate(phone, firstName, listingName, checkInDate, staysId);
-  if (result.ok) {
-    saved.autoCheckinSentAt = new Date();
-    try { await saved.save(); } catch (e) { console.warn('[email][autosend] save flag failed:', e.message); }
-    console.log(`[email][autosend] OK messageId=${result.messageId}`);
-  } else if (result.skipped) {
-    console.log('[email][autosend] skipped:', result.reason);
-  } else {
-    console.error('[email][autosend] FAIL:', JSON.stringify(result.error).slice(0, 300));
+  if (!result.ok) {
+    if (result.skipped) console.log('[email][autosend] skipped:', result.reason);
+    else console.error('[email][autosend] FAIL:', JSON.stringify(result.error).slice(0, 300));
+    return;
+  }
+  saved.autoCheckinSentAt = new Date();
+  try { await saved.save(); } catch (e) { console.warn('[email][autosend] save flag failed:', e.message); }
+  console.log(`[email][autosend] template OK (${result.variant || 'v1'}) messageId=${result.messageId}`);
+
+  // Welcome kit: long free-text with services, house rules, 24/7 concierge.
+  // The template just opened the service window, so the free-text is delivered
+  // in the same thread (no filtering risk).
+  await new Promise(res => setTimeout(res, 1500));
+  const welcome = await sendWelcomeKit(phone, {
+    firstName,
+    listingName: saved.property || listingName,
+    checkInDate: saved.checkin || reservationData.checkin,
+    nights: saved.numNights,
+    totalValue: saved.totalValue,
+  });
+  if (welcome.ok) {
+    console.log(`[email][autosend] welcome kit OK messageId=${welcome.messageId}`);
+  } else if (!welcome.skipped) {
+    console.error('[email][autosend] welcome kit FAIL:', JSON.stringify(welcome.error).slice(0, 300));
   }
 }
 
