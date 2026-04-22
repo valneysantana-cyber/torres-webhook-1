@@ -16,6 +16,7 @@ const { ImapFlow } = require('imapflow');
 const { simpleParser } = require('mailparser');
 const { parseOtaEmail } = require('./emailParser');
 const { handleEmailResponse } = require('./emailResponder');
+const { sendCheckinTemplate } = require('./whatsapp');
 
 // ââ Stays.net reservation parsing + MongoDB storage ââ
 const { isStaysEmail, parseStaysReservationEmail } = require('./reservationParser');
@@ -91,16 +92,68 @@ async function processStaysEmail(parsed) {
   });
 
   // Save to MongoDB
+  let saved = null;
   if (Reservation && isDBConnected()) {
     try {
-      const saved = await Reservation.upsertReservation(reservationData);
-      console.log('[email] â Reservation saved to MongoDB:', saved._id);
+      saved = await Reservation.upsertReservation(reservationData);
+      console.log('[email] Reservation saved to MongoDB:', saved._id);
     } catch (err) {
-      console.error('[email] â Failed to save reservation to MongoDB:', err.message);
+      console.error('[email] Failed to save reservation to MongoDB:', err.message);
     }
   } else {
-    console.log('[email] MongoDB not available â reservation data NOT persisted');
+    console.log('[email] MongoDB not available — reservation data NOT persisted');
     console.log('[email] Reservation data (in-memory):', JSON.stringify(reservationData, null, 2));
+  }
+
+  // Auto-send check-in template via WhatsApp (realtime, beats the VPS cron)
+  await maybeSendCheckinTemplate(saved, reservationData);
+}
+
+/**
+ * Send the pre-checkin WhatsApp template when we captured a real phone from a
+ * Stays reservation email — but only if:
+ *   1. phone is present and cleaned (not a placeholder / OTA proxy)
+ *   2. check-in is still in the future
+ *   3. we haven't already auto-sent for this reservation (autoCheckinSentAt null)
+ *   4. WA_CHECKIN_AUTO_SEND env flag is enabled
+ *
+ * Marks autoCheckinSentAt on success so the VPS stays_sync doesn't duplicate.
+ */
+async function maybeSendCheckinTemplate(saved, reservationData) {
+  if (process.env.WA_CHECKIN_AUTO_SEND !== 'true') return;
+  if (!saved) return;
+  if (saved.autoCheckinSentAt) {
+    console.log('[email][autosend] already sent previously, skipping');
+    return;
+  }
+  const phone = saved.guestPhoneClean || reservationData.guestPhoneClean;
+  if (!phone || phone.length < 12) {
+    console.log('[email][autosend] no real phone yet, skipping');
+    return;
+  }
+  try {
+    const ci = new Date(saved.checkin || reservationData.checkin);
+    if (!isNaN(ci) && ci.getTime() < Date.now() - 24 * 3600 * 1000) {
+      console.log('[email][autosend] check-in already past, skipping');
+      return;
+    }
+  } catch {}
+
+  const firstName   = (saved.guestName || '').split(' ')[0] || 'Hospede';
+  const listingName = saved.accommodation || saved.property || '-';
+  const staysId     = saved.staysReservationId || reservationData.staysReservationId || '';
+  const checkInDate = saved.checkin || reservationData.checkin;
+
+  console.log(`[email][autosend] sending checkin template to ${firstName} (${phone})`);
+  const result = await sendCheckinTemplate(phone, firstName, listingName, checkInDate, staysId);
+  if (result.ok) {
+    saved.autoCheckinSentAt = new Date();
+    try { await saved.save(); } catch (e) { console.warn('[email][autosend] save flag failed:', e.message); }
+    console.log(`[email][autosend] OK messageId=${result.messageId}`);
+  } else if (result.skipped) {
+    console.log('[email][autosend] skipped:', result.reason);
+  } else {
+    console.error('[email][autosend] FAIL:', JSON.stringify(result.error).slice(0, 300));
   }
 }
 
@@ -250,8 +303,16 @@ async function startEmailMonitor() {
     const mailbox = await client.mailboxOpen('INBOX');
     console.log(`[email] INBOX opened â ${mailbox.exists} messages`);
 
+    // Track the polling timer so we can cancel it on disconnect
+    let pollingTimer = null;
+
     // Process new emails function
     async function checkNewEmails() {
+      if (!client.usable) {
+        // Connection dropped — stop polling; the 'close' handler will reconnect
+        if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
+        return;
+      }
       try {
         // Search for UNSEEN messages
         const uids = await client.search({ seen: false });
@@ -285,6 +346,15 @@ async function startEmailMonitor() {
         }
       } catch (err) {
         console.error('[email] Error checking new emails:', err.message);
+        // Zombie connection: imapflow sometimes keeps client.usable=true after
+        // Gmail silently drops the socket. Force-close so the 'close' handler
+        // can trigger a fresh reconnect.
+        if (/Connection not available|not connected|closed/i.test(err.message)) {
+          console.warn('[email] zombie connection detected, forcing close + reconnect');
+          if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
+          try { await client.logout(); } catch {}
+          try { await client.close(); } catch {}
+        }
       }
     }
 
@@ -298,7 +368,7 @@ async function startEmailMonitor() {
     });
 
     // Keep connection alive with periodic polling (fallback for IDLE issues)
-    setInterval(async () => {
+    pollingTimer = setInterval(async () => {
       try {
         await checkNewEmails();
       } catch (err) {
@@ -308,6 +378,7 @@ async function startEmailMonitor() {
 
     // Handle disconnects with auto-reconnect
     client.on('close', () => {
+      if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
       console.log('[email] IMAP connection closed, reconnecting in 30s...');
       setTimeout(() => startEmailMonitor(), 30_000);
     });
