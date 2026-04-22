@@ -300,8 +300,13 @@ async function startEmailMonitor() {
     console.log('[email] IMAP connected successfully');
 
     // Open INBOX
-    const mailbox = await client.mailboxOpen('INBOX');
-    console.log(`[email] INBOX opened â ${mailbox.exists} messages`);
+    // Gmail filters often route incoming mail straight to user-defined labels,
+    // skipping INBOX. Monitor the actual destination via GMAIL_IMAP_MAILBOX
+    // (default: INBOX). For a "catch-all" setup, use '[Gmail]/All Mail' or the
+    // localized equivalent ('[Gmail]/Todos os e-mails').
+    const mailboxPath = process.env.GMAIL_IMAP_MAILBOX || 'INBOX';
+    const mailbox = await client.mailboxOpen(mailboxPath);
+    console.log(`[email] mailbox '${mailboxPath}' opened — ${mailbox.exists} messages`);
 
     // Track the polling timer so we can cancel it on disconnect
     let pollingTimer = null;
