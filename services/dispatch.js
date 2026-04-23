@@ -3,9 +3,10 @@
 /**
  * dailyCheckinDispatch
  * Sends a WhatsApp summary of ALL active guests to the operations number.
- * Two sections:
- * - 🛎 Check-ins de hoje
- * - 🏨 Em estadia (mid-stay: arrived before today, checkout >= today)
+ * Three sections:
+ * - 🛎 Check-ins de hoje    (arrivals)
+ * - 🏠 Em estadia           (mid-stay: arrived before today, checkout > today)
+ * - 🚪 Check-outs de hoje   (checkout === today, from arrivals or priorArrivals)
  *
  * Trigger via cron — NOT on server boot.
  */
@@ -27,27 +28,30 @@ function resolveApartmentName(r, listingsMap) {
 async function dailyCheckinDispatch() {
   try {
     const today = getCurrentDateBRT();
-    const { arrivals: checkinsHoje, midStay: emEstadia, listingsMap } = await fetchTodayAllActiveGuests();
+    const {
+      arrivals: checkinsHoje,
+      midStay: emEstadia,
+      departures: checkoutsHoje = [],
+      listingsMap,
+    } = await fetchTodayAllActiveGuests();
 
-    const fmtCheckins = checkinsHoje.length === 0
-      ? ' (nenhum check-in hoje)'
-      : checkinsHoje.map(r => {
-          const name = resolveGuestName(r);
-          const apt = resolveApartmentName(r, listingsMap);
-          const rawDate = r.checkOutDate || r.checkoutDate || r.endDate || '?';
-          const checkout = rawDate !== '?' ? rawDate.split('-').reverse().join('/') : '?';
-          return ` • ${name} → ${apt} — ${r.guests || (r.guestsDetails && r.guestsDetails.length) || 1} hóspede${(r.guests || (r.guestsDetails && r.guestsDetails.length) || 1) !== 1 ? 's' : ''} (saída: ${checkout})`;
-        }).join('\n');
+    const formatLine = (r) => {
+      const name = resolveGuestName(r);
+      const apt = resolveApartmentName(r, listingsMap);
+      const rawDate = r.checkOutDate || r.checkoutDate || r.endDate || '?';
+      const checkout = rawDate !== '?' ? rawDate.split('-').reverse().join('/') : '?';
+      const guests = r.guests || (r.guestsDetails && r.guestsDetails.length) || 1;
+      return ` • ${name} → ${apt} — ${guests} hóspede${guests !== 1 ? 's' : ''} (saída: ${checkout})`;
+    };
 
-    const fmtEstadia = emEstadia.length === 0
-      ? ' (nenhum hóspede em estadia)'
-      : emEstadia.map(r => {
-          const name = resolveGuestName(r);
-          const apt = resolveApartmentName(r, listingsMap);
-          const rawDate = r.checkOutDate || r.checkoutDate || r.endDate || '?';
-          const checkout = rawDate !== '?' ? rawDate.split('-').reverse().join('/') : '?';
-          return ` • ${name} → ${apt} — ${r.guests || (r.guestsDetails && r.guestsDetails.length) || 1} hóspede${(r.guests || (r.guestsDetails && r.guestsDetails.length) || 1) !== 1 ? 's' : ''} (saída: ${checkout})`;
-        }).join('\n');
+    const fmtCheckins  = checkinsHoje.length  === 0 ? ' (nenhum check-in hoje)'        : checkinsHoje.map(formatLine).join('\n');
+    const fmtEstadia   = emEstadia.length     === 0 ? ' (nenhum hóspede em estadia)'   : emEstadia.map(formatLine).join('\n');
+    const fmtCheckouts = checkoutsHoje.length === 0 ? ' (nenhum check-out hoje)'       : checkoutsHoje.map(formatLine).join('\n');
+
+    // Total ativo = check-ins + em estadia + check-outs que não são check-ins de hoje
+    const checkinIds = new Set(checkinsHoje.map((r) => String(r._id || r.id)));
+    const checkoutsNotArriving = checkoutsHoje.filter((r) => !checkinIds.has(String(r._id || r.id)));
+    const totalAtivos = checkinsHoje.length + emEstadia.length + checkoutsNotArriving.length;
 
     const mensagem = [
       `🏨 *TorresGuest — Relatório Diário*`,
@@ -59,7 +63,10 @@ async function dailyCheckinDispatch() {
       `🏠 *Em estadia (${emEstadia.length}):*`,
       fmtEstadia,
       ``,
-      `📊 *Total de hóspedes: ${checkinsHoje.length + emEstadia.length}*`,
+      `🚪 *Check-outs de hoje (${checkoutsHoje.length}):*`,
+      fmtCheckouts,
+      ``,
+      `📊 *Total de hóspedes ativos hoje: ${totalAtivos}*`,
       `✅ Relatório gerado automaticamente.`,
     ].join('\n');
 
