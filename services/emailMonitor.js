@@ -363,35 +363,51 @@ async function startEmailMonitor() {
         console.log(`[email] Found ${uids.length} unseen message(s)`);
 
         for (const uid of uids) {
+          // Mark-seen-first strategy: observed bug — the IMAP download / parse /
+          // Mongoose upsert could hang before the Seen flag ever got written, so
+          // the next poll saw the same UID and looped forever. We now commit
+          // Seen on the IMAP side BEFORE doing any heavy work. Losing a
+          // notification on a crash is less bad than perpetually re-processing.
           let parsed = null;
           let fromAddress = '';
           let subject = '';
-          try {
-            const raw = await client.download(uid.toString(), undefined, { uid: true });
-            if (!raw?.content) {
-              try { await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true }); } catch {}
-              continue;
-            }
+          let markedSeen = false;
+          const markSeen = async () => {
+            if (markedSeen) return;
+            try { await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true }); markedSeen = true; }
+            catch (e) { console.warn(`[email] markSeen failed UID=${uid}:`, e.message); }
+          };
 
-            const chunks = [];
-            for await (const chunk of raw.content) chunks.push(chunk);
-            parsed = await simpleParser(Buffer.concat(chunks));
+          try {
+            // 1) Download + parse with a TIGHT timeout — if IMAP is slow we skip.
+            const prefetch = await withTimeout((async () => {
+              const raw = await client.download(uid.toString(), undefined, { uid: true });
+              if (!raw?.content) return null;
+              const chunks = [];
+              for await (const chunk of raw.content) chunks.push(chunk);
+              return simpleParser(Buffer.concat(chunks));
+            })(), 15_000, `download+parse UID ${uid}`);
+
+            if (!prefetch) { await markSeen(); continue; }
+            parsed = prefetch;
             fromAddress = parsed.from?.value?.[0]?.address || '';
             subject = parsed.subject || '';
 
             const ota  = classifyOta(fromAddress);
             const stay = isStaysEmail(fromAddress);
-            if (!ota && !stay) {
-              await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true });
-              continue;
-            }
+            if (!ota && !stay) { await markSeen(); continue; }
 
-            await withTimeout(processEmail(parsed), PROCESS_TIMEOUT_MS, `UID ${uid} ${fromAddress}`);
-            await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true });
+            // 2) Commit Seen BEFORE the heavy processing. If the webhook/Meta
+            // call hangs, we never loop on this UID again.
+            await markSeen();
+
+            // 3) Heavy processing with its own timeout. Errors are logged but
+            // do not retry (UID is already Seen).
+            await withTimeout(processEmail(parsed), PROCESS_TIMEOUT_MS, `processEmail UID ${uid} ${fromAddress}`);
           } catch (err) {
-            console.error(`[email] Error processing UID=${uid} from=${fromAddress} subj="${subject.slice(0, 80)}":`, err.message);
+            console.error(`[email] Error UID=${uid} from=${fromAddress} subj="${subject.slice(0, 80)}":`, err.message);
             if (err.stack) console.error('[email] stack:', err.stack.split('\n').slice(0, 6).join(' | '));
-            try { await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true }); } catch {}
+            await markSeen();
           }
         }
       } catch (err) {
