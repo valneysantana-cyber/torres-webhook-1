@@ -326,6 +326,22 @@ async function startEmailMonitor() {
 
     // Track the polling timer so we can cancel it on disconnect
     let pollingTimer = null;
+    // Semaphore: prevent concurrent checkNewEmails invocations. Without this,
+    // a slow processEmail() call keeps the previous poll alive while the next
+    // 60s tick fires another poll — both iterate the same unseen UIDs in
+    // parallel, neither ever reaching the final messageFlagsAdd cleanly.
+    let checking = false;
+
+    // Per-message hard timeout. processEmail() talks to Mongo + Meta API +
+    // OpenAI; any of those hanging indefinitely would starve the monitor.
+    const PROCESS_TIMEOUT_MS = 45_000;
+    const withTimeout = (promise, ms, label) => {
+      let timer;
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`timeout ${ms}ms (${label})`)), ms); }),
+      ]).finally(() => clearTimeout(timer));
+    };
 
     // Process new emails function
     async function checkNewEmails() {
@@ -334,6 +350,11 @@ async function startEmailMonitor() {
         if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
         return;
       }
+      if (checking) {
+        console.log('[email] previous checkNewEmails still running, skipping this tick');
+        return;
+      }
+      checking = true;
       try {
         // Search for UNSEEN messages
         const uids = await client.search({ seen: false });
@@ -348,7 +369,6 @@ async function startEmailMonitor() {
           try {
             const raw = await client.download(uid.toString(), undefined, { uid: true });
             if (!raw?.content) {
-              // No content — still mark seen to avoid reprocessing forever
               try { await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true }); } catch {}
               continue;
             }
@@ -362,17 +382,13 @@ async function startEmailMonitor() {
             const ota  = classifyOta(fromAddress);
             const stay = isStaysEmail(fromAddress);
             if (!ota && !stay) {
-              // Not a message we respond to. Mark seen so we never revisit.
               await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true });
               continue;
             }
 
-            await processEmail(parsed);
+            await withTimeout(processEmail(parsed), PROCESS_TIMEOUT_MS, `UID ${uid} ${fromAddress}`);
             await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true });
           } catch (err) {
-            // Critical: log full stack + from/subject context so we can diagnose
-            // silent parse/dispatch failures. ALWAYS mark seen afterwards so a
-            // poison-pill message can't trap the monitor in an infinite poll loop.
             console.error(`[email] Error processing UID=${uid} from=${fromAddress} subj="${subject.slice(0, 80)}":`, err.message);
             if (err.stack) console.error('[email] stack:', err.stack.split('\n').slice(0, 6).join(' | '));
             try { await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true }); } catch {}
@@ -380,15 +396,14 @@ async function startEmailMonitor() {
         }
       } catch (err) {
         console.error('[email] Error checking new emails:', err.message);
-        // Zombie connection: imapflow sometimes keeps client.usable=true after
-        // Gmail silently drops the socket. Force-close so the 'close' handler
-        // can trigger a fresh reconnect.
         if (/Connection not available|not connected|closed/i.test(err.message)) {
           console.warn('[email] zombie connection detected, forcing close + reconnect');
           if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
           try { await client.logout(); } catch {}
           try { await client.close(); } catch {}
         }
+      } finally {
+        checking = false;
       }
     }
 
