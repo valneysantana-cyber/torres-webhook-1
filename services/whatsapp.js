@@ -135,6 +135,45 @@ async function replyToGuest(to, text, options = {}) {
 }
 
 /**
+ * Safe date formatters for date-only strings ("YYYY-MM-DD").
+ *
+ * Why not `new Date(isoDate).toLocaleDateString`: the Date constructor
+ * interprets a bare YYYY-MM-DD as midnight UTC. Any server running in a
+ * negative-offset timezone (e.g. BRT = GMT-3) then renders the PREVIOUS
+ * day when formatting in 'pt-BR'. Real bug observed on VPS: Stays
+ * reservation for 2026-06-30 displayed as "29 de junho de 2026".
+ *
+ * We parse the YYYY-MM-DD manually and build Date.UTC(y, m-1, d, 12) —
+ * noon UTC — which is safely the same calendar day in any timezone from
+ * UTC-11 to UTC+11.
+ */
+const MONTHS_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const WEEKDAYS_PT = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+
+function parseDateOnly(value) {
+  if (!value) return null;
+  if (value instanceof Date && !isNaN(value)) return value;
+  const str = String(value).slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
+  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 12));
+  const d = new Date(value);
+  return isNaN(d) ? null : d;
+}
+
+function formatDatePTShort(value) {
+  const d = parseDateOnly(value);
+  if (!d) return '';
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return `${dd} de ${MONTHS_PT[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
+}
+
+function formatDatePTLong(value) {
+  const d = parseDateOnly(value);
+  if (!d) return '';
+  return `${WEEKDAYS_PT[d.getUTCDay()]}, ${d.getUTCDate()} de ${MONTHS_PT[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
+}
+
+/**
  * Sends the pre-checkin template (Meta-approved UTILITY).
  *
  * Works with two template shapes:
@@ -163,9 +202,7 @@ async function sendCheckinTemplate(phone, firstName, listingName, checkInDate, s
   const isV2         = /_v2$|v2_|V2/.test(templateName);
 
   try {
-    const dateBR = new Date(checkInDate).toLocaleDateString('pt-BR', {
-      day: '2-digit', month: 'long', year: 'numeric',
-    });
+    const dateBR = formatDatePTShort(checkInDate);
     const components = [{
       type: 'body',
       parameters: [
@@ -236,9 +273,7 @@ async function sendWelcomeKit(phone, data = {}) {
   if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) return { skipped: true, reason: 'missing credentials' };
   const firstName   = data.firstName || 'Hospede';
   const listingName = data.listingName || 'nosso flat';
-  const dateBR = data.checkInDate
-    ? new Date(data.checkInDate).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-    : '';
+  const dateBR = data.checkInDate ? formatDatePTLong(data.checkInDate) : '';
   const nightsLine = data.nights ? ` por ${data.nights} dia${data.nights > 1 ? 's' : ''}` : '';
   const valueLine  = data.totalValue ? `, no valor de ${data.totalValue}` : '';
 
