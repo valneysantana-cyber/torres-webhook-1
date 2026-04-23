@@ -138,8 +138,24 @@ async function fetchTodayAllActiveGuests() {
     return checkout > today;
   });
 
-  // Fetch full details for all reservations in parallel (to get client names)
-  const all = [...arrivals, ...midStay];
+  // Check-outs de hoje: reservas (de qualquer grupo) cujo checkout === today.
+  // Inclui 1) quem chegou hoje e sai hoje (diária), 2) quem chegou antes e sai hoje.
+  // Dedup por _id para não contar duas vezes nos totais.
+  const departureCandidates = [...arrivals, ...priorArrivals].filter((r) => {
+    const checkout = (r.checkOutDate || r.checkout || '').split('T')[0];
+    return checkout === today;
+  });
+  const seenDepartures = new Set();
+  const departures = departureCandidates.filter((r) => {
+    const id = String(r._id || r.id || '');
+    if (seenDepartures.has(id)) return false;
+    seenDepartures.add(id);
+    return true;
+  });
+
+  // Fetch full details for all reservations in parallel (to get client names).
+  // Order matters so we can slice back to each bucket.
+  const all = [...arrivals, ...midStay, ...departures];
   const enriched = await Promise.all(
     all.map(async (r) => {
       const mongoId = String(r._id || r.id || '');
@@ -152,10 +168,16 @@ async function fetchTodayAllActiveGuests() {
   // Fetch listings name map in parallel with the above
   const listingsMap = await fetchListingsMap();
 
-  const enrichedArrivals = enriched.slice(0, arrivals.length);
-  const enrichedMidStay  = enriched.slice(arrivals.length);
+  const enrichedArrivals   = enriched.slice(0, arrivals.length);
+  const enrichedMidStay    = enriched.slice(arrivals.length, arrivals.length + midStay.length);
+  const enrichedDepartures = enriched.slice(arrivals.length + midStay.length);
 
-  return { arrivals: enrichedArrivals, midStay: enrichedMidStay, listingsMap };
+  return {
+    arrivals:   enrichedArrivals,
+    midStay:    enrichedMidStay,
+    departures: enrichedDepartures,
+    listingsMap,
+  };
 }
 
 async function fetchTodayCheckinReservations() {
