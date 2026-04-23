@@ -342,27 +342,40 @@ async function startEmailMonitor() {
         console.log(`[email] Found ${uids.length} unseen message(s)`);
 
         for (const uid of uids) {
+          let parsed = null;
+          let fromAddress = '';
+          let subject = '';
           try {
             const raw = await client.download(uid.toString(), undefined, { uid: true });
-            if (!raw?.content) continue;
+            if (!raw?.content) {
+              // No content — still mark seen to avoid reprocessing forever
+              try { await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true }); } catch {}
+              continue;
+            }
 
-            // Collect stream chunks
             const chunks = [];
-            for await (const chunk of raw.content) {
-              chunks.push(chunk);
-            }
-            const buffer = Buffer.concat(chunks);
-            const parsed = await simpleParser(buffer);
+            for await (const chunk of raw.content) chunks.push(chunk);
+            parsed = await simpleParser(Buffer.concat(chunks));
+            fromAddress = parsed.from?.value?.[0]?.address || '';
+            subject = parsed.subject || '';
 
-            // Process OTA emails AND Stays.net reservation emails
-            const fromAddress = parsed.from?.value?.[0]?.address || '';
-            if (classifyOta(fromAddress) || isStaysEmail(fromAddress)) {
-              await processEmail(parsed);
-              // Mark as seen after processing
+            const ota  = classifyOta(fromAddress);
+            const stay = isStaysEmail(fromAddress);
+            if (!ota && !stay) {
+              // Not a message we respond to. Mark seen so we never revisit.
               await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true });
+              continue;
             }
+
+            await processEmail(parsed);
+            await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true });
           } catch (err) {
-            console.error('[email] Error processing message:', err.message);
+            // Critical: log full stack + from/subject context so we can diagnose
+            // silent parse/dispatch failures. ALWAYS mark seen afterwards so a
+            // poison-pill message can't trap the monitor in an infinite poll loop.
+            console.error(`[email] Error processing UID=${uid} from=${fromAddress} subj="${subject.slice(0, 80)}":`, err.message);
+            if (err.stack) console.error('[email] stack:', err.stack.split('\n').slice(0, 6).join(' | '));
+            try { await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true }); } catch {}
           }
         }
       } catch (err) {
