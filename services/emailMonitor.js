@@ -115,12 +115,15 @@ async function processStaysEmail(parsed) {
  *   1. phone is present and cleaned (not a placeholder / OTA proxy)
  *   2. check-in is still in the future
  *   3. we haven't already auto-sent for this reservation (autoCheckinSentAt null)
- *   4. WA_CHECKIN_AUTO_SEND env flag is enabled
+ *   4. WA_CHECKIN_AUTO_SEND is not explicitly set to 'false' (default is ON)
  *
  * Marks autoCheckinSentAt on success so the VPS stays_sync doesn't duplicate.
  */
 async function maybeSendCheckinTemplate(saved, reservationData) {
-  if (process.env.WA_CHECKIN_AUTO_SEND !== 'true') return;
+  if (process.env.WA_CHECKIN_AUTO_SEND === 'false') {
+    console.log('[email][autosend] disabled via WA_CHECKIN_AUTO_SEND=false');
+    return;
+  }
   if (!saved) return;
   if (saved.autoCheckinSentAt) {
     console.log('[email][autosend] already sent previously, skipping');
@@ -299,6 +302,11 @@ async function startEmailMonitor() {
   }
 
   console.log(`[email] Starting IMAP monitor for ${GMAIL_IMAP_USER}...`);
+
+  const autoSend = process.env.WA_CHECKIN_AUTO_SEND === 'false' ? 'OFF' : 'ON';
+  const tplName  = process.env.WA_CHECKIN_TEMPLATE_NAME || 'checkin_link_pt (default)';
+  const pubUrl   = process.env.PUBLIC_URL || 'https://conciergecloud.com.br (default)';
+  console.log(`[email][autosend config] auto_send=${autoSend} template=${tplName} public_url=${pubUrl}`);
 
   const client = new ImapFlow({
     host: 'imap.gmail.com',
