@@ -48,10 +48,11 @@ async function dailyCheckinDispatch() {
     const fmtEstadia   = emEstadia.length     === 0 ? ' (nenhum hóspede em estadia)'   : emEstadia.map(formatLine).join('\n');
     const fmtCheckouts = checkoutsHoje.length === 0 ? ' (nenhum check-out hoje)'       : checkoutsHoje.map(formatLine).join('\n');
 
-    // Total ativo = check-ins + em estadia + check-outs que não são check-ins de hoje
-    const checkinIds = new Set(checkinsHoje.map((r) => String(r._id || r.id)));
-    const checkoutsNotArriving = checkoutsHoje.filter((r) => !checkinIds.has(String(r._id || r.id)));
-    const totalAtivos = checkinsHoje.length + emEstadia.length + checkoutsNotArriving.length;
+    // Total ativo = quem fica no hotel após o fim do dia.
+    // Exclui check-outs (já de saída) e diárias (entra+sai no mesmo dia).
+    const departureIds = new Set(checkoutsHoje.map((r) => String(r._id || r.id)));
+    const checkinsAtivos = checkinsHoje.filter((r) => !departureIds.has(String(r._id || r.id)));
+    const totalAtivos = checkinsAtivos.length + emEstadia.length;
 
     const mensagem = [
       `🏨 *TorresGuest — Relatório Diário*`,
