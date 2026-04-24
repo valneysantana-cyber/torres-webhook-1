@@ -396,7 +396,12 @@ async function startEmailMonitor() {
       checkingStartedAt = Date.now();
       lastProgressAt = Date.now();
       try {
-        const uids = await withTimeout(client.search({ seen: false }), SEARCH_TIMEOUT_MS, 'search unseen');
+        // CRITICAL: pass { uid: true } so search returns real UIDs (3654, 3655),
+        // not sequence numbers (1, 2). Without this, markSeen/download/messageFlagsAdd
+        // below — which all pass { uid: true } — target UIDs that don't exist,
+        // are silently no-op'd by IMAP, and the same seq-numbered "UIDs" keep
+        // coming back on every poll. Observed bug 24/04.
+        const uids = await withTimeout(client.search({ seen: false }, { uid: true }), SEARCH_TIMEOUT_MS, 'search unseen');
         if (!uids || !uids.length) return;
 
         console.log(`[email] Found ${uids.length} unseen message(s): [${uids.join(',')}]`);
