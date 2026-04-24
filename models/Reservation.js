@@ -15,10 +15,15 @@
 const mongoose = require('mongoose');
 
 const reservationSchema = new mongoose.Schema({
+  // ── Multi-tenant routing ──
+  tenantId: { type: String, default: 'torres', index: true },   // tenant dono desta reserva
+  listingStaysId: { type: String, default: null, index: true }, // Stays ObjectId do listing (resolve owner)
+  listingName: { type: String, default: null },
+
   // ── Guest Info ──
   guestName: { type: String, required: true, index: true },
   guestPhone: { type: String, default: null },       // +55 11 99907-3135
-  guestPhoneClean: { type: String, default: null },   // 5511999073135 (ready for WhatsApp API)
+  guestPhoneClean: { type: String, default: null, index: true },   // 5511999073135 (ready for WhatsApp API)
   guestEmail: { type: String, default: null },        // relay email (xxx@guest.booking.com)
 
   // ── Reservation Details ──

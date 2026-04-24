@@ -10,6 +10,92 @@ const {
   HUMAN_NUMBER_SECONDARY,
 } = require('../config');
 
+/**
+ * Compõe o system prompt a partir de tenant.settings estruturados.
+ * Usado quando o tenant NÃO é torres (que mantém SYSTEM_PROMPT hardcoded)
+ * e NÃO tem settings.systemPrompt custom (override manual).
+ *
+ * Campos consumidos em tenant.settings:
+ *   brandName, address, checkInTime, checkOutTime,
+ *   breakfast, parking, reception, cleaning, internet, frigobar, restaurant, transport,
+ *   acceptsPets, acceptsPetsNote, poolGymHours,
+ *   reservationContact, reservationWebsite, humanEscalationNumber,
+ *   contextNotes (array), customFaqs (array), signatureName
+ */
+function buildSystemPromptFromSettings(tenant) {
+  const s = (tenant && tenant.settings) || {};
+  const brand = s.brandName || 'nosso concierge';
+  const lines = [];
+  lines.push(`Você é o concierge virtual da ${brand}, com atendimento humano, cordial, elegante e objetivo.`);
+  lines.push('Responda sempre no mesmo idioma do hóspede (português, inglês ou espanhol).');
+  lines.push('Nunca invente informações.');
+  lines.push('');
+  lines.push('Contexto confiável da operação:');
+  if (Array.isArray(s.contextNotes)) for (const n of s.contextNotes) lines.push(`- ${n}`);
+  if (s.address) lines.push(`- Endereço oficial: ${s.address}.`);
+  if (s.checkInTime) lines.push(`- Check-in: a partir das ${s.checkInTime}.`);
+  if (s.checkOutTime) lines.push(`- Check-out: até ${s.checkOutTime}.`);
+  if (s.breakfast) {
+    const b = s.breakfast;
+    if (b.enabled === false || b.type === 'none') lines.push('- Café da manhã: NÃO é oferecido na propriedade.');
+    else {
+      const prefix = b.type === 'included' ? 'INCLUSO na reserva' : b.type === 'paid' ? 'disponível (cobrança extra)' : 'disponível';
+      lines.push(`- Café da manhã: ${prefix}${b.hours ? ', ' + b.hours : ''}${b.location ? ', no ' + b.location : ''}.${b.note ? ' ' + b.note : ''}`);
+    }
+  }
+  if (s.restaurant && s.restaurant.available && s.restaurant.mealsBesidesBreakfast) {
+    lines.push(`- Restaurante: ${s.restaurant.note || 'serve almoço e jantar sob consulta.'}`);
+  }
+  if (s.poolGymHours) lines.push(`- Piscina e academia: ${s.poolGymHours}.`);
+  if (s.reception) {
+    const r = s.reception;
+    const map = { '24h-physical': 'Recepção e segurança 24 horas.', 'digital-facial': 'Check-in digital com reconhecimento facial.', 'digital-code': 'Check-in digital via código enviado no WhatsApp.', 'scheduled': 'Recepção em horário agendado.' };
+    lines.push(`- ${map[r.type] || r.note || 'Recepção disponível.'}${r.note && map[r.type] ? ' ' + r.note : ''}`);
+  }
+  if (s.parking) {
+    const p = s.parking;
+    if (p.type === 'none') lines.push('- Estacionamento: NÃO oferecido no prédio.');
+    else if (p.type === 'valet-included') lines.push(`- Estacionamento com manobrista${p.location ? ' ' + p.location : ''}, sem custo adicional.${p.note ? ' ' + p.note : ''}`);
+    else if (p.type === 'valet-paid') lines.push(`- Estacionamento com manobrista${p.location ? ' ' + p.location : ''}${p.cost ? ', custo ' + p.cost : ''}.${p.note ? ' ' + p.note : ''}`);
+    else if (p.type === 'external') lines.push(`- Estacionamento: EXTERNO${p.location ? ', localizado em ' + p.location : ''}${p.cost ? ', custo ' + p.cost : ''}.${p.note ? ' ' + p.note : ''}`);
+  }
+  if (s.cleaning) {
+    const c = s.cleaning;
+    const map = { daily: 'diária', onrequest: 'sob demanda', weekly: 'semanal' };
+    lines.push(`- Limpeza: ${map[c.type] || c.type}${c.provider ? ' realizada pela ' + c.provider : ''}.${c.note ? ' ' + c.note : ''}`);
+  }
+  if (s.internet) {
+    const i = s.internet;
+    const map = { 'captive-portal': 'Wi-Fi via portal cativo (requer cadastro simples)', 'open': 'Wi-Fi aberto sem senha', 'password': 'Wi-Fi com senha — fornecida no check-in', 'none': 'Sem Wi-Fi no flat' };
+    lines.push(`- Internet: ${map[i.type] || i.type}.${i.note ? ' ' + i.note : ''}`);
+  }
+  if (s.frigobar && s.frigobar.enabled) {
+    lines.push(`- Frigobar: abastecido.${s.frigobar.note ? ' ' + s.frigobar.note : ''}`);
+  }
+  if (s.transport && s.transport.taxiAvailable) {
+    lines.push(`- Transporte: ${s.transport.note || 'táxi/transfer sob consulta.'}`);
+  }
+  if (s.acceptsPets === false) lines.push(`- ${s.acceptsPetsNote || 'Não aceitamos pets no estabelecimento.'}`);
+  if (s.reservationContact || s.reservationWebsite) {
+    lines.push(`- Reservas e informações: ${s.reservationContact ? 'WhatsApp ' + s.reservationContact : ''}${s.reservationContact && s.reservationWebsite ? ' ou ' : ''}${s.reservationWebsite ? 'site ' + s.reservationWebsite : ''}.`);
+  }
+  if (Array.isArray(s.customFaqs) && s.customFaqs.length) {
+    lines.push('');
+    lines.push('Perguntas e respostas específicas desta propriedade:');
+    for (const f of s.customFaqs) if (f.question && f.answer) lines.push(`- Se perguntar "${f.question}": ${f.answer}`);
+  }
+  lines.push('');
+  lines.push('Regras:');
+  lines.push('- Nunca comece respostas com "Olá", "Oi", "Bom dia", "Boa tarde" ou qualquer saudação.');
+  lines.push('- Responda direto ao ponto, de forma natural, como uma conversa contínua.');
+  lines.push('- Responda de forma curta, útil, natural e acolhedora.');
+  lines.push('- O atendimento deve ser 100% focado em hospedagem, turismo, estadia, estrutura e região.');
+  lines.push('- Se o hóspede perguntar sobre temas fora da hospedagem, redirecione educadamente.');
+  lines.push('- Só encaminhe para humano quando for estritamente necessário.');
+  if (s.humanEscalationNumber) lines.push(`- Se precisar escalar pra humano, o número é ${s.humanEscalationNumber}.`);
+  return lines.join('\n');
+}
+
 const SYSTEM_PROMPT = `
 Você é o concierge virtual da TorresGuest, com atendimento humano, cordial, elegante e objetivo.
 Responda sempre no mesmo idioma do hóspede (português, inglês ou espanhol).
@@ -110,8 +196,18 @@ async function getChatGptFallbackReply(userMessage, phone, context = [], profile
 
   const historyBlock = buildHistoryBlock(context);
   const profileBlock = buildProfileBlock(profile);
-  // Multi-tenant: se tenant tiver systemPrompt customizado, usa-lo; senao fallback para Torres hardcoded
-  const basePrompt = (tenant && tenant.settings && tenant.settings.systemPrompt) || SYSTEM_PROMPT;
+  // Multi-tenant: prioridade
+  //  1. settings.systemPrompt custom (override manual pelo admin)
+  //  2. se tenant tem settings estruturadas e NÃO é torres → builder dinâmico
+  //  3. fallback SYSTEM_PROMPT (torres hardcoded, estabilidade)
+  let basePrompt;
+  if (tenant && tenant.settings && tenant.settings.systemPrompt) {
+    basePrompt = tenant.settings.systemPrompt;
+  } else if (tenant && tenant.tenantId && tenant.tenantId !== 'torres' && tenant.settings) {
+    basePrompt = buildSystemPromptFromSettings(tenant);
+  } else {
+    basePrompt = SYSTEM_PROMPT;
+  }
   const systemContent = profileBlock ? `${basePrompt}${profileBlock}` : basePrompt;
   const userInput = `${historyBlock}Telefone: ${phone}\nMensagem: ${userMessage}`;
 
