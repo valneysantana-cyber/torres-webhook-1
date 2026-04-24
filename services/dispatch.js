@@ -196,10 +196,41 @@ async function sendRoomRequestNotification(guestPhone, originalMessage, requestT
   }
 }
 
+/**
+ * Relay the guest's cancellation reason to the host's DISPATCH_NUMBER so they
+ * can decide (manually) whether to reach out, offer something, or just track
+ * the motive for future pricing/listing decisions. Called from the WhatsApp
+ * handler right after recording the reason text.
+ */
+async function sendCancellationReasonToHost({ guestName, staysId, ota, reason, phone }) {
+  try {
+    const mensagem = [
+      `📊 *Motivo de cancelamento — ${ota || 'reserva'}*`,
+      ``,
+      `👤 Hóspede: *${guestName || 'não identificado'}*`,
+      `🏷 Reserva: ${staysId || '—'}`,
+      `📱 Telefone: +${phone || '—'}`,
+      ``,
+      `💬 Resposta do hóspede:`,
+      `"${(reason || '').slice(0, 500)}"`,
+      ``,
+      `💡 Decida se quer ligar / oferecer algo — nenhuma ação automática foi disparada.`,
+    ].join('\n');
+    const numbers = DISPATCH_NUMBER.split(',').map(n => n.trim()).filter(Boolean);
+    for (const num of numbers) {
+      await sendWhatsAppText(num, mensagem);
+    }
+    console.log('[dispatch] Cancellation reason sent to', numbers);
+  } catch (err) {
+    console.error('[dispatch] sendCancellationReasonToHost failed:', err.message);
+  }
+}
+
 module.exports = {
   dailyCheckinDispatch,
   sendEscalationAlert,
   sendFrigobarRestockNotification,
   sendTransferAlert,
   sendRoomRequestNotification,
+  sendCancellationReasonToHost,
 };

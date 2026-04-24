@@ -323,6 +323,48 @@ async function sendWelcomeKit(phone, data = {}) {
   }
 }
 
+/**
+ * Sends the cancellation retention template (UTILITY) after a Stays cancellation.
+ * The Meta template must be pre-approved; its name is configurable via
+ * WA_CANCEL_TEMPLATE_NAME (default: cancellation_retention_v1). Template body
+ * expects 2 variables: {{1}} = firstName, {{2}} = OTA display name.
+ *
+ * @param {string} phone         - 5511999073135
+ * @param {{firstName:string, ota:string}} data
+ * @returns {Promise<{ok:boolean, skipped?:boolean, messageId?:string, error?:any}>}
+ */
+async function sendCancellationRetention(phone, { firstName, ota } = {}) {
+  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) return { skipped: true, reason: 'missing credentials' };
+  const templateName = process.env.WA_CANCEL_TEMPLATE_NAME || 'cancellation_retention_v1';
+  try {
+    const r = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: phone,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: 'pt_BR' },
+          components: [{
+            type: 'body',
+            parameters: [
+              { type: 'text', text: firstName || 'Hospede' },
+              { type: 'text', text: ota || 'sua plataforma' },
+            ],
+          }],
+        },
+      }),
+    });
+    const data = await r.json();
+    if (!r.ok) return { ok: false, error: data };
+    return { ok: true, messageId: data.messages?.[0]?.id };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
 module.exports = {
   markReadAndTyping,
   downloadWhatsAppMedia,
@@ -332,4 +374,5 @@ module.exports = {
   replyToGuest,
   sendCheckinTemplate,
   sendWelcomeKit,
+  sendCancellationRetention,
 };
