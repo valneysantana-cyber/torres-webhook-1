@@ -69,8 +69,54 @@ function invalidateCache(phoneId) {
   else cache.clear();
 }
 
+/**
+ * Resolve tenant dono de uma reserva ativa do hospede.
+ *
+ * Em shared-infra (1 WABA Meta atende vários tenants), todas as msgs entram
+ * pelo mesmo `phone_number_id` → `getTenantByPhoneId` retorna o master.
+ * Pra customizar respostas por propriedade, precisamos saber QUAL reserva do
+ * hospede tá ativa agora e usar o `tenantId` dela.
+ *
+ * Fluxo:
+ *   phone → Reservation.findActive(phone) → reservation.tenantId → fetch tenant config
+ *
+ * Fallback: se hospede não tem reserva ativa (primeira interação, pesquisa, etc)
+ * usa o master (fallbackTenant).
+ *
+ * @param {string} phone Guest phone E.164 digits (e.g. "5511999999999")
+ * @param {object} fallbackTenant Master tenant (do getTenantByPhoneId)
+ * @returns {Promise<object>} Tenant com settings do dono da reserva ativa
+ */
+async function resolveTenantByGuestPhone(phone, fallbackTenant) {
+  if (!phone || !fallbackTenant) return fallbackTenant;
+  try {
+    const Reservation = require('../models/Reservation');
+    // Busca reserva mais recente do phone, com preferência pra ativa (check-out futuro)
+    const now = new Date();
+    const res = await Reservation.findOne({
+      guestPhoneClean: phone,
+      status: { $nin: ['cancelado', 'no-show'] },
+    }).sort({ checkInDate: -1, createdAt: -1 }).lean();
+    if (!res || !res.tenantId || res.tenantId === fallbackTenant.tenantId) return fallbackTenant;
+
+    // Fetch tenant config via CRM API (endpoint público x-api-key)
+    const r = await fetch(`${CRM_API_URL}/admin/tenant-by-id/${encodeURIComponent(res.tenantId)}`, {
+      method: 'GET',
+      headers: { 'x-api-key': CRM_API_KEY, 'Accept': 'application/json' },
+    });
+    if (!r.ok) return fallbackTenant;
+    const data = await r.json();
+    const t = data.tenant || data;
+    return t && t.tenantId ? t : fallbackTenant;
+  } catch (e) {
+    console.error('[tenant] resolveTenantByGuestPhone error:', e.message);
+    return fallbackTenant;
+  }
+}
+
 module.exports = {
   getTenantByPhoneId,
+  resolveTenantByGuestPhone,
   invalidateCache,
   TORRES_DEFAULT,
 };

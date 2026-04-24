@@ -64,7 +64,7 @@ const {
 } = require('../utils/matchers');
 const { fetchReservationByCode } = require('../services/stays');
 const { getChatGptFallbackReply, transcribeAudioBuffer } = require('../services/openai');
-const { getTenantByPhoneId } = require('../services/tenant');
+const { getTenantByPhoneId, resolveTenantByGuestPhone } = require('../services/tenant');
 const { downloadWhatsAppMedia, replyToGuest, markReadAndTyping, sendWelcomeKit } = require('../services/whatsapp');
 const { saveMessage, getContext, getProfile, updateProfile } = require('../services/crm');
 const { classifyMessage } = require('../services/classifier');
@@ -424,8 +424,11 @@ async function handleIncoming(payload) {
         }
 
         // ---- AI fallback (contexto + perfil de fidelidade) -------------
+        // Shared-infra: resolve tenant dono da reserva ativa deste hóspede
+        // (uma WABA atende N tenants; sem isso todos caem em torres).
+        const guestTenant = await resolveTenantByGuestPhone(from, tenant);
         const [context, profile] = await Promise.all([getContext(from), getProfile(from)]);
-        const aiReply = await getChatGptFallbackReply(body, from, context, profile, tenant);
+        const aiReply = await getChatGptFallbackReply(body, from, context, profile, guestTenant);
         if (aiReply) {
           await replyAndSave(from, aiReply, { alsoSendAudio: camFromAudio });
           continue;
