@@ -114,9 +114,36 @@ async function resolveTenantByGuestPhone(phone, fallbackTenant) {
   }
 }
 
+/**
+ * Resolve tenant + listingStaysId pelo NOME da acomodação (campo "Acomodação"
+ * do email Stays). Usado pelo email parser que não tem o ObjectId do listing.
+ *
+ * Faz reverse-lookup via CRM API `/admin/tenant-by-accommodation/:name` que
+ * percorre tenants ativos e procura match em credentials.listingNamesJson.
+ *
+ * @param {string} accommodationName Ex: "1607" ou "404"
+ * @returns {Promise<{ tenant: object, listingStaysId: string }|null>}
+ */
+async function resolveTenantByAccommodation(accommodationName) {
+  if (!accommodationName || !CRM_API_URL) return null;
+  try {
+    const r = await fetch(`${CRM_API_URL}/admin/tenant-by-accommodation/${encodeURIComponent(String(accommodationName).trim())}`, {
+      method: 'GET',
+      headers: { 'x-api-key': CRM_API_KEY, 'Accept': 'application/json' },
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data && data.tenant ? { tenant: data.tenant, listingStaysId: data.listingStaysId } : null;
+  } catch (e) {
+    console.error('[tenant] resolveTenantByAccommodation error:', e.message);
+    return null;
+  }
+}
+
 module.exports = {
   getTenantByPhoneId,
   resolveTenantByGuestPhone,
+  resolveTenantByAccommodation,
   invalidateCache,
   TORRES_DEFAULT,
 };

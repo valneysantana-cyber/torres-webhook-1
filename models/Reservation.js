@@ -29,6 +29,8 @@ const reservationSchema = new mongoose.Schema({
   // ── Reservation Details ──
   bookingNumber: { type: String, index: true },       // OTA confirmation number
   staysReservationId: { type: String, index: true },  // Stays.net internal ID (e.g., LU02J)
+  confirmationCode: { type: String, index: true },    // Synonym: gravado por stays_sync E pelo email parser (=staysReservationId)
+  staysId: { type: String, index: true },             // Stays Mongo ObjectId (gravado por stays_sync depois)
   checkin: { type: String },                          // "01 jul 2026"
   checkout: { type: String },                         // "02 jul 2026"
   numGuests: { type: Number, default: 1 },

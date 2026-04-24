@@ -91,12 +91,35 @@ async function processStaysEmail(parsed) {
     totalValue: reservationData.totalValue,
   });
 
+  // Resolve tenant pelo nome da acomodação (multi-tenant routing)
+  // Email Stays só traz "Acomodação: 1607", não o listingStaysId. Reverse-lookup
+  // no listingNamesJson de cada tenant ativo via CRM API.
+  if (reservationData.accommodation) {
+    try {
+      const { resolveTenantByAccommodation } = require('./tenant');
+      const owner = await resolveTenantByAccommodation(reservationData.accommodation);
+      if (owner) {
+        reservationData.tenantId = owner.tenant.tenantId;
+        reservationData.listingStaysId = owner.listingStaysId;
+        console.log(`[email][tenant] accommodation=${reservationData.accommodation} → tenant=${owner.tenant.tenantId} listing=${owner.listingStaysId}`);
+      } else {
+        console.log(`[email][tenant] accommodation=${reservationData.accommodation} sem match — caindo em torres default`);
+        reservationData.tenantId = 'torres';
+      }
+    } catch (e) { console.warn('[email][tenant] resolve falhou:', e.message); }
+  }
+
+  // Symmetry: confirmationCode = staysReservationId (consistência entre flows)
+  if (reservationData.staysReservationId && !reservationData.confirmationCode) {
+    reservationData.confirmationCode = reservationData.staysReservationId;
+  }
+
   // Save to MongoDB
   let saved = null;
   if (Reservation && isDBConnected()) {
     try {
       saved = await Reservation.upsertReservation(reservationData);
-      console.log('[email] Reservation saved to MongoDB:', saved._id);
+      console.log('[email] Reservation saved to MongoDB:', saved._id, 'tenant:', saved.tenantId || '(none)');
     } catch (err) {
       console.error('[email] Failed to save reservation to MongoDB:', err.message);
     }
