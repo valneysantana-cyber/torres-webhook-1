@@ -301,42 +301,15 @@ async function handleIncoming(payload) {
         // ── Fase 2: salvar nome do WhatsApp no perfil (fire-and-forget) ──
         if (contactName) updateProfile(from, { name: contactName }).catch(() => {});
 
-        // ---- escalation classifier (prioridade máxima) ------------------
-        const escalation = classifyMessage(body);
-        if (escalation) {
-          console.log('[classifier] escalacao detectada:', escalation.name, escalation.level);
-          await replyAndSave(from, escalation.guestReply, { alsoSendAudio: camFromAudio });
-          if (!escalation.noAlert) await sendEscalationAlert(from, body, escalation);
-          continue;
-        }
-
-        // ---- greeting ---------------------------------------------------
-        // Pure greeting only (no '?'). Greeting+question falls through to the AI.
-        const words = normalized.trim().split(/\s+/);
-        const isJustGreeting = shouldSendGreeting(normalized) && !body.includes('?') && words.length <= 5;
-        if (isJustGreeting) {
-          await replyAndSave(from, GREETING_RESPONSE(contactName), { alsoSendAudio: camFromAudio });
-          continue;
-        }
-
-        // ---- thanks -----------------------------------------------------
-        if (shouldSendThanks(normalized)) {
-          await replyAndSave(from, THANKS_RESPONSE, { alsoSendAudio: camFromAudio });
-          continue;
-        }
-
-        // ---- menu -------------------------------------------------------
-        if (shouldSendMenu(normalized)) {
-          console.log('[menu] sending menu response');
-          await replyAndSave(from, MENU_RESPONSE, { alsoSendAudio: camFromAudio });
-          pendingConfirmations.delete(from);
-          continue;
-        }
-
-        // ---- cancellation retention: capture reason --------------------
+        // ---- cancellation retention: capture reason (HIGHEST PRIORITY) ---
+        // Must run BEFORE the escalation classifier and any keyword handler
+        // because the guest's reason often contains words like "reserva",
+        // "cancel", "checkout", which are intercepted by other flows (e.g.
+        // observed 24/04 with Carlos Frederico JI03J — classifier caught
+        // "Reserva INFO" first and the reason was lost).
+        //
         // If this phone has a reservation with cancellationReason='pending'
         // sent in the last 72h, the NEXT text they send IS the reason.
-        // Intercept before the AI so it doesn't try to "answer" the motive.
         if (Reservation && body && body.trim().length > 0) {
           try {
             const pending = await Reservation.findPendingRetentionByPhone(from);
@@ -371,6 +344,38 @@ async function handleIncoming(payload) {
           } catch (e) {
             console.error('[retention] lookup failed (fallthrough to normal flow):', e.message);
           }
+        }
+
+        // ---- escalation classifier (prioridade máxima p/ fluxo normal) --
+        const escalation = classifyMessage(body);
+        if (escalation) {
+          console.log('[classifier] escalacao detectada:', escalation.name, escalation.level);
+          await replyAndSave(from, escalation.guestReply, { alsoSendAudio: camFromAudio });
+          if (!escalation.noAlert) await sendEscalationAlert(from, body, escalation);
+          continue;
+        }
+
+        // ---- greeting ---------------------------------------------------
+        // Pure greeting only (no '?'). Greeting+question falls through to the AI.
+        const words = normalized.trim().split(/\s+/);
+        const isJustGreeting = shouldSendGreeting(normalized) && !body.includes('?') && words.length <= 5;
+        if (isJustGreeting) {
+          await replyAndSave(from, GREETING_RESPONSE(contactName), { alsoSendAudio: camFromAudio });
+          continue;
+        }
+
+        // ---- thanks -----------------------------------------------------
+        if (shouldSendThanks(normalized)) {
+          await replyAndSave(from, THANKS_RESPONSE, { alsoSendAudio: camFromAudio });
+          continue;
+        }
+
+        // ---- menu -------------------------------------------------------
+        if (shouldSendMenu(normalized)) {
+          console.log('[menu] sending menu response');
+          await replyAndSave(from, MENU_RESPONSE, { alsoSendAudio: camFromAudio });
+          pendingConfirmations.delete(from);
+          continue;
         }
 
         // ---- reservation confirmation flow ------------------------------
