@@ -50,6 +50,17 @@ const reservationSchema = new mongoose.Schema({
   // ── WhatsApp auto-send tracking (dedupe between emailMonitor and stays_sync) ──
   autoCheckinSentAt: { type: Date, default: null },
 
+  // ── Delayed welcome kit ──
+  // First-contact guests have a closed Meta 24h service window, so free-text
+  // welcome kit (sendWelcomeKit) is silently dropped by Meta despite HTTP 200.
+  // We now mark it pending when the check-in template is sent; the WhatsApp
+  // handler fires it as soon as the guest sends any message (which opens the
+  // window). See project_meta_service_window.md.
+  welcomeKitPending: { type: Boolean, default: false },
+  welcomeKitTemplateSentAt: { type: Date, default: null },  // when the check-in template went out (opens 72h capture window)
+  welcomeKitSentAt: { type: Date, default: null },          // when the welcome kit free-text was actually delivered
+  welcomeKitContext: { type: Object, default: null },       // { firstName, listingName, checkInDate, nights, totalValue }
+
   // ── Cancellation retention flow ──
   // Preenchidos quando reserva é cancelada e o hóspede recebe o template de retenção.
   cancellationRetentionSentAt: { type: Date, default: null },
@@ -118,6 +129,24 @@ reservationSchema.statics.findPendingRetentionByPhone = function (phoneClean, wi
     cancellationReason: 'pending',
     cancellationRetentionSentAt: { $gte: since },
   }).sort({ cancellationRetentionSentAt: -1 });
+};
+
+/**
+ * Find a reservation whose check-in template was sent recently but the welcome
+ * kit free-text still hasn't been delivered (Meta 24h window). Called when the
+ * guest sends any WhatsApp message — the window just opened, so we can send
+ * the welcome kit in the same thread.
+ *
+ * 48h window: past that, check-in is likely close/already done and the
+ * welcome kit becomes noise.
+ */
+reservationSchema.statics.findPendingWelcomeKitByPhone = function (phoneClean, windowMs = 48 * 3600 * 1000) {
+  const since = new Date(Date.now() - windowMs);
+  return this.findOne({
+    guestPhoneClean: phoneClean,
+    welcomeKitPending: true,
+    welcomeKitTemplateSentAt: { $gte: since },
+  }).sort({ welcomeKitTemplateSentAt: -1 });
 };
 
 /**

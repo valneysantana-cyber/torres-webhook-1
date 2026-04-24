@@ -65,7 +65,7 @@ const {
 const { fetchReservationByCode } = require('../services/stays');
 const { getChatGptFallbackReply, transcribeAudioBuffer } = require('../services/openai');
 const { getTenantByPhoneId } = require('../services/tenant');
-const { downloadWhatsAppMedia, replyToGuest, markReadAndTyping } = require('../services/whatsapp');
+const { downloadWhatsAppMedia, replyToGuest, markReadAndTyping, sendWelcomeKit } = require('../services/whatsapp');
 const { saveMessage, getContext, getProfile, updateProfile } = require('../services/crm');
 const { classifyMessage } = require('../services/classifier');
 const {
@@ -106,6 +106,46 @@ function isAwaitingCode(phone) {
 async function replyAndSave(from, text, opts = {}) {
   await replyToGuest(from, text, opts);
   saveMessage(from, 'assistant', text).catch(() => {});
+  // Fire-and-forget: if this guest has a welcome kit pending (Meta 24h window
+  // was closed when the check-in template fired), deliver it now — the inbound
+  // msg that triggered this reply just opened the window.
+  maybeDeliverDelayedWelcomeKit(from).catch(err =>
+    console.error('[welcome-kit][delayed] dispatch failed:', err.message)
+  );
+}
+
+/**
+ * Idempotent: finds a reservation whose welcome kit is still pending within
+ * the 48h window, sends it, and flips the pending flag. Safe to call after
+ * every outbound reply — O(1) Mongo lookup + early return when nothing pending.
+ */
+async function maybeDeliverDelayedWelcomeKit(from) {
+  if (!Reservation) return;
+  const pending = await Reservation.findPendingWelcomeKitByPhone(from);
+  if (!pending) return;
+
+  // Atomic claim: only the request that flips welcomeKitPending false wins.
+  // Prevents double-send if multiple replies fire in the same tick.
+  const claimed = await Reservation.collection.findOneAndUpdate(
+    { _id: pending._id, welcomeKitPending: true },
+    { $set: { welcomeKitPending: false } },
+    { returnDocument: 'after' }
+  );
+  if (!claimed || !claimed.value) return; // someone else grabbed it
+
+  const ctx = pending.welcomeKitContext || {};
+  console.log(`[welcome-kit][delayed] sending to ${from} (reservation ${pending.staysReservationId})`);
+  // Brief delay so welcome kit doesn't crowd the bot's reply to the guest.
+  await new Promise(res => setTimeout(res, 1200));
+  const r = await sendWelcomeKit(from, ctx);
+  if (r.ok) {
+    await Reservation.updateOne({ _id: pending._id }, { $set: { welcomeKitSentAt: new Date() } });
+    console.log(`[welcome-kit][delayed] OK messageId=${r.messageId}`);
+  } else if (!r.skipped) {
+    // Failure → release claim so next inbound msg retries
+    await Reservation.updateOne({ _id: pending._id }, { $set: { welcomeKitPending: true } });
+    console.error('[welcome-kit][delayed] FAIL, released claim:', JSON.stringify(r.error).slice(0, 300));
+  }
 }
 
 // ───────────────────────────────────────────────────────────────────────────────

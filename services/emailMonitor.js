@@ -209,25 +209,22 @@ async function maybeSendCheckinTemplate(saved, reservationData) {
     return;
   }
   saved.autoCheckinSentAt = new Date();
-  try { await saved.save(); } catch (e) { console.warn('[email][autosend] save flag failed:', e.message); }
-  console.log(`[email][autosend] template OK (${result.variant || 'v1'}) messageId=${result.messageId}`);
-
-  // Welcome kit: long free-text with services, house rules, 24/7 concierge.
-  // The template just opened the service window, so the free-text is delivered
-  // in the same thread (no filtering risk).
-  await new Promise(res => setTimeout(res, 1500));
-  const welcome = await sendWelcomeKit(phone, {
+  // Welcome kit is NOT sent here anymore. First-contact guests have a closed
+  // Meta 24h service window — free-text is silently dropped despite HTTP 200
+  // (observed with Wandress on 24/04). Instead, mark it pending so the
+  // WhatsApp handler sends it as soon as the guest opens the window with any
+  // inbound message. See project_meta_service_window.md.
+  saved.welcomeKitPending = true;
+  saved.welcomeKitTemplateSentAt = saved.autoCheckinSentAt;
+  saved.welcomeKitContext = {
     firstName,
     listingName: saved.property || listingName,
     checkInDate: saved.checkin || reservationData.checkin,
     nights: saved.numNights,
     totalValue: saved.totalValue,
-  });
-  if (welcome.ok) {
-    console.log(`[email][autosend] welcome kit OK messageId=${welcome.messageId}`);
-  } else if (!welcome.skipped) {
-    console.error('[email][autosend] welcome kit FAIL:', JSON.stringify(welcome.error).slice(0, 300));
-  }
+  };
+  try { await saved.save(); } catch (e) { console.warn('[email][autosend] save flag failed:', e.message); }
+  console.log(`[email][autosend] template OK (${result.variant || 'v1'}) messageId=${result.messageId} — welcome kit queued (will send on first inbound msg)`);
 }
 
 /**
