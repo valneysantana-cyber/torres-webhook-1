@@ -319,6 +319,54 @@ async function startEmailMonitor() {
     logger: false, // Quiet logging in production
   });
 
+  // Robust lifecycle state — closure is re-created on each startEmailMonitor() call,
+  // so reconnect always starts with a clean slate.
+  let pollingTimer = null;
+  let watchdogTimer = null;
+  let circuitBreakerTimer = null;
+  let reconnectScheduled = false;
+  let checking = false;
+  let checkingStartedAt = 0;
+  let lastProgressAt = Date.now();
+
+  const PROCESS_TIMEOUT_MS   = 45_000;   // processEmail (Mongo + Meta + OpenAI)
+  const DOWNLOAD_TIMEOUT_MS  = 15_000;   // client.download + simpleParser
+  const MARKSEEN_TIMEOUT_MS  = 10_000;   // client.messageFlagsAdd — the hang point observed 23/04
+  const SEARCH_TIMEOUT_MS    = 20_000;   // client.search
+  const CHECKING_STUCK_MS    = 150_000;  // 2.5min: one checkNewEmails shouldn't take this long
+  const PROGRESS_STALE_MS    = 180_000;  // 3min no progress = probably zombie
+  const CIRCUIT_BREAKER_MS   = 30 * 60_000; // 30min preventive reconnect
+  const WATCHDOG_TICK_MS     = 30_000;
+
+  const clearAllTimers = () => {
+    if (pollingTimer)        { clearInterval(pollingTimer); pollingTimer = null; }
+    if (watchdogTimer)       { clearInterval(watchdogTimer); watchdogTimer = null; }
+    if (circuitBreakerTimer) { clearTimeout(circuitBreakerTimer); circuitBreakerTimer = null; }
+  };
+
+  const scheduleReconnect = (reason, delayMs = 30_000) => {
+    if (reconnectScheduled) return;
+    reconnectScheduled = true;
+    clearAllTimers();
+    console.log(`[email] scheduling reconnect in ${delayMs}ms (reason: ${reason})`);
+    try { client.close(); } catch {}
+    setTimeout(() => startEmailMonitor(), delayMs);
+  };
+
+  const forceExit = (reason) => {
+    console.error(`[email][FATAL] ${reason} — forcing process.exit(1) for Render auto-restart`);
+    clearAllTimers();
+    setTimeout(() => process.exit(1), 500); // brief flush
+  };
+
+  const withTimeout = (promise, ms, label) => {
+    let timer;
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`timeout ${ms}ms (${label})`)), ms); }),
+    ]).finally(() => clearTimeout(timer));
+  };
+
   try {
     await client.connect();
     console.log('[email] IMAP connected successfully');
@@ -331,70 +379,63 @@ async function startEmailMonitor() {
     const mailboxPath = process.env.GMAIL_IMAP_MAILBOX || 'INBOX';
     const mailbox = await client.mailboxOpen(mailboxPath);
     console.log(`[email] mailbox '${mailboxPath}' opened — ${mailbox.exists} messages`);
+    lastProgressAt = Date.now();
 
-    // Track the polling timer so we can cancel it on disconnect
-    let pollingTimer = null;
-    // Semaphore: prevent concurrent checkNewEmails invocations. Without this,
-    // a slow processEmail() call keeps the previous poll alive while the next
-    // 60s tick fires another poll — both iterate the same unseen UIDs in
-    // parallel, neither ever reaching the final messageFlagsAdd cleanly.
-    let checking = false;
-
-    // Per-message hard timeout. processEmail() talks to Mongo + Meta API +
-    // OpenAI; any of those hanging indefinitely would starve the monitor.
-    const PROCESS_TIMEOUT_MS = 45_000;
-    const withTimeout = (promise, ms, label) => {
-      let timer;
-      return Promise.race([
-        promise,
-        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`timeout ${ms}ms (${label})`)), ms); }),
-      ]).finally(() => clearTimeout(timer));
-    };
-
-    // Process new emails function
     async function checkNewEmails() {
       if (!client.usable) {
-        // Connection dropped — stop polling; the 'close' handler will reconnect
-        if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
+        console.warn('[email] client.usable=false — scheduling reconnect (was silent-killed in previous code path)');
+        scheduleReconnect('client.usable=false at check entry');
         return;
       }
       if (checking) {
-        console.log('[email] previous checkNewEmails still running, skipping this tick');
+        const stuckMs = Date.now() - checkingStartedAt;
+        console.log(`[email] previous checkNewEmails still running (${stuckMs}ms), skipping this tick`);
         return;
       }
       checking = true;
+      checkingStartedAt = Date.now();
+      lastProgressAt = Date.now();
       try {
-        // Search for UNSEEN messages
-        const uids = await client.search({ seen: false });
-        if (!uids.length) return;
+        const uids = await withTimeout(client.search({ seen: false }), SEARCH_TIMEOUT_MS, 'search unseen');
+        if (!uids || !uids.length) return;
 
-        console.log(`[email] Found ${uids.length} unseen message(s)`);
+        console.log(`[email] Found ${uids.length} unseen message(s): [${uids.join(',')}]`);
+        lastProgressAt = Date.now();
 
         for (const uid of uids) {
-          // Mark-seen-first strategy: observed bug — the IMAP download / parse /
-          // Mongoose upsert could hang before the Seen flag ever got written, so
-          // the next poll saw the same UID and looped forever. We now commit
-          // Seen on the IMAP side BEFORE doing any heavy work. Losing a
-          // notification on a crash is less bad than perpetually re-processing.
+          lastProgressAt = Date.now();
+          console.log(`[email] UID=${uid} download start`);
           let parsed = null;
           let fromAddress = '';
           let subject = '';
           let markedSeen = false;
           const markSeen = async () => {
             if (markedSeen) return;
-            try { await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true }); markedSeen = true; }
-            catch (e) { console.warn(`[email] markSeen failed UID=${uid}:`, e.message); }
+            try {
+              await withTimeout(
+                client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true }),
+                MARKSEEN_TIMEOUT_MS,
+                `markSeen UID ${uid}`
+              );
+              markedSeen = true;
+              console.log(`[email] UID=${uid} markSeen OK`);
+            } catch (e) {
+              console.warn(`[email] UID=${uid} markSeen failed: ${e.message}`);
+            }
           };
 
           try {
-            // 1) Download + parse with a TIGHT timeout — if IMAP is slow we skip.
+            // 1) Download + parse with a TIGHT timeout
             const prefetch = await withTimeout((async () => {
               const raw = await client.download(uid.toString(), undefined, { uid: true });
               if (!raw?.content) return null;
               const chunks = [];
               for await (const chunk of raw.content) chunks.push(chunk);
               return simpleParser(Buffer.concat(chunks));
-            })(), 15_000, `download+parse UID ${uid}`);
+            })(), DOWNLOAD_TIMEOUT_MS, `download+parse UID ${uid}`);
+
+            console.log(`[email] UID=${uid} download+parse OK`);
+            lastProgressAt = Date.now();
 
             if (!prefetch) { await markSeen(); continue; }
             parsed = prefetch;
@@ -403,15 +444,20 @@ async function startEmailMonitor() {
 
             const ota  = classifyOta(fromAddress);
             const stay = isStaysEmail(fromAddress);
-            if (!ota && !stay) { await markSeen(); continue; }
+            if (!ota && !stay) {
+              console.log(`[email] UID=${uid} not OTA/Stays, marking seen + skip`);
+              await markSeen();
+              continue;
+            }
 
-            // 2) Commit Seen BEFORE the heavy processing. If the webhook/Meta
-            // call hangs, we never loop on this UID again.
+            // 2) Commit Seen BEFORE heavy processing
             await markSeen();
+            lastProgressAt = Date.now();
 
-            // 3) Heavy processing with its own timeout. Errors are logged but
-            // do not retry (UID is already Seen).
+            // 3) Heavy processing with its own timeout
             await withTimeout(processEmail(parsed), PROCESS_TIMEOUT_MS, `processEmail UID ${uid} ${fromAddress}`);
+            console.log(`[email] UID=${uid} processEmail done`);
+            lastProgressAt = Date.now();
           } catch (err) {
             console.error(`[email] Error UID=${uid} from=${fromAddress} subj="${subject.slice(0, 80)}":`, err.message);
             if (err.stack) console.error('[email] stack:', err.stack.split('\n').slice(0, 6).join(' | '));
@@ -420,14 +466,12 @@ async function startEmailMonitor() {
         }
       } catch (err) {
         console.error('[email] Error checking new emails:', err.message);
-        if (/Connection not available|not connected|closed/i.test(err.message)) {
-          console.warn('[email] zombie connection detected, forcing close + reconnect');
-          if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
-          try { await client.logout(); } catch {}
-          try { await client.close(); } catch {}
+        if (/Connection not available|not connected|closed|timeout/i.test(err.message)) {
+          scheduleReconnect(`checkNewEmails error: ${err.message}`);
         }
       } finally {
         checking = false;
+        checkingStartedAt = 0;
       }
     }
 
@@ -437,23 +481,47 @@ async function startEmailMonitor() {
     // Listen for new messages via IDLE
     client.on('exists', async (data) => {
       console.log(`[email] New message notification (exists: ${data.count})`);
-      await checkNewEmails();
+      try { await checkNewEmails(); } catch (e) { console.error('[email] exists handler error:', e.message); }
     });
 
     // Keep connection alive with periodic polling (fallback for IDLE issues)
     pollingTimer = setInterval(async () => {
-      try {
-        await checkNewEmails();
-      } catch (err) {
-        console.error('[email] Polling error:', err.message);
-      }
-    }, 60_000); // Check every 60 seconds
+      try { await checkNewEmails(); }
+      catch (err) { console.error('[email] Polling error:', err.message); }
+    }, 60_000);
 
-    // Handle disconnects with auto-reconnect
+    // Watchdog: force process.exit(1) if stuck; Render auto-restarts the service
+    watchdogTimer = setInterval(() => {
+      const now = Date.now();
+      if (checking) {
+        const stuckMs = now - checkingStartedAt;
+        if (stuckMs > CHECKING_STUCK_MS) {
+          forceExit(`checkNewEmails hung for ${stuckMs}ms (>${CHECKING_STUCK_MS}ms)`);
+          return;
+        }
+      } else {
+        const staleMs = now - lastProgressAt;
+        if (staleMs > PROGRESS_STALE_MS) {
+          console.warn(`[email] no progress for ${staleMs}ms, client.usable=${client.usable}`);
+          if (!client.usable) {
+            scheduleReconnect('watchdog !client.usable + stale progress');
+          } else {
+            // Connection claims usable but no progress — proactively reconnect
+            scheduleReconnect('watchdog: progress stale despite client.usable=true');
+          }
+        }
+      }
+    }, WATCHDOG_TICK_MS);
+
+    // Circuit breaker: force reconnect every 30min regardless (preventive)
+    circuitBreakerTimer = setTimeout(() => {
+      console.log('[email] circuit breaker: 30min preventive reconnect');
+      scheduleReconnect('circuit breaker 30min', 5_000);
+    }, CIRCUIT_BREAKER_MS);
+
     client.on('close', () => {
-      if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
-      console.log('[email] IMAP connection closed, reconnecting in 30s...');
-      setTimeout(() => startEmailMonitor(), 30_000);
+      console.log('[email] IMAP close event fired');
+      scheduleReconnect('close event', 30_000);
     });
 
     client.on('error', (err) => {
@@ -463,6 +531,7 @@ async function startEmailMonitor() {
   } catch (err) {
     console.error('[email] Failed to start IMAP monitor:', err.message);
     console.log('[email] Retrying in 60 seconds...');
+    clearAllTimers();
     setTimeout(() => startEmailMonitor(), 60_000);
   }
 }
