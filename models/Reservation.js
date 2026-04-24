@@ -50,6 +50,14 @@ const reservationSchema = new mongoose.Schema({
   // ── WhatsApp auto-send tracking (dedupe between emailMonitor and stays_sync) ──
   autoCheckinSentAt: { type: Date, default: null },
 
+  // ── Cancellation retention flow ──
+  // Preenchidos quando reserva é cancelada e o hóspede recebe o template de retenção.
+  cancellationRetentionSentAt: { type: Date, default: null },
+  cancellationOta: { type: String, default: null },                  // "Booking.com", "Airbnb", etc. — usado na var {{2}} do template
+  cancellationReason: { type: String, default: null },               // 'pending' = aguardando resposta; texto livre = motivo recebido
+  cancellationReasonReceivedAt: { type: Date, default: null },       // quando o hóspede respondeu no WhatsApp
+  cancellationDispatchedToHostAt: { type: Date, default: null },     // quando o motivo foi repassado pro dispatchNumber
+
   // ── Timestamps ──
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
@@ -93,6 +101,23 @@ reservationSchema.statics.findByStaysId = function (staysId) {
  */
 reservationSchema.statics.findByGuestEmail = function (email) {
   return this.findOne({ guestEmail: email.toLowerCase() }).sort({ createdAt: -1 });
+};
+
+/**
+ * Find a reservation whose cancellation template was sent recently and is still
+ * awaiting the guest's reason text. Used by the WhatsApp handler to intercept
+ * the next incoming message from that phone and record it as the reason.
+ *
+ * @param {string} phoneClean - 5511999073135 (matches guestPhoneClean)
+ * @param {number} windowMs   - how far back to look (default 72h)
+ */
+reservationSchema.statics.findPendingRetentionByPhone = function (phoneClean, windowMs = 72 * 3600 * 1000) {
+  const since = new Date(Date.now() - windowMs);
+  return this.findOne({
+    guestPhoneClean: phoneClean,
+    cancellationReason: 'pending',
+    cancellationRetentionSentAt: { $gte: since },
+  }).sort({ cancellationRetentionSentAt: -1 });
 };
 
 /**

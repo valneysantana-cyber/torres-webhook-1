@@ -73,7 +73,11 @@ const {
   sendFrigobarRestockNotification,
   sendTransferAlert,
   sendRoomRequestNotification,
+  sendCancellationReasonToHost,
 } = require('../services/dispatch');
+let Reservation;
+try { Reservation = require('../models/Reservation'); }
+catch (e) { console.warn('[whatsapp] Reservation model not available:', e.message); }
 
 // ───────────────────────────────────────────────────────────────────────────────
 // Pending confirmation state (in-memory, per process)
@@ -283,6 +287,46 @@ async function handleIncoming(payload) {
           await replyAndSave(from, MENU_RESPONSE, { alsoSendAudio: camFromAudio });
           pendingConfirmations.delete(from);
           continue;
+        }
+
+        // ---- cancellation retention: capture reason --------------------
+        // If this phone has a reservation with cancellationReason='pending'
+        // sent in the last 72h, the NEXT text they send IS the reason.
+        // Intercept before the AI so it doesn't try to "answer" the motive.
+        if (Reservation && body && body.trim().length > 0) {
+          try {
+            const pending = await Reservation.findPendingRetentionByPhone(from);
+            if (pending) {
+              const reason = body.trim().slice(0, 500);
+              const firstName = (pending.guestName || '').split(' ')[0] || 'Hospede';
+              pending.cancellationReason = reason;
+              pending.cancellationReasonReceivedAt = new Date();
+              try { await pending.save(); } catch (e) { console.warn('[retention] save reason failed:', e.message); }
+
+              console.log(`[retention] captured reason from ${firstName} (${from}) staysId=${pending.staysReservationId}`);
+              await replyAndSave(
+                from,
+                `Muito obrigado, ${firstName}! 🙏\n\nSeu feedback chegou aqui e vai nos ajudar a melhorar. Se mudar de ideia ou quiser reservar outra data, é só me chamar. 💙`,
+                { alsoSendAudio: camFromAudio }
+              );
+
+              // Fire-and-forget: dispatch para o host
+              sendCancellationReasonToHost({
+                guestName: pending.guestName,
+                staysId: pending.staysReservationId,
+                ota: pending.cancellationOta || 'reserva',
+                reason,
+                phone: from,
+              }).then(async () => {
+                pending.cancellationDispatchedToHostAt = new Date();
+                try { await pending.save(); } catch (e) {}
+              }).catch(err => console.error('[retention] dispatch to host failed:', err.message));
+
+              continue;
+            }
+          } catch (e) {
+            console.error('[retention] lookup failed (fallthrough to normal flow):', e.message);
+          }
         }
 
         // ---- reservation confirmation flow ------------------------------

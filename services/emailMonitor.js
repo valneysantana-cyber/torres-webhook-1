@@ -16,10 +16,10 @@ const { ImapFlow } = require('imapflow');
 const { simpleParser } = require('mailparser');
 const { parseOtaEmail } = require('./emailParser');
 const { handleEmailResponse } = require('./emailResponder');
-const { sendCheckinTemplate, sendWelcomeKit } = require('./whatsapp');
+const { sendCheckinTemplate, sendWelcomeKit, sendCancellationRetention } = require('./whatsapp');
 
 // ââ Stays.net reservation parsing + MongoDB storage ââ
-const { isStaysEmail, parseStaysReservationEmail } = require('./reservationParser');
+const { isStaysEmail, parseStaysReservationEmail, isCancellationEmail, displayOtaName } = require('./reservationParser');
 const { isDBConnected } = require('./db');
 let Reservation;
 try {
@@ -105,8 +105,62 @@ async function processStaysEmail(parsed) {
     console.log('[email] Reservation data (in-memory):', JSON.stringify(reservationData, null, 2));
   }
 
-  // Auto-send check-in template via WhatsApp (realtime, beats the VPS cron)
-  await maybeSendCheckinTemplate(saved, reservationData);
+  // Route: cancellation email → retention flow; otherwise → check-in flow
+  if (isCancellationEmail({ subject, text, html })) {
+    console.log('[email] Stays email classified as CANCELLATION — routing to retention flow');
+    await maybeSendCancellationRetention(saved, reservationData);
+  } else {
+    // Auto-send check-in template via WhatsApp (realtime, beats the VPS cron)
+    await maybeSendCheckinTemplate(saved, reservationData);
+  }
+}
+
+/**
+ * Send the cancellation retention template when a Stays cancellation email
+ * arrives — only if:
+ *   1. phone is present (Booking-masked phones skip, same guard as check-in)
+ *   2. retention not already sent for this reservation
+ *   3. WA_CANCEL_RETENTION_AUTO_SEND !== 'false' (default ON, consistent with check-in flag)
+ *
+ * On success, marks cancellationReason='pending' + cancellationRetentionSentAt
+ * + cancellationOta. Guards against duplicates via the 'pending' sentinel.
+ * If the guest had already been dispatched a check-in template, the retention
+ * still fires — the check-in is obsolete now.
+ */
+async function maybeSendCancellationRetention(saved, reservationData) {
+  if (process.env.WA_CANCEL_RETENTION_AUTO_SEND === 'false') {
+    console.log('[email][retention] disabled via WA_CANCEL_RETENTION_AUTO_SEND=false');
+    return;
+  }
+  if (!saved) return;
+  if (saved.cancellationRetentionSentAt) {
+    console.log('[email][retention] already sent for reservation', saved._id);
+    return;
+  }
+  const phone = saved.guestPhoneClean || reservationData.guestPhoneClean;
+  if (!phone || phone.length < 12) {
+    console.log('[email][retention] no real phone, skipping');
+    return;
+  }
+  const firstName = (saved.guestName || reservationData.guestName || '').split(' ')[0] || 'Hospede';
+  const ota = displayOtaName(saved.channel || reservationData.channel || saved.ota);
+
+  console.log(`[email][retention] sending cancellation retention template to ${firstName} (${phone}) ota=${ota}`);
+  const result = await sendCancellationRetention(phone, { firstName, ota });
+  if (!result.ok) {
+    if (result.skipped) console.log('[email][retention] skipped:', result.reason);
+    else console.error('[email][retention] FAIL:', JSON.stringify(result.error).slice(0, 300));
+    return;
+  }
+  // Mark pending — WhatsApp handler will intercept the guest's next message
+  // within 72h and record it as the reason.
+  saved.cancellationRetentionSentAt = new Date();
+  saved.cancellationReason = 'pending';
+  saved.cancellationOta = ota;
+  saved.status = 'cancelado';
+  try { await saved.save(); }
+  catch (e) { console.warn('[email][retention] save flags failed:', e.message); }
+  console.log(`[email][retention] template OK messageId=${result.messageId}`);
 }
 
 /**

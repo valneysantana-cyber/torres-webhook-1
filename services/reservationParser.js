@@ -204,4 +204,45 @@ function isStaysEmail(fromAddress) {
   return addr.includes('@stays.net') || addr.includes('stays.net');
 }
 
-module.exports = { parseStaysReservationEmail, isStaysEmail, cleanPhone };
+/**
+ * Detect whether a parsed Stays.net email represents a reservation cancellation.
+ * Cancelation emails have the same visual layout as regular reservation updates;
+ * the distinguishing signal is "Status: cancelado" in the body (Stays uses
+ * "status reservado atualmente" / "status cancelado atualmente" patterns) or
+ * the subject containing "cancel".
+ *
+ * Returns true only for Stays.net-origin emails; OTA guest relays aren't
+ * cancellations here (those come from Stays itself when the OTA cancels).
+ */
+function isCancellationEmail(email) {
+  if (!email) return false;
+  const subject = String(email.subject || '');
+  const body    = String(email.text || email.html || '');
+  if (!subject.includes('Stays.net')) return false;
+
+  // Primary signal: status cancelado in body
+  if (/status\s+cancelad[oa]/i.test(body)) return true;
+  // Reinforcement: explicit cancellation keywords
+  if (/\bcancelad[oa]\b/i.test(body) && /reserva|estadia|pré-check/i.test(body)) return true;
+  // Subject keyword
+  if (/cancelament|cancelad/i.test(subject)) return true;
+
+  return false;
+}
+
+/**
+ * Normalize channel text ("API booking.com", "Airbnb", "Direto") into a display
+ * name for the retention template's {{2}} variable.
+ */
+function displayOtaName(channel) {
+  if (!channel) return 'sua plataforma';
+  const c = String(channel).toLowerCase();
+  if (c.includes('booking')) return 'Booking.com';
+  if (c.includes('airbnb'))  return 'Airbnb';
+  if (c.includes('expedia')) return 'Expedia';
+  if (c.includes('direto') || c.includes('site'))  return 'reserva direta';
+  // Unknown — sanitize to ≤40 chars
+  return String(channel).trim().slice(0, 40);
+}
+
+module.exports = { parseStaysReservationEmail, isStaysEmail, isCancellationEmail, displayOtaName, cleanPhone };
