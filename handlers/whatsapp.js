@@ -126,14 +126,18 @@ async function maybeDeliverDelayedWelcomeKit(from) {
 
   // Atomic claim: only the request that flips welcomeKitPending false wins.
   // Prevents double-send if multiple replies fire in the same tick.
-  const claimed = await Reservation.collection.findOneAndUpdate(
+  // Use the Mongoose model (not .collection) so the return shape is stable
+  // across driver versions — native driver v5+ returns the doc directly,
+  // v4- wraps in { value: doc }. Mongoose.findOneAndUpdate always returns
+  // the doc or null, which is what we want.
+  const claimedDoc = await Reservation.findOneAndUpdate(
     { _id: pending._id, welcomeKitPending: true },
     { $set: { welcomeKitPending: false } },
-    { returnDocument: 'after' }
+    { new: true }
   );
-  if (!claimed || !claimed.value) return; // someone else grabbed it
+  if (!claimedDoc) return; // someone else grabbed it, or no match
 
-  const ctx = pending.welcomeKitContext || {};
+  const ctx = claimedDoc.welcomeKitContext || pending.welcomeKitContext || {};
   console.log(`[welcome-kit][delayed] sending to ${from} (reservation ${pending.staysReservationId})`);
   // Brief delay so welcome kit doesn't crowd the bot's reply to the guest.
   await new Promise(res => setTimeout(res, 1200));
