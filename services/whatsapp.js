@@ -150,13 +150,51 @@ async function replyToGuest(to, text, options = {}) {
 const MONTHS_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const WEEKDAYS_PT = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 
+// Stays email bodies ship dates as "03 ago 2026" — Portuguese month abbreviations.
+// Only jan/mar/jun/jul/nov coincide with English 3-letter abbreviations; the
+// rest (fev/abr/mai/ago/set/out/dez) are invalid for `new Date()`, which
+// silently returns Invalid Date → downstream sends an empty template param →
+// Meta rejects with "(#131008) Required parameter is missing".
+// Observed 24/04: Valney NB01J (check-in "03 ago 2026") failed; Wandress KZ02J
+// ("10 jun 2026") succeeded — exact same code path, only month differed.
+const MONTHS_PT_SHORT = {
+  jan: 0, fev: 1, mar: 2, abr: 3, mai: 4, jun: 5,
+  jul: 6, ago: 7, set: 8, out: 9, nov: 10, dez: 11,
+};
+const MONTHS_PT_LONG = {
+  janeiro: 0, fevereiro: 1, março: 2, marco: 2, abril: 3, maio: 4, junho: 5,
+  julho: 6, agosto: 7, setembro: 8, outubro: 9, novembro: 10, dezembro: 11,
+};
+
 function parseDateOnly(value) {
   if (!value) return null;
   if (value instanceof Date && !isNaN(value)) return value;
-  const str = String(value).slice(0, 10);
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
-  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 12));
-  const d = new Date(value);
+  const str = String(value).trim();
+
+  // ISO YYYY-MM-DD
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(str);
+  if (iso) return new Date(Date.UTC(+iso[1], +iso[2] - 1, +iso[3], 12));
+
+  // Stays short PT: "03 ago 2026" / "3 ago. 2026"
+  const ptShort = /^(\d{1,2})\s+([a-zç]{3,5})\.?\s+(\d{4})/i.exec(str);
+  if (ptShort) {
+    const key = ptShort[2].toLowerCase().replace(/\./g, '');
+    if (key in MONTHS_PT_SHORT) {
+      return new Date(Date.UTC(+ptShort[3], MONTHS_PT_SHORT[key], +ptShort[1], 12));
+    }
+  }
+
+  // Booking long PT: "1 de julho de 2026" / "03 de agosto de 2026"
+  const ptLong = /^(\d{1,2})\s+de\s+([a-zç]+)\s+de\s+(\d{4})/i.exec(str);
+  if (ptLong) {
+    const key = ptLong[2].toLowerCase();
+    if (key in MONTHS_PT_LONG) {
+      return new Date(Date.UTC(+ptLong[3], MONTHS_PT_LONG[key], +ptLong[1], 12));
+    }
+  }
+
+  // Fallback to native (handles "2026-08-03T…Z", "August 3, 2026", etc.)
+  const d = new Date(str);
   return isNaN(d) ? null : d;
 }
 
