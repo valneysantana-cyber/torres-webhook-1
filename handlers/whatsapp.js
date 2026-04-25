@@ -65,7 +65,8 @@ const {
 const { fetchReservationByCode } = require('../services/stays');
 const { getChatGptFallbackReply, transcribeAudioBuffer } = require('../services/openai');
 const { getTenantByPhoneId, resolveTenantByGuestPhone } = require('../services/tenant');
-const { downloadWhatsAppMedia, replyToGuest, markReadAndTyping, sendWelcomeKit } = require('../services/whatsapp');
+const { downloadWhatsAppMedia, replyToGuest, markReadAndTyping, sendWelcomeKit, sendWhatsAppText } = require('../services/whatsapp');
+const windowGuard = require('../services/windowGuard');
 const { saveMessage, getContext, getProfile, updateProfile } = require('../services/crm');
 const { classifyMessage } = require('../services/classifier');
 const {
@@ -259,6 +260,14 @@ async function handleIncoming(payload) {
 
         // ── UX imediato: visto azul antes de processar ──
         markReadAndTyping(from, message.id).catch(() => {});
+
+        // ── Window guard: drena pendentes (mensagens que não puderam ser
+        //    enviadas antes por janela 24h fechada). Esta inbound abre a janela,
+        //    então enviamos as pendentes ANTES de processar o turno atual.
+        //    Tolerante a falha — não interrompe o fluxo se algo der errado.
+        windowGuard.drainPending(from, (text) => sendWhatsAppText(from, text))
+          .then((n) => { if (n > 0) console.log(`[wg] drained ${n} pending message(s) for ${from}`); })
+          .catch((err) => console.error('[wg] drain bg error:', err.message));
 
         let camFromAudio = false;
         let body = '';

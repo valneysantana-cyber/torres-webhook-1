@@ -23,6 +23,7 @@ const nodemailer = require('nodemailer');
 const { normalizeText } = require('../utils/formatters');
 const { getChatGptFallbackReply } = require('../services/openai');
 const { sendWhatsAppText } = require('../services/whatsapp');
+const windowGuard = require('../services/windowGuard');
 
 // -- Import the EXACT SAME matchers and responses from WhatsApp --
 const {
@@ -199,21 +200,37 @@ async function sendEmailReply(replyTo, responseText, guestName, threading = {}) 
  * @param {string} responseText - The response to send
  * @returns {boolean} Whether the message was sent successfully
  */
-async function sendWhatsAppToGuest(guestPhone, guestName, responseText) {
+async function sendWhatsAppToGuest(guestPhone, guestName, responseText, opts = {}) {
   if (!guestPhone) {
     console.log('[email] No guest phone available -- WhatsApp to guest skipped');
     return false;
   }
 
-  try {
-    // Add greeting prefix for WhatsApp (more personal than email)
-    const whatsappMessage = `Olá ${guestName}! :)\n\n${responseText}\n\n` +
-      `-- TorresGuest Concierge\n` +
-      `Hotel em Perdizes - São Paulo/SP`;
+  // Add greeting prefix for WhatsApp (more personal than email)
+  const whatsappMessage = `Olá ${guestName}! :)\n\n${responseText}\n\n` +
+    `-- TorresGuest Concierge\n` +
+    `Hotel em Perdizes - São Paulo/SP`;
 
-    await sendWhatsAppText(guestPhone, whatsappMessage);
-    console.log(`[email] [OK] WhatsApp sent to guest ${guestName} (${guestPhone})`);
-    return true;
+  // Guard contra Meta 24h service window: hóspede que ainda não mandou inbound
+  // não tem janela aberta — Meta dropa silencioso. Se fechada, enfileira no CRM
+  // e drena na próxima inbound do hóspede.
+  try {
+    const result = await windowGuard.sendOrQueue(
+      guestPhone,
+      whatsappMessage,
+      () => sendWhatsAppText(guestPhone, whatsappMessage),
+      { tenantId: opts.tenantId, reason: opts.reason || 'email_reply' },
+    );
+    if (result.sent) {
+      console.log(`[email] [OK] WhatsApp sent to guest ${guestName} (${guestPhone})`);
+      return true;
+    }
+    if (result.queued) {
+      console.log(`[email] [QUEUED] WhatsApp to ${guestName} (${guestPhone}) — janela 24h fechada, drena na próxima inbound`);
+      return true; // ainda conta como sucesso operacional — vai entregar
+    }
+    console.error(`[email] [ERR] Failed to send/queue WhatsApp to ${guestName} (${guestPhone})`);
+    return false;
   } catch (err) {
     console.error(`[email] [ERR] Failed to send WhatsApp to guest ${guestName}:`, err.message);
     return false;
@@ -359,7 +376,8 @@ async function handleEmailResponse(otaData) {
     whatsappSent = await sendWhatsAppToGuest(
       otaData.reservation.guestPhoneClean,
       guestName,
-      response // Use original response (with WhatsApp formatting) for WhatsApp
+      response, // Use original response (with WhatsApp formatting) for WhatsApp
+      { tenantId: otaData.reservation?.tenantId || otaData.tenantId, reason: 'email_reply' },
     );
   } else if (!otaData.reservation?.guestPhoneClean) {
     console.log('[email] No guest phone in reservation data -- WhatsApp to guest skipped');
