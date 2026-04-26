@@ -91,7 +91,10 @@ function invalidateCache(phoneId) {
  * @returns {Promise<object>} Tenant com settings do dono da reserva ativa OU cc_sales
  */
 async function resolveTenantByGuestPhone(phone, fallbackTenant) {
-  if (!phone || !fallbackTenant) return fallbackTenant;
+  if (!phone || !fallbackTenant) {
+    console.log('[tenant-debug] skip phone=' + phone + ' fallback=' + (fallbackTenant && fallbackTenant.tenantId));
+    return fallbackTenant;
+  }
   try {
     const Reservation = require('../models/Reservation');
     // Busca reserva mais recente do phone, com preferência pra ativa (check-out futuro)
@@ -100,23 +103,31 @@ async function resolveTenantByGuestPhone(phone, fallbackTenant) {
       status: { $nin: ['cancelado', 'no-show'] },
     }).sort({ checkInDate: -1, createdAt: -1 }).lean();
 
+    console.log('[tenant-debug] phone=' + phone + ' reservation=' + (res ? JSON.stringify({tenantId: res.tenantId, status: res.status, name: res.guestName}) : 'NULL'));
+
     // Sem reserva → é prospect do site. Tenta cc_sales.
     if (!res || !res.tenantId) {
       const sales = await fetchTenantById('cc_sales');
+      console.log('[tenant-debug] cc_sales fetch: ' + (sales ? 'tenantId=' + sales.tenantId + ' active=' + sales.active : 'NULL/error'));
       if (sales && sales.active !== false) {
         console.log('[tenant] phone=' + phone + ' sem reserva → cc_sales (prospect)');
         return sales;
       }
+      console.warn('[tenant] cc_sales unavailable → fallback ' + fallbackTenant.tenantId);
       return fallbackTenant;
     }
 
-    if (res.tenantId === fallbackTenant.tenantId) return fallbackTenant;
+    if (res.tenantId === fallbackTenant.tenantId) {
+      console.log('[tenant-debug] reserva matches fallback (' + fallbackTenant.tenantId + '), no fetch');
+      return fallbackTenant;
+    }
 
     // Reserva ativa → carrega tenant dono
     const t = await fetchTenantById(res.tenantId);
+    console.log('[tenant-debug] fetched ' + res.tenantId + ': ' + (t ? 'OK' : 'NULL'));
     return (t && t.tenantId) ? t : fallbackTenant;
   } catch (e) {
-    console.error('[tenant] resolveTenantByGuestPhone error:', e.message);
+    console.error('[tenant] resolveTenantByGuestPhone error:', e.message, e.stack);
     return fallbackTenant;
   }
 }
