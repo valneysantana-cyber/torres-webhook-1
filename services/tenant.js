@@ -78,39 +78,62 @@ function invalidateCache(phoneId) {
  * hospede tá ativa agora e usar o `tenantId` dela.
  *
  * Fluxo:
- *   phone → Reservation.findActive(phone) → reservation.tenantId → fetch tenant config
+ *   1. phone → Reservation.findActive(phone) → reservation.tenantId → fetch tenant config
+ *   2. Sem reserva: tenta `cc_sales` (contexto pré-vendas/produto ConciergeCloud)
+ *   3. Sem cc_sales: cai no fallbackTenant (legacy comportamento)
  *
- * Fallback: se hospede não tem reserva ativa (primeira interação, pesquisa, etc)
- * usa o master (fallbackTenant).
+ * Por que cc_sales: o número do WhatsApp ConciergeCloud é divulgado na landing
+ * pra prospects/visitantes do site. Sem reserva = lead querendo saber do produto,
+ * NÃO hóspede TorresGuest. cc_sales tem systemPrompt de vendas (vide tenant doc).
  *
  * @param {string} phone Guest phone E.164 digits (e.g. "5511999999999")
  * @param {object} fallbackTenant Master tenant (do getTenantByPhoneId)
- * @returns {Promise<object>} Tenant com settings do dono da reserva ativa
+ * @returns {Promise<object>} Tenant com settings do dono da reserva ativa OU cc_sales
  */
 async function resolveTenantByGuestPhone(phone, fallbackTenant) {
   if (!phone || !fallbackTenant) return fallbackTenant;
   try {
     const Reservation = require('../models/Reservation');
     // Busca reserva mais recente do phone, com preferência pra ativa (check-out futuro)
-    const now = new Date();
     const res = await Reservation.findOne({
       guestPhoneClean: phone,
       status: { $nin: ['cancelado', 'no-show'] },
     }).sort({ checkInDate: -1, createdAt: -1 }).lean();
-    if (!res || !res.tenantId || res.tenantId === fallbackTenant.tenantId) return fallbackTenant;
 
-    // Fetch tenant config via CRM API (endpoint público x-api-key)
-    const r = await fetch(`${CRM_API_URL}/admin/tenant-by-id/${encodeURIComponent(res.tenantId)}`, {
-      method: 'GET',
-      headers: { 'x-api-key': CRM_API_KEY, 'Accept': 'application/json' },
-    });
-    if (!r.ok) return fallbackTenant;
-    const data = await r.json();
-    const t = data.tenant || data;
-    return t && t.tenantId ? t : fallbackTenant;
+    // Sem reserva → é prospect do site. Tenta cc_sales.
+    if (!res || !res.tenantId) {
+      const sales = await fetchTenantById('cc_sales');
+      if (sales && sales.active !== false) {
+        console.log('[tenant] phone=' + phone + ' sem reserva → cc_sales (prospect)');
+        return sales;
+      }
+      return fallbackTenant;
+    }
+
+    if (res.tenantId === fallbackTenant.tenantId) return fallbackTenant;
+
+    // Reserva ativa → carrega tenant dono
+    const t = await fetchTenantById(res.tenantId);
+    return (t && t.tenantId) ? t : fallbackTenant;
   } catch (e) {
     console.error('[tenant] resolveTenantByGuestPhone error:', e.message);
     return fallbackTenant;
+  }
+}
+
+async function fetchTenantById(tenantId) {
+  if (!CRM_API_URL || !tenantId) return null;
+  try {
+    const r = await fetch(`${CRM_API_URL}/admin/tenant-by-id/${encodeURIComponent(tenantId)}`, {
+      method: 'GET',
+      headers: { 'x-api-key': CRM_API_KEY, 'Accept': 'application/json' },
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data.tenant || data || null;
+  } catch (e) {
+    console.error('[tenant] fetchTenantById error:', e.message);
+    return null;
   }
 }
 
