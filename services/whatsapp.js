@@ -233,7 +233,7 @@ function formatDatePTLong(value) {
  * @param {string} staysId      Stays.net reservation id (for portal URL)
  * @returns {Promise<{ok:boolean, skipped?:boolean, messageId?:string, error?:any}>}
  */
-async function sendCheckinTemplate(phone, firstName, listingName, checkInDate, staysId) {
+async function sendCheckinTemplate(phone, firstName, listingName, checkInDate, staysId, tenantSettings = {}) {
   if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) return { skipped: true, reason: 'missing credentials' };
   const templateName = process.env.WA_CHECKIN_TEMPLATE_NAME || 'checkin_link_pt';
   const publicUrl    = process.env.PUBLIC_URL || 'https://conciergecloud.com.br';
@@ -289,6 +289,35 @@ async function sendCheckinTemplate(phone, firstName, listingName, checkInDate, s
         }),
       });
     }
+
+    // Nota complementar por tenant.settings.checkInPolicy (default: mandatory = sem nota)
+    // Útil quando o template Meta diz "complete o pré-cadastro" mas a propriedade
+    // aceita check-in presencial. Ex: torres = optional (recepção 24h).
+    // Aviso: free-text só passa na 1a interação se o template foi enviado AGORA
+    // (abre janela de 24h). Hospede first-contact pode não receber se Meta dropar
+    // — mas é nota informativa, não bloqueante.
+    const policy = tenantSettings.checkInPolicy;
+    if (policy === 'optional' || (policy && typeof policy === 'object' && policy.note)) {
+      const note = (policy && policy.note)
+        ? policy.note
+        : 'ℹ️ O pré-check-in pelo WhatsApp é opcional — agiliza sua chegada, mas você também pode preencher tudo na recepção do hotel se preferir.';
+      await new Promise(res => setTimeout(res, 2000));
+      try {
+        await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: phone,
+            type: 'text',
+            text: { body: note },
+          }),
+        });
+      } catch (e) {
+        console.warn('[checkin] policy note send failed:', e.message);
+      }
+    }
+
     return { ok: true, messageId: data.messages?.[0]?.id, variant: isV2 ? 'v2' : 'v1' };
   } catch (e) {
     return { ok: false, error: e.message };

@@ -224,8 +224,18 @@ async function maybeSendCheckinTemplate(saved, reservationData) {
   const staysId     = saved.staysReservationId || reservationData.staysReservationId || '';
   const checkInDate = saved.checkin || reservationData.checkin;
 
-  console.log(`[email][autosend] sending checkin template to ${firstName} (${phone})`);
-  const result = await sendCheckinTemplate(phone, firstName, listingName, checkInDate, staysId);
+  // Resolve tenant pra pegar settings.checkInPolicy (default: mandatory = sem nota extra)
+  let tenantSettings = {};
+  try {
+    if (saved.tenantId) {
+      const { fetchTenantById } = require('./tenant');
+      const t = await fetchTenantById(saved.tenantId);
+      tenantSettings = (t && t.settings) || {};
+    }
+  } catch (e) { console.warn('[email][autosend] tenant fetch warn:', e.message); }
+
+  console.log(`[email][autosend] sending checkin template to ${firstName} (${phone}) tenant=${saved.tenantId||'?'} policy=${tenantSettings.checkInPolicy||'mandatory'}`);
+  const result = await sendCheckinTemplate(phone, firstName, listingName, checkInDate, staysId, tenantSettings);
   if (!result.ok) {
     if (result.skipped) console.log('[email][autosend] skipped:', result.reason);
     else console.error('[email][autosend] FAIL:', JSON.stringify(result.error).slice(0, 300));
