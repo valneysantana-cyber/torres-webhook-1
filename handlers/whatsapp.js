@@ -355,6 +355,43 @@ async function handleIncoming(payload) {
           }
         }
 
+        // ---- check-in template quick-reply (template v3+) ---------------
+        // Hospede tocou "Fazer agora" / "Na recepção" no template OU digitou
+        // afirmativa/negativa em janela 48h após template enviado.
+        // Match na resposta liberada pelo Meta (exato OU sinônimos comuns).
+        if (Reservation && body && body.trim().length > 0 && body.trim().length < 80) {
+          const txt = body.trim().toLowerCase();
+          const isYes = /^(fazer agora|sim|quero|agora|ok|claro|fazer|sim por favor|quero sim|fazer pré|fazer pre|pode mandar|manda|me manda)/.test(txt);
+          const isNo = /^(na recepção|na recepcao|recepção|recepcao|depois|presencial|prefiro recep|na hora|chego e faço|não|nao|deixa pra la|deixa)/.test(txt);
+          if (isYes || isNo) {
+            try {
+              const recent = await Reservation.findOne({
+                guestPhoneClean: from,
+                autoCheckinSentAt: { $gte: new Date(Date.now() - 48 * 3600 * 1000) },
+              }).sort({ autoCheckinSentAt: -1 }).lean();
+              if (recent && recent.staysReservationId) {
+                const publicUrl = process.env.PUBLIC_URL || 'https://conciergecloud.com.br';
+                if (isYes) {
+                  const url = `${publicUrl}/checkin/${recent.staysReservationId}`;
+                  await replyAndSave(from,
+                    `Perfeito! 📲 Aqui está seu pré-check-in:\n\n${url}\n\nLeva 2 minutos. Seus dados são protegidos conforme a LGPD. 🔒`,
+                    { alsoSendAudio: camFromAudio }
+                  );
+                } else {
+                  await replyAndSave(from,
+                    `Combinado! 🏨 Quando chegar, é só ir direto à recepção do hotel.\n\n📄 *Importante:* leve um documento oficial com foto (RG, CNH ou passaporte) — é exigido pra liberar seu cartão de acesso.\n\nRecepção 24h. Qualquer dúvida, me chama por aqui. 😊`,
+                    { alsoSendAudio: camFromAudio }
+                  );
+                }
+                console.log(`[checkin-reply] phone=${from} choice=${isYes?'yes':'no'} reservation=${recent.staysReservationId}`);
+                continue;
+              }
+            } catch (e) {
+              console.warn('[checkin-reply] lookup failed (fallthrough):', e.message);
+            }
+          }
+        }
+
         // ---- escalation classifier (prioridade máxima p/ fluxo normal) --
         const escalation = classifyMessage(body);
         if (escalation) {
