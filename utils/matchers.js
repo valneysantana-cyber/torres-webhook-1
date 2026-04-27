@@ -63,8 +63,16 @@ function shouldSendTransfer(text) {
 function shouldSendHuman(text) {
   return (
     isNumericSelection(text, '10') ||
-    /\b(falar com atendente|falar com atendimento|falar com humano|atendente humano|atendimento humano|quero falar com alguem|quero falar com uma pessoa|quero falar com humano|preciso de atendimento humano|me chama um atendente|me encaminha para atendente|me encaminhe para atendente|suporte humano)\b/.test(text)
+    /\b(falar com atendente|falar com atendimento|falar com humano|atendente humano|atendimento humano|quero falar com alguem|quero falar com uma pessoa|quero falar com humano|preciso de atendimento humano|me chama um atendente|me encaminha para atendente|me encaminhe para atendente|suporte humano|me transfere para humano|me transfira para humano|me transfere para atendente|me transfira para atendente|transfere para humano|transfira para humano|transfere para atendente|transfira para atendente)\b/.test(text)
   );
+}
+
+function shouldHandleCancellationRequest(text) {
+  // Hospede ATIVAMENTE pedindo pra cancelar a reserva (diferente de cancellation
+  // retention que captura motivo APOS cancellation event no Stays). Aqui é
+  // proatividade: se hospede manda "quero cancelar minha reserva" via WhatsApp,
+  // direcionamos pra plataforma de origem ou pra humano.
+  return /\b(quero cancelar|preciso cancelar|gostaria de cancelar|posso cancelar|cancelar minha reserva|cancelar a reserva|cancelar a hospedagem|cancelamento da reserva|desistir da reserva|desistir da hospedagem|desistir da estadia|nao vou conseguir ir|nao posso mais ir|nao consigo ir mais)\b/.test(text);
 }
 
 function shouldRedirectToReservationSite(text) {
@@ -200,6 +208,7 @@ module.exports = {
   shouldSendCheckin,
   shouldSendTransfer,
   shouldSendHuman,
+  shouldHandleCancellationRequest,
   shouldRedirectToReservationSite,
   shouldSendSecurity,
   shouldSendLocation,

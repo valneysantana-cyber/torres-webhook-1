@@ -45,6 +45,7 @@ const {
   shouldSendCheckin,
   shouldSendTransfer,
   shouldSendHuman,
+  shouldHandleCancellationRequest,
   shouldRedirectToReservationSite,
   shouldSendSecurity,
   shouldSendLocation,
@@ -427,6 +428,20 @@ async function handleIncoming(payload) {
 
         // ---- reservation confirmation flow ------------------------------
         if (await maybeHandleReservationConfirmation({ rawText: body, normalizedText: normalized, from, camFromAudio })) {
+          continue;
+        }
+
+        // ---- ACTIVE CANCELLATION REQUEST (escalation) -------------------
+        // Hospede pedindo pra cancelar reserva via WhatsApp. Direciona pra
+        // plataforma de origem + escala humano. ANTES do redirect-to-site
+        // pra evitar match em "reserva" → "fazer nova reserva".
+        if (shouldHandleCancellationRequest(normalized)) {
+          console.log('[cancellation] active request detected from', from);
+          await replyAndSave(from,
+            `Entendi! 😔 Pra cancelar sua reserva, normalmente é direto na plataforma onde você reservou (Booking, Airbnb, site da Stays).\n\nSe precisar de ajuda ou quiser que eu repasse pro nosso time, te conecto com a Sofia: 📱 +55 13 99615-5505 — ela cuida do cancelamento direto com você.`,
+            { alsoSendAudio: camFromAudio }
+          );
+          await sendEscalationAlert(from, body, { name: 'Cancelamento', level: 'alta' }).catch(() => {});
           continue;
         }
 
