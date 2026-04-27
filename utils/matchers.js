@@ -54,7 +54,10 @@ function shouldSendCheckin(text) {
 }
 
 function shouldSendTransfer(text) {
-  return isNumericSelection(text, '9') || /(transfer|aeroporto|uber|taxi|traslado)/.test(text);
+  // \b evita matchar "transferisse"/"transferir"/"transferência" (que indicam pedir
+  // transferência pra outro atendente, não transfer aeroporto). Caso real 27/04:
+  // "transferisse para atendimento humano" caiu aqui antes do shouldSendHuman.
+  return isNumericSelection(text, '9') || /\b(transfer|aeroporto|uber|taxi|traslado)\b/.test(text);
 }
 
 function shouldSendHuman(text) {

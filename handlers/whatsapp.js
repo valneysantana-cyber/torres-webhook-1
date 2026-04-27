@@ -356,13 +356,14 @@ async function handleIncoming(payload) {
         }
 
         // ---- check-in template quick-reply (template v3+) ---------------
-        // Hospede tocou "Fazer agora" / "Na recepção" no template OU digitou
-        // afirmativa/negativa em janela 48h após template enviado.
-        // Match na resposta liberada pelo Meta (exato OU sinônimos comuns).
-        if (Reservation && body && body.trim().length > 0 && body.trim().length < 80) {
+        // Match SOMENTE no payload exato dos quick-reply buttons do template Meta.
+        // Variações de free-text ("quero", "não") caem no classifier/AI normal —
+        // antes match permissivo causou falso-positivo: "quero falar com humano"
+        // foi interpretado como "Fazer agora" e respondeu com link de checkin.
+        if (Reservation && body) {
           const txt = body.trim().toLowerCase();
-          const isYes = /^(fazer agora|sim|quero|agora|ok|claro|fazer|sim por favor|quero sim|fazer pré|fazer pre|pode mandar|manda|me manda)/.test(txt);
-          const isNo = /^(na recepção|na recepcao|recepção|recepcao|depois|presencial|prefiro recep|na hora|chego e faço|não|nao|deixa pra la|deixa)/.test(txt);
+          const isYes = txt === 'fazer agora';
+          const isNo = txt === 'na recepção' || txt === 'na recepcao';
           if (isYes || isNo) {
             try {
               const recent = await Reservation.findOne({
