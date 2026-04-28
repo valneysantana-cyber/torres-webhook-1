@@ -343,6 +343,7 @@ async function sendWelcomeKit(phone, data = {}) {
   const dateBR = data.checkInDate ? formatDatePTLong(data.checkInDate) : '';
   const nightsLine = data.nights ? ` por ${data.nights} dia${data.nights > 1 ? 's' : ''}` : '';
   const valueLine  = data.totalValue ? `, no valor de ${data.totalValue}` : '';
+  const { links: affLinks } = require('../utils/affiliateLinks');
 
   const body = [
     `Olá, ${firstName}! 😊`,
@@ -362,6 +363,9 @@ async function sendWelcomeKit(phone, data = {}) {
     '🛠️ Aviso rápido de melhorias: nas próximas semanas pode ocorrer limpeza de fachada e troca de carpetes nos corredores, eventualmente em horário comercial — plano do hotel para te receber com mais conforto.',
     '',
     '🍫 Frigobar: prontinho e abastecido. Pagamento via PIX pelo QR Code na plaquinha sob a pia (reposição feita pela nossa equipe, não pelo hotel).',
+    '',
+    `🍝 Pedido no Don Maitre (10% off): ${affLinks.donMaitre('welcome_kit')}`,
+    `📖 Guia do hóspede (Wi-Fi, dicas, vizinhança): ${affLinks.guide('welcome_kit')}`,
     '',
     'Se precisar de qualquer suporte, conte conosco — estou disponível 24/7 por aqui.',
     '',
