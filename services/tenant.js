@@ -90,31 +90,56 @@ function invalidateCache(phoneId) {
  * @param {object} fallbackTenant Master tenant (do getTenantByPhoneId)
  * @returns {Promise<object>} Tenant com settings do dono da reserva ativa OU cc_sales
  */
+// Cancelamento recente: manter tenant original em vez de cair em cc_sales.
+// Janela de 7 dias cobre: hóspede cancela e volta com dúvida/reembolso/remarcação.
+const RECENT_CANCELLATION_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
 async function resolveTenantByGuestPhone(phone, fallbackTenant) {
   if (!phone || !fallbackTenant) return fallbackTenant;
   try {
     const Reservation = require('../models/Reservation');
-    // Busca reserva mais recente do phone, com preferência pra ativa (check-out futuro)
-    const res = await Reservation.findOne({
+
+    // 1. Busca reserva ATIVA (não cancelada) mais recente
+    const active = await Reservation.findOne({
       guestPhoneClean: phone,
       status: { $nin: ['cancelado', 'no-show'] },
     }).sort({ checkInDate: -1, createdAt: -1 }).lean();
 
-    // Sem reserva → é prospect do site. Tenta cc_sales.
-    if (!res || !res.tenantId) {
-      const sales = await fetchTenantById('cc_sales');
-      if (sales && sales.active !== false) {
-        console.log('[tenant] phone=' + phone + ' sem reserva → cc_sales (prospect)');
-        return sales;
-      }
-      return fallbackTenant;
+    if (active && active.tenantId) {
+      if (active.tenantId === fallbackTenant.tenantId) return fallbackTenant;
+      const t = await fetchTenantById(active.tenantId);
+      return (t && t.tenantId) ? t : fallbackTenant;
     }
 
-    if (res.tenantId === fallbackTenant.tenantId) return fallbackTenant;
+    // 2. Sem reserva ativa: checar cancelamento recente (janela 7d)
+    // Mantém o tenant original pra hóspede cancelado conversar sobre
+    // reembolso/remarcação no contexto certo, em vez de virar prospect SaaS.
+    const recentCancel = await Reservation.findOne({
+      guestPhoneClean: phone,
+      status: { $in: ['cancelado', 'no-show'] },
+    }).sort({ updatedAt: -1, checkInDate: -1 }).lean();
 
-    // Reserva ativa → carrega tenant dono
-    const t = await fetchTenantById(res.tenantId);
-    return (t && t.tenantId) ? t : fallbackTenant;
+    if (recentCancel && recentCancel.tenantId) {
+      const cancelTs = recentCancel.cancellationReasonReceivedAt
+        || recentCancel.cancellationRetentionSentAt
+        || recentCancel.updatedAt
+        || recentCancel.createdAt;
+      const ageMs = cancelTs ? (Date.now() - new Date(cancelTs).getTime()) : Infinity;
+      if (ageMs < RECENT_CANCELLATION_WINDOW_MS) {
+        console.log('[tenant] phone=' + phone + ' cancelamento recente (' + Math.round(ageMs / 3600000) + 'h) → mantendo tenant=' + recentCancel.tenantId);
+        if (recentCancel.tenantId === fallbackTenant.tenantId) return fallbackTenant;
+        const t = await fetchTenantById(recentCancel.tenantId);
+        if (t && t.tenantId) return t;
+      }
+    }
+
+    // 3. Sem reserva ativa nem cancelada recente → prospect cc_sales
+    const sales = await fetchTenantById('cc_sales');
+    if (sales && sales.active !== false) {
+      console.log('[tenant] phone=' + phone + ' sem reserva → cc_sales (prospect)');
+      return sales;
+    }
+    return fallbackTenant;
   } catch (e) {
     console.error('[tenant] resolveTenantByGuestPhone error:', e.message);
     return fallbackTenant;

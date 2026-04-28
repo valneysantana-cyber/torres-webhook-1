@@ -46,6 +46,13 @@ function shouldSendRestaurant(text) {
   return isNumericSelection(text, '7') || /(restaurante do hotel|restaurante no hotel|almoco|jantar|refeicao|refeicoes)/.test(text);
 }
 
+// Pedido/delivery — encaminha pra landing do Don Maitre (parceiro) com cupom.
+// Avaliado ANTES de shouldSendRestaurant em PT_DISPATCH pra "pedir comida"
+// não cair na resposta genérica de "restaurante do hotel".
+function shouldSendFoodOrder(text) {
+  return /(pedir comida|pedido de comida|fazer um pedido|fazer pedido|pedido no restaurante|cardapio|cardápio|pedir refei|delivery|ifood|i food|food order|order food|fome|estou com fome|comida no quarto|room service)/.test(text);
+}
+
 function shouldSendCheckin(text) {
   return (
     isNumericSelection(text, '8') ||
@@ -205,6 +212,7 @@ module.exports = {
   shouldSendSnacks,
   shouldSendTowels,
   shouldSendRestaurant,
+  shouldSendFoodOrder,
   shouldSendCheckin,
   shouldSendTransfer,
   shouldSendHuman,
