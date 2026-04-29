@@ -3,25 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel do Anfitrião — ConciergeCloud</title>
+<meta name="robots" content="noindex,nofollow">
+<title>Afiliações — ConciergeCloud (admin)</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--brand:#1A6B8A;--brand-dark:#124E68;--brand-light:#EAF4F9;--accent:#F0A500;--text:#1C2B36;--muted:#5A7080;--border:#DDE7EE;--white:#fff;--success:#1E8449;--warn:#B37400;--err:#C0392B;--bg:#F7FBFD}
 body{font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif;color:var(--text);background:var(--bg);line-height:1.5;min-height:100vh}
-
-/* HEADER */
 header{background:var(--brand-dark);color:#fff;padding:14px 5%;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 6px rgba(0,0,0,.1)}
 header .brand{font-size:1.2rem;font-weight:600;letter-spacing:.3px;display:flex;align-items:center;gap:10px}
 header .brand .logo{font-size:1.4rem}
 header .user{font-size:.9rem;opacity:.9}
 header .user b{font-weight:600}
-
-/* CONTAINER */
 .container{max-width:1280px;margin:0 auto;padding:30px 5% 80px}
 h1{font-size:1.6rem;color:var(--brand-dark);margin-bottom:6px}
 .subtitle{color:var(--muted);margin-bottom:28px;font-size:.95rem}
-
-/* CARDS ROW */
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
 .stat-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:4px solid var(--brand)}
 .stat-card.accent{border-left-color:var(--accent)}
@@ -30,18 +25,12 @@ h1{font-size:1.6rem;color:var(--brand-dark);margin-bottom:6px}
 .stat-card h3{font-size:.78rem;text-transform:uppercase;color:var(--muted);letter-spacing:.5px;margin-bottom:8px;font-weight:600}
 .stat-card .value{font-size:2rem;font-weight:700;color:var(--brand-dark)}
 .stat-card .sub{font-size:.85rem;color:var(--muted);margin-top:4px}
-
-/* SECTIONS */
 .section{background:#fff;border-radius:10px;padding:22px 24px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .section h2{font-size:1.15rem;color:var(--brand-dark);margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .section .section-sub{color:var(--muted);font-size:.85rem;margin-bottom:18px}
 .section-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;flex-wrap:wrap;gap:10px}
 .btn{display:inline-block;padding:8px 14px;background:var(--brand);color:#fff;border-radius:6px;font-size:.85rem;text-decoration:none;border:0;cursor:pointer;font-family:inherit;transition:background .15s}
 .btn:hover{background:var(--brand-dark)}
-.btn.accent{background:var(--accent);color:var(--brand-dark);font-weight:600}
-.btn.accent:hover{background:#d98900}
-
-/* TABLE */
 table{width:100%;border-collapse:collapse;font-size:.9rem}
 th{text-align:left;padding:10px 8px;color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border);background:var(--bg)}
 td{padding:12px 8px;border-bottom:1px solid var(--border)}
@@ -50,34 +39,16 @@ tr:hover td{background:#fafcfd}
 .badge.booking{background:#003580;color:#fff}
 .badge.airbnb{background:#FF5A5F;color:#fff}
 .badge.expedia{background:#FFD200;color:#000}
-.badge.website{background:var(--brand);color:#fff}
-.badge.decolar{background:#662D91;color:#fff}
 .badge.outros{background:var(--muted);color:#fff}
 .badge.level-Embaixador{background:#9b59b6;color:#fff}
-.badge.level-VIP{background:#e74c3c;color:#fff}
-.badge.level-Frequente{background:#3498db;color:#fff}
-.badge.level-Visitante{background:#bdc3c7;color:#333}
 .muted{color:var(--muted);font-size:.85rem}
 .empty{text-align:center;padding:40px 20px;color:var(--muted)}
-.loading{text-align:center;padding:30px;color:var(--muted)}
-.error{background:#FDEDEC;color:var(--err);padding:12px 16px;border-radius:6px;margin:10px 0;font-size:.9rem}
-
-/* Conversation list */
-.conv-list{max-height:480px;overflow-y:auto}
-.conv-item{display:flex;justify-content:space-between;align-items:center;padding:12px 10px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
-.conv-item:hover{background:var(--brand-light)}
-.conv-item .left{flex:1;min-width:0}
-.conv-item .name{font-weight:600;color:var(--text)}
-.conv-item .preview{color:var(--muted);font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-.conv-item .right{text-align:right;font-size:.75rem;color:var(--muted);margin-left:12px;flex-shrink:0}
-
-/* TABS quando tem >1 tenant */
-.tenant-switch{display:none;margin-bottom:18px}
-.tenant-switch select{padding:6px 10px;border-radius:6px;border:1px solid var(--border);font-size:.9rem;background:#fff}
-
+.gate{background:#fff;border-radius:10px;padding:40px;text-align:center;max-width:520px;margin:80px auto;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.gate h2{color:var(--brand-dark);margin-bottom:10px}
+.gate p{color:var(--muted);margin-bottom:18px}
+.gate code{background:var(--brand-light);padding:3px 8px;border-radius:4px;font-size:.85rem;color:var(--brand-dark)}
 footer{text-align:center;color:var(--muted);font-size:.8rem;padding:20px;margin-top:30px;border-top:1px solid var(--border)}
 footer a{color:var(--muted);text-decoration:underline;margin:0 6px}
-
 @media (max-width:600px){
   .stat-card .value{font-size:1.6rem}
   th,td{padding:8px 6px;font-size:.82rem}
@@ -91,87 +62,71 @@ footer a{color:var(--muted);text-decoration:underline;margin:0 6px}
   <a href="/" class="brand" style="text-decoration:none;color:inherit" title="Voltar ao site"><span class="logo">🏠</span><span>ConciergeCloud</span></a>
   <div class="nav" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
     <a href="/admin.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">Tenants</a>
-    <a href="/dashboard.html" style="color:#fff;text-decoration:none;font-size:.9rem;border-bottom:2px solid #F0A500;padding-bottom:3px">Dashboard</a>
+    <a href="/dashboard.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">Dashboard</a>
     <a href="/admin/checkins.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">Pré-check-ins</a>
     <a href="/search.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">Buscar Hóspedes</a>
-    <a href="/afiliacoes.html" id="navAfiliados" style="display:none;color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">💰 Afiliados</a>
+    <a href="/afiliacoes.html" style="color:#fff;text-decoration:none;font-size:.9rem;border-bottom:2px solid #F0A500;padding-bottom:3px">💰 Afiliados</a>
     <span class="user" style="font-size:.85rem;opacity:.9;margin-left:10px">👤 <b id="currentUser">—</b></span>
   </div>
 </header>
 
-<div class="container">
+<div id="gate" class="gate" style="display:none">
+  <h2>🔒 Área restrita</h2>
+  <p>Esta página é admin-only. Pra habilitar, visite uma vez:</p>
+  <p><code>/dashboard.html?admin=1</code></p>
+  <p style="margin-top:18px"><a href="/dashboard.html" class="btn">Voltar ao Dashboard</a></p>
+</div>
 
-  <h1>Painel do Anfitrião</h1>
-  <div class="subtitle">Resumo do seu imóvel — reservas, hóspedes e atendimento automatizado</div>
+<div id="content" class="container" style="display:none">
 
-  <div class="tenant-switch" id="tenantSwitch">
-    <label><b>Tenant:</b> <select id="tenantSelect"></select></label>
-  </div>
+  <h1>💰 Afiliações ConciergeCloud</h1>
+  <div class="subtitle">Status de aplicações, aprovações e cliques rastreados por programa · admin only</div>
 
-  <!-- CARDS -->
-  <div class="stats-row" id="statsRow">
-    <div class="stat-card">
-      <h3>Total de Hóspedes</h3>
-      <div class="value" id="totalGuests">—</div>
-      <div class="sub">todos os tempos</div>
-    </div>
-    <div class="stat-card accent">
-      <h3>Reservas Próximas (7 dias)</h3>
-      <div class="value" id="upcomingCount">—</div>
-      <div class="sub" id="upcomingSub">—</div>
-    </div>
-    <div class="stat-card success">
-      <h3>Embaixadores + VIPs</h3>
-      <div class="value" id="vipCount">—</div>
-      <div class="sub">hóspedes de alto valor</div>
-    </div>
-    <div class="stat-card warn">
-      <h3>Receita Próxima (7d)</h3>
-      <div class="value" id="upcomingRevenue">—</div>
-      <div class="sub">BRL estimado</div>
-    </div>
-  </div>
+  <!-- STATS -->
+  <div class="stats-row" id="affStatsRow"></div>
 
-  <!-- PRÓXIMAS RESERVAS -->
+  <!-- FILTROS + TABELA -->
   <div class="section">
     <div class="section-header">
       <div>
-        <h2>📅 Próximas Reservas</h2>
-        <div class="section-sub">Próximos 30 dias, ordenadas por check-in</div>
+        <h2>📋 Programas</h2>
+        <div class="section-sub">Filtre por status e por persona</div>
       </div>
-      <div>
-        <select id="daysFilter" class="btn" style="background:#fff;color:var(--text);border:1px solid var(--border)" onchange="loadUpcoming()">
-          <option value="7">Próximos 7 dias</option>
-          <option value="14">Próximos 14 dias</option>
-          <option value="30" selected>Próximos 30 dias</option>
-          <option value="90">Próximos 90 dias</option>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="affFilter" class="btn" style="background:#fff;color:var(--text);border:1px solid var(--border)">
+          <option value="all">Todos status</option>
+          <option value="approved">✅ Aprovados</option>
+          <option value="pending">⏳ Pendentes</option>
+          <option value="applied">📨 Aplicados</option>
+          <option value="rejected">❌ Rejeitados</option>
+          <option value="not_applied">⚪ Não aplicados</option>
+        </select>
+        <select id="affPersona" class="btn" style="background:#fff;color:var(--text);border:1px solid var(--border)">
+          <option value="all">Todas personas</option>
+          <option value="traveler">✈️ Viajantes</option>
+          <option value="host">🏠 Anfitriões</option>
+          <option value="guest">🛌 Hóspedes</option>
+          <option value="premium">💎 Premium</option>
         </select>
       </div>
     </div>
-    <div id="upcomingTable" class="loading">Carregando reservas…</div>
-  </div>
-
-  <!-- ÚLTIMAS CONVERSAS -->
-  <div class="section">
-    <div class="section-header">
-      <div>
-        <h2>💬 Últimas Conversas</h2>
-        <div class="section-sub">Hóspedes que interagiram recentemente pelo WhatsApp</div>
-      </div>
-      <a href="/search.html" class="btn accent">🔎 Buscar hóspede</a>
+    <div id="affGrid"></div>
+    <div class="muted" style="margin-top:12px;font-size:.78rem">
+      Atualização manual em <code>afiliacoes.html</code> até integração GA4 Measurement Protocol estar live.
+      Pra desabilitar: console DevTools → <code>localStorage.removeItem('cc_admin'); location.reload()</code>
     </div>
-    <div id="convList" class="loading">Carregando conversas…</div>
   </div>
 
-  <!-- AÇÕES -->
+  <!-- ATALHOS -->
   <div class="section">
-    <h2>⚙️ Ações rápidas</h2>
-    <div class="section-sub">Acessos úteis do painel</div>
+    <h2>⚡ Atalhos rápidos</h2>
+    <div class="section-sub">Recursos relacionados</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-      <a href="/search.html" class="btn">🔎 Buscar Hóspedes</a>
-      <a href="/campaigns" class="btn" onclick="return false" style="opacity:.5;cursor:not-allowed" title="Em breve">📢 Campanhas (em breve)</a>
-      <a href="mailto:privacidade@conciergecloud.com.br?subject=Solicitação%20LGPD" class="btn">🛡️ Solicitar LGPD</a>
-      <a href="https://wa.me/5513996155505?text=Precisando%20de%20suporte%20ConciergeCloud" class="btn" target="_blank">💬 Suporte via WhatsApp</a>
+      <a href="https://ui.awin.com/dashboard/awin/publisher/2871781/br" target="_blank" class="btn">🛒 Awin Publisher</a>
+      <a href="https://app.impact.com" target="_blank" class="btn">📡 Impact (Holafly/Airalo)</a>
+      <a href="https://signup.hotmart.com/pt-br/afiliado" target="_blank" class="btn">🎓 Hotmart</a>
+      <a href="https://www.lomadee.com.br" target="_blank" class="btn">🛍️ Lomadee</a>
+      <a href="/admin/afiliacoes.html" class="btn">📊 Dashboard standalone (Basic Auth)</a>
     </div>
   </div>
 
@@ -179,138 +134,19 @@ footer a{color:var(--muted);text-decoration:underline;margin:0 6px}
 
 <footer>
   © 2026 ConciergeCloud ·
+  <a href="/dashboard.html">Voltar ao Dashboard</a> ·
   <a href="/termos.html" target="_blank">Termos</a> ·
-  <a href="/privacidade.html" target="_blank">Privacidade</a> ·
-  <a href="mailto:contato@conciergecloud.com.br">Contato</a>
+  <a href="/privacidade.html" target="_blank">Privacidade</a>
 </footer>
 
 <script>
-// ---------- CONFIG ----------
-const BASE = '/crm'; // nginx location /crm/ -> port 3001
-function headers(){
-  // Se rodar via nginx, X-Remote-User vem do htpasswd. Via direto, adiciona admin.
-  const h = {'Content-Type':'application/json'};
-  return h;
-}
-function fmt(n){return (n||0).toLocaleString('pt-BR')}
-function fmtBRL(n){return (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
-function fmtDate(d){if(!d)return '—';const dt=new Date(d);return dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}
-function fmtDateTime(d){if(!d)return '';const dt=new Date(d);return dt.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}
-function partnerBadge(p){
-  if(!p)return '<span class="badge outros">—</span>';
-  const low=p.toLowerCase();
-  if(low.includes('booking'))return '<span class="badge booking">Booking</span>';
-  if(low.includes('airbnb'))return '<span class="badge airbnb">Airbnb</span>';
-  if(low.includes('expedia'))return '<span class="badge expedia">Expedia</span>';
-  if(low.includes('website')||low.includes('direct'))return '<span class="badge website">Direto</span>';
-  if(low.includes('decolar'))return '<span class="badge decolar">Decolar</span>';
-  return '<span class="badge outros">'+p+'</span>';
-}
-
-async function api(path){
-  try{
-    const r = await fetch(BASE+path, {headers: headers()});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return await r.json();
-  } catch(e){
-    console.error('API error:', path, e);
-    return null;
-  }
-}
-
-// ---------- STATS ----------
-async function loadStats(){
-  const s = await api('/guests/stats');
-  if(!s){document.getElementById('totalGuests').textContent='erro';return}
-  document.getElementById('totalGuests').textContent = fmt(s.total);
-  const vipTotal = (s.embaixador||0) + (s.vip||0);
-  document.getElementById('vipCount').textContent = fmt(vipTotal);
-}
-
-// ---------- UPCOMING ----------
-async function loadUpcoming(){
-  const days = document.getElementById('daysFilter').value;
-  const container = document.getElementById('upcomingTable');
-  container.innerHTML = '<div class="loading">Carregando…</div>';
-  const data = await api('/reservations/upcoming?days='+days);
-  if(!data){container.innerHTML='<div class="error">Erro ao buscar reservas.</div>';return}
-
-  // Card resumo: top 7d
-  if(days==='30' || days==='7'){
-    const next7 = data.reservations.filter(r=>{
-      const ci = new Date(r.checkInDate);
-      const limit = new Date(Date.now()+7*24*3600*1000);
-      return ci <= limit;
-    });
-    document.getElementById('upcomingCount').textContent = fmt(next7.length);
-    const rev7 = next7.reduce((a,r)=>a+(r.priceTotal||0),0);
-    document.getElementById('upcomingRevenue').textContent = fmtBRL(rev7);
-    document.getElementById('upcomingSub').textContent = next7.length===0 ? 'nenhuma' : `${next7.length} check-in${next7.length>1?'s':''}`;
-  }
-
-  if(!data.reservations || data.reservations.length===0){
-    container.innerHTML = '<div class="empty">Nenhuma reserva nos próximos '+days+' dias.</div>';
-    return;
-  }
-
-  let html = '<table><thead><tr><th>Check-in</th><th>Check-out</th><th>Hóspede</th><th>Canal</th><th>Imóvel</th><th>Valor</th></tr></thead><tbody>';
-  for(const r of data.reservations){
-    html += '<tr>';
-    html += '<td><b>'+fmtDate(r.checkInDate)+'</b></td>';
-    html += '<td>'+fmtDate(r.checkOutDate)+'</td>';
-    html += '<td>'+(r.guestName||'<span class="muted">anônimo</span>')+(r.guestPhone?'<br><span class="muted">'+r.guestPhone+'</span>':'')+'</td>';
-    html += '<td>'+partnerBadge(r.partner)+'</td>';
-    html += '<td>'+(r.listingName||'<span class="muted">—</span>')+'</td>';
-    html += '<td>'+fmtBRL(r.priceTotal)+'</td>';
-    html += '</tr>';
-  }
-  html += '</tbody></table>';
-  html += '<div class="muted" style="margin-top:10px;text-align:right">'+data.reservations.length+' reserva'+(data.reservations.length>1?'s':'')+'</div>';
-  container.innerHTML = html;
-}
-
-// ---------- CONVERSATIONS ----------
-async function loadConversations(){
-  const container = document.getElementById('convList');
-  const data = await api('/conversations/recent?limit=20');
-  if(!data){container.innerHTML='<div class="error">Erro ao buscar conversas.</div>';return}
-  if(!data.conversations || data.conversations.length===0){
-    container.innerHTML = '<div class="empty">Nenhuma conversa recente.</div>';return;
-  }
-  let html = '<div class="conv-list">';
-  for(const c of data.conversations){
-    html += '<div class="conv-item" onclick="window.location.href=\'/search.html?q='+encodeURIComponent(c.phone)+'\'">';
-    html += '<div class="left">';
-    html += '<div class="name">'+(c.name||c.phone)+' <span class="badge level-'+(c.level||'Visitante')+'">'+(c.level||'Visitante')+'</span></div>';
-    html += '<div class="preview">'+(c.lastMessage || 'sem prévia')+'</div>';
-    html += '</div>';
-    html += '<div class="right">'+fmtDateTime(c.lastTs)+'<br><span class="muted">'+c.messageCount+' msg</span></div>';
-    html += '</div>';
-  }
-  html += '</div>';
-  container.innerHTML = html;
-}
-
-// ---------- INIT ----------
-function init(){
-  // Descobre usuario atual via nginx (se X-Remote-User estiver presente em cookie seria melhor)
-  // Por ora, lemos de URL param ou pedimos via prompt simples
-  document.getElementById('currentUser').textContent = 'anfitrião';
-  loadStats();
-  loadUpcoming();
-  loadConversations();
-  initAdminNav();
-}
-init();
-setInterval(()=>{loadStats();loadConversations()}, 60000); // refresh a cada 60s
-
 // ============================================================
-// ADMIN NAV — flag cc_admin no localStorage mostra item "💰 Afiliados"
-// O conteúdo está em /afiliacoes.html (página separada).
-// Habilitar: visite /dashboard.html?admin=1 uma vez OU console:
+// AFILIAÇÕES — admin-only feature flag
+// Habilitar: /dashboard.html?admin=1 OU console:
 //   localStorage.setItem('cc_admin','true'); location.reload();
 // Desabilitar: localStorage.removeItem('cc_admin'); location.reload();
 // ============================================================
+
 function isAdminEnabled(){
   const params = new URLSearchParams(location.search);
   if(params.get('admin')==='1'){
@@ -319,14 +155,8 @@ function isAdminEnabled(){
   }
   return localStorage.getItem('cc_admin')==='true';
 }
-function initAdminNav(){
-  if(!isAdminEnabled()) return;
-  const navAff = document.getElementById('navAfiliados');
-  if(navAff) navAff.style.display='';
-}
 
-/* ---- DEPRECATED ---- AFFILIATE_PROGRAMS movido para /afiliacoes.html
-const __DEAD_AFFILIATE_PROGRAMS = [
+const AFFILIATE_PROGRAMS = [
   // AWIN (12 aplicações 27-28/04)
   {network:'awin', merchant:'Booking.com BR', persona:'traveler', status:'pending', applied:'2026-04-27', approved:null, commission:'6-10%', nextAction:'Awin: aguardar 24-72h'},
   {network:'awin', merchant:'Radisson Hotels', persona:'traveler', status:'pending', applied:'2026-04-27', approved:null, commission:'~4%', nextAction:'Awin: aguardar'},
@@ -380,16 +210,6 @@ const AFF_PERSONA_LABEL = {traveler:'✈️ Viajante', host:'🏠 Anfitrião', g
 
 let affFilter = 'all', affPersona = 'all';
 
-function isAdminEnabled(){
-  const params = new URLSearchParams(location.search);
-  if(params.get('admin')==='1'){
-    localStorage.setItem('cc_admin','true');
-    // limpa querystring sem reload
-    history.replaceState({}, '', location.pathname);
-  }
-  return localStorage.getItem('cc_admin')==='true';
-}
-
 function renderAffStats(){
   const counts = {approved:0, pending:0, applied:0, rejected:0, not_applied:0};
   AFFILIATE_PROGRAMS.forEach(p => counts[p.status]++);
@@ -431,7 +251,20 @@ function renderAffGrid(){
   document.getElementById('affGrid').innerHTML = html;
 }
 
-// fim do código DEPRECATED — termina o block-comment aberto acima */
+function init(){
+  document.getElementById('currentUser').textContent = 'anfitrião';
+  if(!isAdminEnabled()){
+    document.getElementById('gate').style.display = '';
+    return;
+  }
+  document.getElementById('content').style.display = '';
+  document.getElementById('affFilter').addEventListener('change', e => { affFilter=e.target.value; renderAffGrid(); });
+  document.getElementById('affPersona').addEventListener('change', e => { affPersona=e.target.value; renderAffGrid(); });
+  renderAffStats();
+  renderAffGrid();
+}
+init();
 </script>
+
 </body>
 </html>
