@@ -436,6 +436,41 @@ async function sendCancellationRetention(phone, { firstName, ota } = {}) {
   }
 }
 
+/**
+ * Sends the `daily_report_v1` UTILITY template (8 vars) with the daily summary
+ * of arrivals / mid-stays / departures. Approved at Meta WhatsApp Manager —
+ * works OUTSIDE the 24h service window (unlike sendWhatsAppText which gets
+ * dropped silently for numbers that haven't pinged the bot recently).
+ *
+ * @param {string} phone     5511999073135
+ * @param {Array<{type:'text', text:string}>} parameters  Built by `utils/templates.buildDailyReportVars`
+ */
+async function sendDailyReportTemplate(phone, parameters) {
+  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) return { skipped: true, reason: 'missing credentials' };
+  const templateName = process.env.WA_DAILY_REPORT_TEMPLATE_NAME || 'daily_report_v1';
+  try {
+    const r = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: phone,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: 'pt_BR' },
+          components: [{ type: 'body', parameters }],
+        },
+      }),
+    });
+    const data = await r.json();
+    if (!r.ok) return { ok: false, error: data };
+    return { ok: true, messageId: data.messages?.[0]?.id };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
 module.exports = {
   markReadAndTyping,
   downloadWhatsAppMedia,
@@ -446,4 +481,5 @@ module.exports = {
   sendCheckinTemplate,
   sendWelcomeKit,
   sendCancellationRetention,
+  sendDailyReportTemplate,
 };
