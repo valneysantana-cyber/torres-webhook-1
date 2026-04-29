@@ -14,7 +14,12 @@
 const { DISPATCH_NUMBER } = require('../config')
 const { getCurrentDateBRT, resolveGuestName } = require('../utils/formatters');
 const { fetchTodayAllActiveGuests } = require('./stays');
-const { sendWhatsAppText } = require('./whatsapp');
+const { sendWhatsAppText, sendDailyReportTemplate } = require('./whatsapp');
+const { buildDailyReportVars } = require('../utils/templates');
+
+// Feature flag — quando true, daily report usa Meta template (funciona fora janela 24h).
+// Desligar pra rollback emergencial: `WA_DAILY_REPORT_USE_TEMPLATE=false` no Render.
+const USE_TEMPLATE = (process.env.WA_DAILY_REPORT_USE_TEMPLATE || 'true').toLowerCase() !== 'false';
 
 function resolveApartmentName(r, listingsMap) {
   const nested = r.listing || r.unit || r.accommodation || {};
@@ -44,9 +49,9 @@ async function dailyCheckinDispatch() {
       return ` • ${name} → ${apt} — ${guests} hóspede${guests !== 1 ? 's' : ''} (saída: ${checkout})`;
     };
 
-    const fmtCheckins  = checkinsHoje.length  === 0 ? ' (nenhum check-in hoje)'        : checkinsHoje.map(formatLine).join('\n');
-    const fmtEstadia   = emEstadia.length     === 0 ? ' (nenhum hóspede em estadia)'   : emEstadia.map(formatLine).join('\n');
-    const fmtCheckouts = checkoutsHoje.length === 0 ? ' (nenhum check-out hoje)'       : checkoutsHoje.map(formatLine).join('\n');
+    const fmtCheckins  = checkinsHoje.length  === 0 ? [' (nenhum check-in hoje)']        : checkinsHoje.map(formatLine);
+    const fmtEstadia   = emEstadia.length     === 0 ? [' (nenhum hóspede em estadia)']   : emEstadia.map(formatLine);
+    const fmtCheckouts = checkoutsHoje.length === 0 ? [' (nenhum check-out hoje)']       : checkoutsHoje.map(formatLine);
 
     // Total ativo = quem fica no hotel após o fim do dia.
     // Exclui check-outs (já de saída) e diárias (entra+sai no mesmo dia).
@@ -54,28 +59,46 @@ async function dailyCheckinDispatch() {
     const checkinsAtivos = checkinsHoje.filter((r) => !departureIds.has(String(r._id || r.id)));
     const totalAtivos = checkinsAtivos.length + emEstadia.length;
 
-    const mensagem = [
-      `🏨 *TorresGuest — Relatório Diário*`,
-      `📅 ${today}`,
-      ``,
-      `🛎 *Check-ins de hoje (${checkinsHoje.length}):*`,
-      fmtCheckins,
-      ``,
-      `🏠 *Em estadia (${emEstadia.length}):*`,
-      fmtEstadia,
-      ``,
-      `🚪 *Check-outs de hoje (${checkoutsHoje.length}):*`,
-      fmtCheckouts,
-      ``,
-      `📊 *Total de hóspedes ativos hoje: ${totalAtivos}*`,
-      `✅ Relatório gerado automaticamente.`,
-    ].join('\n');
-
     const numbers = DISPATCH_NUMBER.split(',').map(n => n.trim()).filter(Boolean);
-    for (const num of numbers) {
-      await sendWhatsAppText(num, mensagem);
+
+    if (USE_TEMPLATE) {
+      // Path NOVO — template Meta UTILITY `daily_report_v1` (funciona fora janela 24h)
+      const params = buildDailyReportVars({
+        today,
+        checkinsHoje: fmtCheckins,
+        emEstadia: fmtEstadia,
+        checkoutsHoje: fmtCheckouts,
+        totalAtivos,
+      });
+      const results = [];
+      for (const num of numbers) {
+        const r = await sendDailyReportTemplate(num, params);
+        results.push({ num, ok: !!r.ok, msgId: r.messageId, err: r.error?.error?.message || r.error });
+      }
+      console.log('[dispatch] Relatório diário (template) → ', results);
+    } else {
+      // Path LEGADO — free-text (só entrega pra números na janela 24h)
+      const mensagem = [
+        `🏨 *TorresGuest — Relatório Diário*`,
+        `📅 ${today}`,
+        ``,
+        `🛎 *Check-ins de hoje (${fmtCheckins.length === 1 && fmtCheckins[0].startsWith(' (nenhum') ? 0 : checkinsHoje.length}):*`,
+        fmtCheckins.join('\n'),
+        ``,
+        `🏠 *Em estadia (${fmtEstadia.length === 1 && fmtEstadia[0].startsWith(' (nenhum') ? 0 : emEstadia.length}):*`,
+        fmtEstadia.join('\n'),
+        ``,
+        `🚪 *Check-outs de hoje (${fmtCheckouts.length === 1 && fmtCheckouts[0].startsWith(' (nenhum') ? 0 : checkoutsHoje.length}):*`,
+        fmtCheckouts.join('\n'),
+        ``,
+        `📊 *Total de hóspedes ativos hoje: ${totalAtivos}*`,
+        `✅ Relatório gerado automaticamente.`,
+      ].join('\n');
+      for (const num of numbers) {
+        await sendWhatsAppText(num, mensagem);
+      }
+      console.log('[dispatch] Relatório diário (free-text legado) enviado para', numbers);
     }
-    console.log('[dispatch] Relatório diário enviado para', numbers);
   } catch (err) {
     console.error('[dispatch] Erro no dailyCheckinDispatch:', err.message);
   }
