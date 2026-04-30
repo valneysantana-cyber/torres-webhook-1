@@ -100,7 +100,7 @@ async function sendWhatsAppAudio(to, mediaId) {
 }
 
 async function sendWhatsAppText(to, body) {
-  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) { console.error('Missing WhatsApp credentials'); return; }
+  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) { console.error('Missing WhatsApp credentials'); return { ok: false, error: 'missing-credentials' }; }
   const response = await fetch(`https://graph.facebook.com/v25.0/${PHONE_NUMBER_ID}/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${WHATSAPP_TOKEN}` },
@@ -109,10 +109,11 @@ async function sendWhatsAppText(to, body) {
   if (!response.ok) {
     const text = await response.text();
     console.error('Failed to send WhatsApp message', response.status, text);
-  } else {
-    const data = await response.json();
-    console.log('WhatsApp reply sent', JSON.stringify(data));
+    return { ok: false, status: response.status, error: text };
   }
+  const data = await response.json();
+  console.log('WhatsApp reply sent', JSON.stringify(data));
+  return { ok: true, messageId: data?.messages?.[0]?.id };
 }
 
 async function replyToGuest(to, text, options = {}) {
