@@ -26,7 +26,7 @@ const {
   getReservationResponse,
   FRIGOBAR_PIX_RESPONSE,
   FRIGOBAR_RESTOCK_RESPONSE,
-  EARLY_COMPANION_ARRIVAL_RESPONSE,
+  getEarlyCompanionArrivalResponse,
 } = require('../responses/strings');
 const { getFaqResponse } = require('../responses/faq');
 const {
@@ -438,17 +438,31 @@ async function handleIncoming(payload) {
 
         // ---- EARLY COMPANION ARRIVAL ------------------------------------
         // Titular avisa que outra pessoa da reserva chegará antes ou pede
-        // acesso sem sua presença. Política TorresGuest permite — orienta
-        // o titular a enviar doc + nome + horário pra liberar a entrada.
-        // Posicionado ANTES de cancellation/redirect porque a frase comum
-        // ("acesso sem minha presença") não envolve "reserva" mas sim
-        // antecipação de chegada — e ANTES do AI fallback para garantir
-        // resposta determinística (GPT por padrão nega o acesso).
-        // Notify pra equipe via sendRoomRequestNotification — recepção
-        // precisa estar ciente do pedido.
+        // acesso sem sua presença. Política TorresGuest permite. Estratégia:
+        // localizar a reserva ativa e devolver o link do pré-checkin
+        // (`/checkin/{staysId}`) pra que o titular encaminhe pra acompanhante
+        // — ela mesma sobe doc + nome + horário no formulário, que dispara o
+        // email pra recepção AHI (Feature B). Sem máquina de estados, sem
+        // template Meta extra: reusa a infra de pré-checkin que já existe.
+        //
+        // Posicionado antes de cancellation/redirect (frase típica não
+        // envolve "reserva") e antes do AI fallback (GPT por padrão nega).
         if (shouldHandleEarlyCompanionArrival(body)) {
           console.log('[early-companion] detected from', from);
-          await replyAndSave(from, EARLY_COMPANION_ARRIVAL_RESPONSE, { alsoSendAudio: camFromAudio });
+          let staysId = null;
+          if (Reservation) {
+            try {
+              const reservation = await Reservation.findOne({
+                guestPhoneClean: from,
+                status: { $in: ['reservado', 'confirmado', 'checkin'] },
+              }).sort({ createdAt: -1 }).lean();
+              staysId = reservation?.staysReservationId || null;
+            } catch (e) {
+              console.warn('[early-companion] reservation lookup failed:', e.message);
+            }
+          }
+          const publicUrl = process.env.PUBLIC_URL || 'https://conciergecloud.com.br';
+          await replyAndSave(from, getEarlyCompanionArrivalResponse(staysId, publicUrl), { alsoSendAudio: camFromAudio });
           sendRoomRequestNotification(from, body, 'Antecipação de Chegada — Acompanhante').catch(() => {});
           continue;
         }
