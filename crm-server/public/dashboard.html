@@ -92,8 +92,15 @@ footer a{color:var(--muted);text-decoration:underline;margin:0 6px}
 <body>
 
 <header>
-  <div class="brand"><span class="logo">🏠</span><span>ConciergeCloud</span></div>
-  <div class="user">Conectado como <b id="currentUser">—</b></div>
+  <a href="/" class="brand" style="text-decoration:none;color:inherit" title="Voltar ao site"><span class="logo">🏠</span><span>ConciergeCloud</span></a>
+  <div class="nav" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+    <a href="/admin.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">Tenants</a>
+    <a href="/dashboard.html" style="color:#fff;text-decoration:none;font-size:.9rem;border-bottom:2px solid #F0A500;padding-bottom:3px">Dashboard</a>
+    <a href="/admin/checkins.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">Pré-check-ins</a>
+    <a href="/search.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">Buscar Hóspedes</a>
+    <a href="/afiliacoes.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">💰 Afiliados</a>
+    <span class="user" style="font-size:.85rem;opacity:.9;margin-left:10px">👤 <b id="currentUser">—</b></span>
+  </div>
 </header>
 
 <div class="container">
