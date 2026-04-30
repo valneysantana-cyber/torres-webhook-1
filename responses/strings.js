@@ -72,15 +72,43 @@ function getLocationResponse(lang) {
 }
 
 
-const EARLY_COMPANION_ARRIVAL_RESPONSE = `Claro! 🌴 Podemos receber seu(a) acompanhante antes da sua chegada — ele(a) faz parte da sua reserva, sem problema.
+/**
+ * Resposta para EARLY_COMPANION_ARRIVAL.
+ *
+ * Quando temos o staysId da reserva ativa do titular, devolvemos o link
+ * direto do pré-checkin — o titular encaminha pra acompanhante por
+ * qualquer canal e ela mesma preenche (doc + nome + horário) no
+ * formulário web, que dispara o email pra recepção AHI (Feature B).
+ *
+ * Quando não temos staysId (reserva não localizada), caímos na versão
+ * sem link — pede os dados pelo WhatsApp e escala pra Sofia se preciso.
+ */
+function getEarlyCompanionArrivalResponse(staysId, publicUrl) {
+  const base = publicUrl || 'https://conciergecloud.com.br';
+  if (staysId) {
+    return `Claro! 🌴 Podemos receber seu(a) acompanhante antes da sua chegada — ele(a) faz parte da sua reserva, sem problema.
 
-Pra garantir a segurança da estadia e agilizar a entrada dele(a), preciso só de 3 informações:
+É só ele(a) preencher o pré-checkin neste link:
 
-📄 *Documento com foto* (RG ou CNH — frente e verso)
-👤 *Nome completo* do(a) acompanhante
-🕐 *Horário previsto* de chegada
+🔗 ${base}/checkin/${staysId}
 
-Pode mandar tudo aqui pelo WhatsApp mesmo. Assim que receber, eu pré-cadastro e aviso a recepção — aí na chegada é só apresentar o documento original e o cartão de acesso é liberado. Tudo tranquilo! 😊`;
+Leva 2 minutos. O formulário pede:
+📄 Documento com foto (RG ou CNH — frente e verso)
+👤 Nome completo
+🕐 Horário previsto de chegada
+
+Pode encaminhar o link por aqui mesmo ou por outro canal. Assim que ele(a) enviar, a recepção é avisada automaticamente e na chegada é só apresentar o documento original. 😊`;
+  }
+  return `Claro! 🌴 Podemos receber seu(a) acompanhante antes da sua chegada — ele(a) faz parte da sua reserva, sem problema.
+
+Pra organizar a entrada dele(a), me passa por aqui:
+
+📄 Documento com foto (RG ou CNH — frente e verso)
+👤 Nome completo do(a) acompanhante
+🕐 Horário previsto de chegada
+
+Assim que receber, aviso a recepção e ele(a) só precisa apresentar o documento original na chegada. 😊`;
+}
 
 const FRIGOBAR_PIX_RESPONSE = `🍽️ *Cardápio — Frigobar & Snacks*
 
@@ -137,5 +165,5 @@ module.exports = {
   getLocationResponse,
   FRIGOBAR_PIX_RESPONSE,
   FRIGOBAR_RESTOCK_RESPONSE,
-  EARLY_COMPANION_ARRIVAL_RESPONSE,
+  getEarlyCompanionArrivalResponse,
 };
