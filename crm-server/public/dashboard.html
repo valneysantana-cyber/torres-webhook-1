@@ -388,7 +388,7 @@ const AFFILIATE_PROGRAMS = [
   {network:'awin', merchant:'Discover Car Hire AS', persona:'traveler', status:'pending', applied:'2026-04-27', approved:null, commission:'2.21% conv (EPC USD 0.64)', nextAction:'Awin: aguardar (descoberto pending no painel 30/04)'},
   {network:'direct', merchant:'Marriott Bonvoy (próprio)', persona:'premium', status:'direct_pending', applied:null, approved:null, commission:'3-6% + bônus', nextAction:'Registro em marriott.com/affiliates ou Impact (em CJ só UKLG cassino fake)'},
   {network:'direct', merchant:'Hilton Honors (próprio)', persona:'premium', status:'direct_pending', applied:null, approved:null, commission:'4%', nextAction:'Registro em hilton.com/affiliates ou Impact (não está em CJ)'},
-  {network:'cj', merchant:'IHG Europe (Intercontinental)', persona:'premium', status:'pending_review', applied:null, approved:null, commission:'3% (EPC USD 91/3m)', nextAction:'CJ ID 4381309 — botão Apply desabilitado, conta em revisão (verificar W-8BEN-E + bank)'},
+  {network:'cj', merchant:'IHG Europe (Intercontinental)', persona:'premium', status:'pending', applied:'2026-04-30', approved:null, commission:'3% (EPC USD 91/3m)', nextAction:'CJ ID 4381309 — aplicado 30/04, aguardar revisão manual'},
   {network:'direct', merchant:'Magazine Luiza (próprio)', persona:'host', status:'direct_pending', applied:null, approved:null, commission:'2-8%', nextAction:'Registro separado em advertise.magalu.com.br (não está em Lomadee/Awin/CJ)'},
   {network:'awin', merchant:'Casas Bahia BR', persona:'host', status:'pending', applied:'2026-04-30', approved:null, commission:'1.79% conv (EPC R$1.21)', nextAction:'Awin: aguardar (aplicado 30/04)'},
   {network:'awin', merchant:'Lojas Renner BR (Awin)', persona:'traveler', status:'rejected', applied:'2026-04-27', approved:null, commission:'~3% (EPC 0.54)', nextAction:'Reaplicar após criar seção Roupas Viagem em /travel.html'},
@@ -407,8 +407,10 @@ const AFFILIATE_PROGRAMS = [
   {network:'lomadee', merchant:'Kärcher', persona:'host', status:'pending_channel', applied:null, approved:null, commission:'3.2% (limpeza pro)', nextAction:'Cadastrar canal Lomadee → gerar tracking link'},
   {network:'lomadee', merchant:'FOMcare', persona:'guest', status:'pending_channel', applied:null, approved:null, commission:'4% (saúde)', nextAction:'Cadastrar canal Lomadee → gerar tracking link'},
   {network:'lomadee', merchant:'Hunter Fan', persona:'host', status:'pending_channel', applied:null, approved:null, commission:'0.8% (Exclusivo, ventiladores)', nextAction:'Cadastrar canal Lomadee → gerar tracking link'},
-  // === CJ — descoberto 30/04 ===
-  {network:'cj', merchant:'GoDaddy.com', persona:'host', status:'pending_review', applied:null, approved:null, commission:'CPS', nextAction:'CJ ID 1513033 — botão Apply desabilitado, conta em revisão'},
+  // === CJ — aplicado 30/04 ===
+  // === CJ — aplicações acidental 30/04 (mas vale: hosting útil pra anfitriões/devs) ===
+  {network:'cj', merchant:'eUKhost Ltd', persona:'host', status:'pending', applied:'2026-04-30', approved:null, commission:'CPS hospedagem (EPC GBP 4.38/3m)', nextAction:'CJ ID 3022407 — aplicado por engano 30/04 (auto via ref reorder); útil pra anfitriões com sites próprios'},
+  {network:'cj', merchant:'GoDaddy.com', persona:'host', status:'pending', applied:'2026-04-30', approved:null, commission:'10% (EPC USD 99/3m)', nextAction:'CJ ID 1513033 — aplicado 30/04, aguardar revisão manual'},
 ];
 
 const AFF_STATUS_BADGE = {approved:'level-Embaixador', joined:'level-VIP', pending:'expedia', applied:'booking', rejected:'airbnb', via_impact:'decolar', direct_pending:'website', pending_channel:'pending-channel', pending_review:'pending-review', not_applied:'outros'};
