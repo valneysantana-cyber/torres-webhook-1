@@ -72,6 +72,16 @@ function getLocationResponse(lang) {
 }
 
 
+const EARLY_COMPANION_ARRIVAL_RESPONSE = `Claro! 🌴 Podemos receber seu(a) acompanhante antes da sua chegada — ele(a) faz parte da sua reserva, sem problema.
+
+Pra garantir a segurança da estadia e agilizar a entrada dele(a), preciso só de 3 informações:
+
+📄 *Documento com foto* (RG ou CNH — frente e verso)
+👤 *Nome completo* do(a) acompanhante
+🕐 *Horário previsto* de chegada
+
+Pode mandar tudo aqui pelo WhatsApp mesmo. Assim que receber, eu pré-cadastro e aviso a recepção — aí na chegada é só apresentar o documento original e o cartão de acesso é liberado. Tudo tranquilo! 😊`;
+
 const FRIGOBAR_PIX_RESPONSE = `🍽️ *Cardápio — Frigobar & Snacks*
 
 ☕ Café – R$ 8,00
@@ -127,4 +137,5 @@ module.exports = {
   getLocationResponse,
   FRIGOBAR_PIX_RESPONSE,
   FRIGOBAR_RESTOCK_RESPONSE,
+  EARLY_COMPANION_ARRIVAL_RESPONSE,
 };

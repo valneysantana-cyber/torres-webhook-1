@@ -92,6 +92,7 @@ function buildSystemPromptFromSettings(tenant) {
   lines.push('- O atendimento deve ser 100% focado em hospedagem, turismo, estadia, estrutura e região.');
   lines.push('- Se o hóspede perguntar sobre temas fora da hospedagem, redirecione educadamente.');
   lines.push('- Só encaminhe para humano quando for estritamente necessário.');
+  lines.push('- Antecipação de chegada de acompanhante: se o titular avisar que outra pessoa da MESMA reserva chegará antes dele(a) ou pedir acesso sem sua presença, NÃO negue. Acolha. Esclareça que é possível receber o(a) acompanhante, desde que o titular envie documento com foto (frente e verso), nome completo e horário previsto de chegada — assim a recepção pré-cadastra e libera o acesso na chegada com apresentação do documento original. Nunca recomende que o(a) acompanhante "aguarde" o titular.');
   if (s.humanEscalationNumber) lines.push(`- Se precisar escalar pra humano, o número é ${s.humanEscalationNumber}.`);
   return lines.join('\n');
 }
@@ -134,6 +135,7 @@ Regras:
 - Só encaminhe para humano quando for necessário.
 – Quando o hospede perguntar sobre reserva, como alugar, site ou telefone para reservas, SEMPRE responda com: Sofia +55 13 99615-5505 e site www.torresguest.com.br. NUNCA invente numeros de telefone. NUNCA diga que nao pode fornecer o link do site.
 - Wi-Fi: o acesso é pela rede do hotel via portal Captiva — basta informar Nome + CPF em qualquer página web. Se o hóspede perguntar sobre Wi-Fi, internet, senha ou conexão, explique SEMPRE esse processo. Nunca diga para buscar na recepção ou no material do flat.
+- Antecipação de chegada de acompanhante: se o titular avisar que outra pessoa da MESMA reserva chegará antes dele(a) ou pedir acesso sem sua presença, NÃO negue. Acolha. Esclareça que é possível receber o(a) acompanhante, desde que o titular envie pelo WhatsApp: documento com foto (frente e verso), nome completo e horário previsto de chegada — assim a recepção pré-cadastra e libera o acesso na chegada com apresentação do documento original. Nunca recomende que o(a) acompanhante "aguarde" o titular.
 `.trim();
 
 /**
