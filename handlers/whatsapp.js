@@ -26,6 +26,7 @@ const {
   getReservationResponse,
   FRIGOBAR_PIX_RESPONSE,
   FRIGOBAR_RESTOCK_RESPONSE,
+  EARLY_COMPANION_ARRIVAL_RESPONSE,
 } = require('../responses/strings');
 const { getFaqResponse } = require('../responses/faq');
 const {
@@ -60,6 +61,7 @@ const {
   shouldSendCurrentDate,
   shouldSendCurrentTime,
   shouldHandleReservationConfirmation,
+  shouldHandleEarlyCompanionArrival,
   detectLanguage,
   extractReservationCode,
   shouldSendFrigobarPix,
@@ -431,6 +433,23 @@ async function handleIncoming(payload) {
 
         // ---- reservation confirmation flow ------------------------------
         if (await maybeHandleReservationConfirmation({ rawText: body, normalizedText: normalized, from, camFromAudio })) {
+          continue;
+        }
+
+        // ---- EARLY COMPANION ARRIVAL ------------------------------------
+        // Titular avisa que outra pessoa da reserva chegará antes ou pede
+        // acesso sem sua presença. Política TorresGuest permite — orienta
+        // o titular a enviar doc + nome + horário pra liberar a entrada.
+        // Posicionado ANTES de cancellation/redirect porque a frase comum
+        // ("acesso sem minha presença") não envolve "reserva" mas sim
+        // antecipação de chegada — e ANTES do AI fallback para garantir
+        // resposta determinística (GPT por padrão nega o acesso).
+        // Notify pra equipe via sendRoomRequestNotification — recepção
+        // precisa estar ciente do pedido.
+        if (shouldHandleEarlyCompanionArrival(body)) {
+          console.log('[early-companion] detected from', from);
+          await replyAndSave(from, EARLY_COMPANION_ARRIVAL_RESPONSE, { alsoSendAudio: camFromAudio });
+          sendRoomRequestNotification(from, body, 'Antecipação de Chegada — Acompanhante').catch(() => {});
           continue;
         }
 

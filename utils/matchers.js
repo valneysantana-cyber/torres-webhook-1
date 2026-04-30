@@ -127,6 +127,62 @@ function shouldSendCurrentTime(text) {
   return /(que horas|qual a hora|horas sao|hora atual|que hora e|que hora sao)/.test(text);
 }
 
+/**
+ * Normalizador local: lowercase + remove diacríticos preservando a letra
+ * base (â→a, ç→c, ã→a). Usar em matchers próprios em vez do normalizeText
+ * global, que decompõe via NFD e gera espaço onde havia diacrítico
+ * ("presença" vira "presenc a", "vão" vira "va o").
+ */
+function normalizeKeepLetters(text) {
+  return (text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Detecta pedido de antecipação de chegada de acompanhante da MESMA reserva
+ * — titular avisa que outra pessoa da reserva chegará antes ou pede acesso
+ * sem sua presença. Caso real 29/04: "A Camila chegará mais cedo do que eu,
+ * precisando do acesso sem minha presença."
+ *
+ * Política TorresGuest permite, desde que o titular pré-envie documento +
+ * nome completo + horário. NÃO é negar — é orientar.
+ *
+ * Conservador: exige (A) "sem minha presença" claro, OU (B) chegada antes
+ * do titular explícita, OU (C) menção a acompanhante + sinal claro de
+ * antecipação. Evita falso-positivo em "minha esposa quer entrar na piscina".
+ *
+ * IMPORTANTE: recebe `rawText` (não-normalizado) — usa normalizeKeepLetters
+ * em vez do normalizeText global (que quebra "ç" e "~" em espaço).
+ */
+function shouldHandleEarlyCompanionArrival(rawText) {
+  const t = normalizeKeepLetters(rawText);
+
+  // A) acesso/entrada SEM a presença do titular — sinal forte e raro fora deste contexto
+  if (/\bsem\s+(minha|nossa)\s+presenca\b/.test(t)) return true;
+  if (/\b(acesso|entrar|entrada|ingresso)\b.{0,30}\bsem\s+(mim|o\s+titular|a\s+minha\s+presenca|a\s+nossa\s+presenca)\b/.test(t)) return true;
+  if (/\b(deixar|permitir|liberar)\s+(?:[ao]s?\s+)?(entrar|acessar|entrada|acesso)\b.{0,30}\b(antes|sem\s+mim|sem\s+minha)\b/.test(t)) return true;
+
+  // B) chegada de terceiro antes do titular — "chegará antes de mim", "vai chegar primeiro que eu"
+  const arrivalVerb = /\b(cheg(a|ar|ara|ando|aria)|vai\s+chegar|vir|virao|chegando)\b/.test(t);
+  const earlyAdverb = /\b(antes|primeiro|mais\s+cedo|cedo|antecipad)\b/.test(t);
+  const beforeMe = /\b(do\s+que\s+eu|de\s+mim|antes\s+de\s+mim|que\s+eu\s+chegue|que\s+eu)\b/.test(t);
+  if (arrivalVerb && earlyAdverb && beforeMe) return true;
+
+  // C) acompanhante mencionado + intenção clara de antecipação/acesso prévio
+  const companion = /\b(acompanhante|outra\s+hospede|outro\s+hospede|outra\s+pessoa\s+da\s+reserva|companheir[oa]|namorad[oa]|esposa|marido|esposo|conjuge|filh[oa]|irma[oa]|sobrinh[oa]|amig[oa]\s+(meu|minha))\b/.test(t);
+  const earlyArrivalIntent = (arrivalVerb && earlyAdverb)
+    || /\bantes\s+(de|da)\s+(mim|minha\s+chegada|nossa\s+chegada)\b/.test(t)
+    || /\b(pode|poderia|poderiam)\s+(receber|liberar|deixar\s+entrar)\b/.test(t);
+  if (companion && earlyArrivalIntent) return true;
+
+  return false;
+}
+
 function shouldHandleReservationConfirmation(text) {
   return (
     isNumericSelection(text, '11') ||
@@ -229,6 +285,7 @@ module.exports = {
   shouldSendCurrentDate,
   shouldSendCurrentTime,
   shouldHandleReservationConfirmation,
+  shouldHandleEarlyCompanionArrival,
   detectLanguage,
   extractReservationCode,
   shouldSendFrigobarPix,
