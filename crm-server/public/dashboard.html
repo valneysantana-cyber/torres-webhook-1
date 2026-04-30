@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <meta name="lomadee" content="2324685" />
+    <meta name="verify-admitad" content="cdcb1e8802" />
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel do Anfitrião — ConciergeCloud</title>
@@ -88,15 +90,8 @@ footer a{color:var(--muted);text-decoration:underline;margin:0 6px}
 <body>
 
 <header>
-  <a href="/" class="brand" style="text-decoration:none;color:inherit" title="Voltar ao site"><span class="logo">🏠</span><span>ConciergeCloud</span></a>
-  <div class="nav" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
-    <a href="/admin.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">Tenants</a>
-    <a href="/dashboard.html" style="color:#fff;text-decoration:none;font-size:.9rem;border-bottom:2px solid #F0A500;padding-bottom:3px">Dashboard</a>
-    <a href="/admin/checkins.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">Pré-check-ins</a>
-    <a href="/search.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">Buscar Hóspedes</a>
-    <a href="/afiliacoes.html" id="navAfiliados" style="display:none;color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem">💰 Afiliados</a>
-    <span class="user" style="font-size:.85rem;opacity:.9;margin-left:10px">👤 <b id="currentUser">—</b></span>
-  </div>
+  <div class="brand"><span class="logo">🏠</span><span>ConciergeCloud</span></div>
+  <div class="user">Conectado como <b id="currentUser">—</b></div>
 </header>
 
 <div class="container">
@@ -172,6 +167,47 @@ footer a{color:var(--muted);text-decoration:underline;margin:0 6px}
       <a href="/campaigns" class="btn" onclick="return false" style="opacity:.5;cursor:not-allowed" title="Em breve">📢 Campanhas (em breve)</a>
       <a href="mailto:privacidade@conciergecloud.com.br?subject=Solicitação%20LGPD" class="btn">🛡️ Solicitar LGPD</a>
       <a href="https://wa.me/5513996155505?text=Precisando%20de%20suporte%20ConciergeCloud" class="btn" target="_blank">💬 Suporte via WhatsApp</a>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       AFILIAÇÕES (admin-only, escondido por padrão)
+       Habilitar: ?admin=1 na URL OU localStorage.cc_admin='true'
+       ============================================================ -->
+  <div class="section" id="affiliateSection" style="display:none">
+    <div class="section-header">
+      <div>
+        <h2>💰 Afiliações ConciergeCloud</h2>
+        <div class="section-sub">Status de aplicações, aprovações e cliques rastreados por programa · admin only · v1 estática</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="affFilter" class="btn" style="background:#fff;color:var(--text);border:1px solid var(--border)">
+          <option value="all">Todos status</option>
+          <option value="approved">✅ Aprovados</option>
+          <option value="pending">⏳ Pendentes</option>
+          <option value="applied">📨 Aplicados</option>
+          <option value="rejected">❌ Rejeitados</option>
+          <option value="not_applied">⚪ Não aplicados</option>
+        </select>
+        <select id="affPersona" class="btn" style="background:#fff;color:var(--text);border:1px solid var(--border)">
+          <option value="all">Todas personas</option>
+          <option value="traveler">✈️ Viajantes</option>
+          <option value="host">🏠 Anfitriões</option>
+          <option value="guest">🛌 Hóspedes</option>
+          <option value="premium">💎 Premium</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Stats afiliações -->
+    <div class="stats-row" id="affStatsRow" style="margin-bottom:18px"></div>
+
+    <!-- Tabela -->
+    <div id="affGrid"></div>
+
+    <div class="muted" style="margin-top:12px;font-size:.78rem">
+      Atualização manual em <code>dashboard.html</code> até integração GA4 Measurement Protocol estar live.
+      Pra desabilitar esta seção: console DevTools → <code>localStorage.removeItem('cc_admin'); location.reload()</code>
     </div>
   </div>
 
@@ -299,34 +335,19 @@ function init(){
   loadStats();
   loadUpcoming();
   loadConversations();
-  initAdminNav();
+  initAffiliateSection();
 }
 init();
 setInterval(()=>{loadStats();loadConversations()}, 60000); // refresh a cada 60s
 
 // ============================================================
-// ADMIN NAV — flag cc_admin no localStorage mostra item "💰 Afiliados"
-// O conteúdo está em /afiliacoes.html (página separada).
+// AFILIAÇÕES — admin-only feature flag
 // Habilitar: visite /dashboard.html?admin=1 uma vez OU console:
 //   localStorage.setItem('cc_admin','true'); location.reload();
 // Desabilitar: localStorage.removeItem('cc_admin'); location.reload();
 // ============================================================
-function isAdminEnabled(){
-  const params = new URLSearchParams(location.search);
-  if(params.get('admin')==='1'){
-    localStorage.setItem('cc_admin','true');
-    history.replaceState({}, '', location.pathname);
-  }
-  return localStorage.getItem('cc_admin')==='true';
-}
-function initAdminNav(){
-  if(!isAdminEnabled()) return;
-  const navAff = document.getElementById('navAfiliados');
-  if(navAff) navAff.style.display='';
-}
 
-/* ---- DEPRECATED ---- AFFILIATE_PROGRAMS movido para /afiliacoes.html
-const __DEAD_AFFILIATE_PROGRAMS = [
+const AFFILIATE_PROGRAMS = [
   // AWIN (12 aplicações 27-28/04)
   {network:'awin', merchant:'Booking.com BR', persona:'traveler', status:'pending', applied:'2026-04-27', approved:null, commission:'6-10%', nextAction:'Awin: aguardar 24-72h'},
   {network:'awin', merchant:'Radisson Hotels', persona:'traveler', status:'pending', applied:'2026-04-27', approved:null, commission:'~4%', nextAction:'Awin: aguardar'},
@@ -349,11 +370,11 @@ const __DEAD_AFFILIATE_PROGRAMS = [
   // CIVITATIS
   {network:'civitatis', merchant:'Civitatis Tours', persona:'traveler', status:'pending', applied:'2026-04-27', approved:null, commission:'5-7% + €1', nextAction:'Aguardar aprovação manual'},
   // NOVAS REDES (28/04)
-  {network:'hotmart', merchant:'Hotmart Afiliados', persona:'host', status:'not_applied', applied:null, approved:null, commission:'30-80%', nextAction:'Cadastrar via 01_HOTMART.md'},
-  {network:'lomadee', merchant:'Lomadee', persona:'traveler', status:'not_applied', applied:null, approved:null, commission:'1-12%', nextAction:'Cadastrar via 02_LOMADEE.md'},
-  {network:'admitad', merchant:'Admitad', persona:'traveler', status:'not_applied', applied:null, approved:null, commission:'2-15%', nextAction:'Cadastrar via 03_ADMITAD.md'},
-  {network:'rakuten', merchant:'Rakuten Advertising', persona:'traveler', status:'not_applied', applied:null, approved:null, commission:'1-15%', nextAction:'Cadastrar via 04_RAKUTEN.md'},
-  {network:'cj', merchant:'CJ Affiliate', persona:'premium', status:'not_applied', applied:null, approved:null, commission:'3-15% + bounty', nextAction:'Cadastrar via 05_CJ_AFFILIATE.md'},
+  {network:'hotmart', merchant:'Hotmart Afiliados', persona:'host', status:'joined', applied:'2026-04-29', approved:'2026-04-29', commission:'30-80%', nextAction:'Afiliar a cursos relevantes'},
+  {network:'lomadee', merchant:'Lomadee', persona:'traveler', status:'joined', applied:'2026-04-29', approved:'2026-04-29', commission:'1-12%', nextAction:'Self-service: usar Marcas pra gerar links'},
+  {network:'admitad', merchant:'Admitad', persona:'traveler', status:'joined', applied:'2026-04-29', approved:'2026-04-29', commission:'2-15%', nextAction:'Login vania_torres-santanacd8a9 / metatag verified'},
+  {network:'rakuten', merchant:'Rakuten (via Impact.com)', persona:'traveler', status:'via_impact', applied:'2026-04-29', approved:null, commission:'1-15%', nextAction:'Migrou pra Impact.com (conta já existe)'},
+  {network:'cj', merchant:'CJ Affiliate', persona:'premium', status:'joined', applied:'2026-04-29', approved:'2026-04-29', commission:'3-15% + bounty', nextAction:'ATIVO! Find Advertisers > Marriott/Hilton/IHG'},
   // PRÓXIMA RODADA
   {network:'awin', merchant:'Hostelworld', persona:'traveler', status:'not_applied', applied:null, approved:null, commission:'7%', nextAction:'Aplicar via Awin já logado'},
   {network:'awin', merchant:'Wise', persona:'traveler', status:'not_applied', applied:null, approved:null, commission:'$50-75/cliente', nextAction:'Aplicar via Awin'},
@@ -363,9 +384,9 @@ const __DEAD_AFFILIATE_PROGRAMS = [
   {network:'cj', merchant:'IHG One Rewards', persona:'premium', status:'not_applied', applied:null, approved:null, commission:'3-6%', nextAction:'Após CJ aprovar (ou direto PartnerConnect)'},
   {network:'lomadee', merchant:'Magazine Luiza', persona:'host', status:'not_applied', applied:null, approved:null, commission:'2-8%', nextAction:'Após Lomadee aprovar'},
   {network:'lomadee', merchant:'Casas Bahia', persona:'host', status:'not_applied', applied:null, approved:null, commission:'2-6%', nextAction:'Após Lomadee aprovar'},
-  {network:'lomadee', merchant:'Renner', persona:'traveler', status:'not_applied', applied:null, approved:null, commission:'4-10%', nextAction:'Após Lomadee + criar seção Roupas Viagem'},
-  {network:'admitad', merchant:'CVC Viagens', persona:'traveler', status:'not_applied', applied:null, approved:null, commission:'~1-3%', nextAction:'Após Admitad aprovar'},
-  {network:'admitad', merchant:'AliExpress', persona:'host', status:'not_applied', applied:null, approved:null, commission:'2-10%', nextAction:'Após Admitad aprovar'},
+  {network:'awin', merchant:'Lojas Renner BR (Awin)', persona:'traveler', status:'rejected', applied:'2026-04-27', approved:null, commission:'~3% (EPC 0.54)', nextAction:'Reaplicar após criar seção Roupas Viagem em /travel.html'},
+  {network:'admitad', merchant:'CVC BR (EN)', persona:'traveler', status:'joined', applied:'2026-04-29', approved:'2026-04-29', commission:'CPA 1.85%-3.74% (EPC R$6)', nextAction:'Auto-aprovado, gerar links no Admitad'},
+  {network:'admitad', merchant:'AliExpress WW', persona:'host', status:'joined', applied:'2026-04-29', approved:'2026-04-29', commission:'EPC $4 / CR 6.29%', nextAction:'Auto-aprovado, Approval rate 89%, hold 70d'},
   {network:'rakuten', merchant:'Petlove', persona:'guest', status:'not_applied', applied:null, approved:null, commission:'4-8%', nextAction:'Após Rakuten aprovar'},
   {network:'rakuten', merchant:'Cobasi', persona:'guest', status:'not_applied', applied:null, approved:null, commission:'4-8%', nextAction:'Após Rakuten aprovar'},
   // B2B DIRETO
@@ -431,7 +452,14 @@ function renderAffGrid(){
   document.getElementById('affGrid').innerHTML = html;
 }
 
-// fim do código DEPRECATED — termina o block-comment aberto acima */
+function initAffiliateSection(){
+  if(!isAdminEnabled()) return;
+  document.getElementById('affiliateSection').style.display='';
+  document.getElementById('affFilter').addEventListener('change', e => { affFilter=e.target.value; renderAffGrid(); });
+  document.getElementById('affPersona').addEventListener('change', e => { affPersona=e.target.value; renderAffGrid(); });
+  renderAffStats();
+  renderAffGrid();
+}
 </script>
 </body>
 </html>
