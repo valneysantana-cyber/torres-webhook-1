@@ -55,6 +55,8 @@ tr:hover td{background:#fafcfd}
 .badge.website{background:var(--brand);color:#fff}
 .badge.decolar{background:#662D91;color:#fff}
 .badge.outros{background:var(--muted);color:#fff}
+.badge.pending-channel{background:#FFA94D;color:#fff}
+.badge.pending-review{background:#FF7043;color:#fff}
 .badge.level-Embaixador{background:#9b59b6;color:#fff}
 .badge.level-VIP{background:#e74c3c;color:#fff}
 .badge.level-Frequente{background:#3498db;color:#fff}
@@ -187,6 +189,11 @@ footer a{color:var(--muted);text-decoration:underline;margin:0 6px}
           <option value="pending">⏳ Pendentes</option>
           <option value="applied">📨 Aplicados</option>
           <option value="rejected">❌ Rejeitados</option>
+          <option value="joined">🟢 Rede aprovada (joined)</option>
+          <option value="pending_review">🟠 Aguarda revisão (CJ)</option>
+          <option value="pending_channel">🟡 Falta canal (Lomadee)</option>
+          <option value="direct_pending">📌 Programa próprio (registro separado)</option>
+          <option value="via_impact">🔄 Migrou pra Impact</option>
           <option value="not_applied">⚪ Não aplicados</option>
         </select>
         <select id="affPersona" class="btn" style="background:#fff;color:var(--text);border:1px solid var(--border)">
@@ -376,27 +383,35 @@ const AFFILIATE_PROGRAMS = [
   {network:'rakuten', merchant:'Rakuten (via Impact.com)', persona:'traveler', status:'via_impact', applied:'2026-04-29', approved:null, commission:'1-15%', nextAction:'Migrou pra Impact.com (conta já existe)'},
   {network:'cj', merchant:'CJ Affiliate', persona:'premium', status:'joined', applied:'2026-04-29', approved:'2026-04-29', commission:'3-15% + bounty', nextAction:'ATIVO! Find Advertisers > Marriott/Hilton/IHG'},
   // PRÓXIMA RODADA
-  {network:'awin', merchant:'Hostelworld', persona:'traveler', status:'not_applied', applied:null, approved:null, commission:'7%', nextAction:'Aplicar via Awin já logado'},
-  {network:'awin', merchant:'Wise', persona:'traveler', status:'not_applied', applied:null, approved:null, commission:'$50-75/cliente', nextAction:'Aplicar via Awin'},
-  {network:'awin', merchant:'Discover Cars', persona:'traveler', status:'not_applied', applied:null, approved:null, commission:'60% líquida', nextAction:'Aplicar via Awin'},
-  {network:'cj', merchant:'Marriott Bonvoy', persona:'premium', status:'not_applied', applied:null, approved:null, commission:'3-6% + bônus', nextAction:'Após CJ aprovar'},
-  {network:'cj', merchant:'Hilton Honors', persona:'premium', status:'not_applied', applied:null, approved:null, commission:'4%', nextAction:'Após CJ aprovar'},
-  {network:'cj', merchant:'IHG One Rewards', persona:'premium', status:'not_applied', applied:null, approved:null, commission:'3-6%', nextAction:'Após CJ aprovar (ou direto PartnerConnect)'},
-  {network:'lomadee', merchant:'Magazine Luiza', persona:'host', status:'not_applied', applied:null, approved:null, commission:'2-8%', nextAction:'Após Lomadee aprovar'},
+  {network:'direct', merchant:'Hostelworld (próprio)', persona:'traveler', status:'direct_pending', applied:null, approved:null, commission:'7%', nextAction:'Registro em hostelworld.com ou Impact (não está em Awin)'},
+  {network:'direct', merchant:'Wise (próprio)', persona:'traveler', status:'direct_pending', applied:null, approved:null, commission:'$50-75/cliente', nextAction:'Registro em wise.com/business/affiliate-program (não está em Awin)'},
+  {network:'awin', merchant:'Discover Car Hire AS', persona:'traveler', status:'pending', applied:'2026-04-27', approved:null, commission:'2.21% conv (EPC USD 0.64)', nextAction:'Awin: aguardar (descoberto pending no painel 30/04)'},
+  {network:'direct', merchant:'Marriott Bonvoy (próprio)', persona:'premium', status:'direct_pending', applied:null, approved:null, commission:'3-6% + bônus', nextAction:'Registro em marriott.com/affiliates ou Impact (em CJ só UKLG cassino fake)'},
+  {network:'direct', merchant:'Hilton Honors (próprio)', persona:'premium', status:'direct_pending', applied:null, approved:null, commission:'4%', nextAction:'Registro em hilton.com/affiliates ou Impact (não está em CJ)'},
+  {network:'cj', merchant:'IHG Europe (Intercontinental)', persona:'premium', status:'pending_review', applied:null, approved:null, commission:'3% (EPC USD 91/3m)', nextAction:'CJ ID 4381309 — botão Apply desabilitado, conta em revisão (verificar W-8BEN-E + bank)'},
+  {network:'direct', merchant:'Magazine Luiza (próprio)', persona:'host', status:'direct_pending', applied:null, approved:null, commission:'2-8%', nextAction:'Registro separado em advertise.magalu.com.br (não está em Lomadee/Awin/CJ)'},
   {network:'awin', merchant:'Casas Bahia BR', persona:'host', status:'pending', applied:'2026-04-30', approved:null, commission:'1.79% conv (EPC R$1.21)', nextAction:'Awin: aguardar (aplicado 30/04)'},
   {network:'awin', merchant:'Lojas Renner BR (Awin)', persona:'traveler', status:'rejected', applied:'2026-04-27', approved:null, commission:'~3% (EPC 0.54)', nextAction:'Reaplicar após criar seção Roupas Viagem em /travel.html'},
   {network:'admitad', merchant:'CVC BR (EN)', persona:'traveler', status:'joined', applied:'2026-04-29', approved:'2026-04-29', commission:'CPA 1.85%-3.74% (EPC R$6)', nextAction:'Auto-aprovado, gerar links no Admitad'},
   {network:'admitad', merchant:'AliExpress WW', persona:'host', status:'joined', applied:'2026-04-29', approved:'2026-04-29', commission:'EPC $4 / CR 6.29%', nextAction:'Auto-aprovado, Approval rate 89%, hold 70d'},
-  {network:'rakuten', merchant:'Petlove', persona:'guest', status:'not_applied', applied:null, approved:null, commission:'4-8%', nextAction:'Após Rakuten aprovar'},
-  {network:'rakuten', merchant:'Cobasi', persona:'guest', status:'not_applied', applied:null, approved:null, commission:'4-8%', nextAction:'Após Rakuten aprovar'},
+  {network:'direct', merchant:'Petlove (Impact)', persona:'guest', status:'direct_pending', applied:null, approved:null, commission:'4-8%', nextAction:'Buscar em Impact.com Brand Discovery (Rakuten foi descontinuado)'},
+  {network:'direct', merchant:'Cobasi (Impact)', persona:'guest', status:'direct_pending', applied:null, approved:null, commission:'4-8%', nextAction:'Buscar em Impact.com Brand Discovery (Rakuten foi descontinuado)'},
   // B2B DIRETO
   {network:'direct', merchant:'Yale BR Smart Lock', persona:'host', status:'not_applied', applied:null, approved:null, commission:'B2B', nextAction:'Email comercial Yale BR'},
   {network:'direct', merchant:'Buddemeyer', persona:'host', status:'not_applied', applied:null, approved:null, commission:'10-25% B2B', nextAction:'Email comercial Buddemeyer'},
   {network:'direct', merchant:'Mobly', persona:'host', status:'not_applied', applied:null, approved:null, commission:'varia', nextAction:'Verificar Awin BR; senão direto'},
   {network:'direct', merchant:'Karcher BR', persona:'host', status:'not_applied', applied:null, approved:null, commission:'B2B', nextAction:'Email comercial Karcher'},
+  // === Lomadee Casa & Decoração (descobertas 30/04) — pending_channel: precisa cadastrar canal em Lomadee Meus Canais ===
+  {network:'lomadee', merchant:'Catran', persona:'host', status:'pending_channel', applied:null, approved:null, commission:'4.8% (cama/mesa/banho)', nextAction:'Cadastrar canal Lomadee → gerar tracking link'},
+  {network:'lomadee', merchant:'Brinox', persona:'host', status:'pending_channel', applied:null, approved:null, commission:'4% (utilidades domésticas)', nextAction:'Cadastrar canal Lomadee → gerar tracking link'},
+  {network:'lomadee', merchant:'Kärcher', persona:'host', status:'pending_channel', applied:null, approved:null, commission:'3.2% (limpeza pro)', nextAction:'Cadastrar canal Lomadee → gerar tracking link'},
+  {network:'lomadee', merchant:'FOMcare', persona:'guest', status:'pending_channel', applied:null, approved:null, commission:'4% (saúde)', nextAction:'Cadastrar canal Lomadee → gerar tracking link'},
+  {network:'lomadee', merchant:'Hunter Fan', persona:'host', status:'pending_channel', applied:null, approved:null, commission:'0.8% (Exclusivo, ventiladores)', nextAction:'Cadastrar canal Lomadee → gerar tracking link'},
+  // === CJ — descoberto 30/04 ===
+  {network:'cj', merchant:'GoDaddy.com', persona:'host', status:'pending_review', applied:null, approved:null, commission:'CPS', nextAction:'CJ ID 1513033 — botão Apply desabilitado, conta em revisão'},
 ];
 
-const AFF_STATUS_BADGE = {approved:'level-Embaixador', pending:'expedia', rejected:'airbnb', applied:'booking', not_applied:'outros'};
+const AFF_STATUS_BADGE = {approved:'level-Embaixador', joined:'level-VIP', pending:'expedia', applied:'booking', rejected:'airbnb', via_impact:'decolar', direct_pending:'website', pending_channel:'pending-channel', pending_review:'pending-review', not_applied:'outros'};
 const AFF_PERSONA_LABEL = {traveler:'✈️ Viajante', host:'🏠 Anfitrião', guest:'🛌 Hóspede', premium:'💎 Premium'};
 
 let affFilter = 'all', affPersona = 'all';
