@@ -61,8 +61,31 @@ async function dailyCheckinDispatch() {
 
     const numbers = DISPATCH_NUMBER.split(',').map(n => n.trim()).filter(Boolean);
 
+    // Free-text formatado — usado tanto no path híbrido (após template) quanto no legado.
+    // Cada hóspede em sua própria linha; só passa pra quem tem janela 24h aberta com o bot.
+    const freeTextMessage = [
+      `🏨 *TorresGuest — Relatório Diário*`,
+      `📅 ${today}`,
+      ``,
+      `🛎 *Check-ins de hoje (${fmtCheckins.length === 1 && fmtCheckins[0].startsWith(' (nenhum') ? 0 : checkinsHoje.length}):*`,
+      fmtCheckins.join('\n'),
+      ``,
+      `🏠 *Em estadia (${fmtEstadia.length === 1 && fmtEstadia[0].startsWith(' (nenhum') ? 0 : emEstadia.length}):*`,
+      fmtEstadia.join('\n'),
+      ``,
+      `🚪 *Check-outs de hoje (${fmtCheckouts.length === 1 && fmtCheckouts[0].startsWith(' (nenhum') ? 0 : checkoutsHoje.length}):*`,
+      fmtCheckouts.join('\n'),
+      ``,
+      `📊 *Total de hóspedes ativos hoje: ${totalAtivos}*`,
+      `✅ Relatório gerado automaticamente.`,
+    ].join('\n');
+
     if (USE_TEMPLATE) {
-      // Path NOVO — template Meta UTILITY `daily_report_v1` (funciona fora janela 24h)
+      // Path HÍBRIDO — template Meta `daily_report_v1` (cobertura universal, funciona fora janela 24h)
+      // + free-text logo em seguida (entrega formato visual rico só pra quem tem janela 24h aberta).
+      // O template usa lista inline com ` · ` por restrição Meta (#132018: vars não podem ter \n).
+      // O free-text pode usar \n livremente. Quem tem janela aberta recebe AMBOS — o último renderiza
+      // melhor no chat (cada hóspede em sua linha). Quem não tem janela só recebe template.
       const params = buildDailyReportVars({
         today,
         checkinsHoje: fmtCheckins,
@@ -70,32 +93,27 @@ async function dailyCheckinDispatch() {
         checkoutsHoje: fmtCheckouts,
         totalAtivos,
       });
-      const results = [];
+      const tmplResults = [];
+      const freeResults = [];
       for (const num of numbers) {
-        const r = await sendDailyReportTemplate(num, params);
-        results.push({ num, ok: !!r.ok, msgId: r.messageId, err: r.error?.error?.message || r.error });
+        const tr = await sendDailyReportTemplate(num, params);
+        tmplResults.push({ num, ok: !!tr.ok, msgId: tr.messageId, err: tr.error?.error?.message || tr.error });
+        // Tenta free-text — se janela 24h fechada, Meta dropa silenciosamente (esperado).
+        // Não bloqueia o loop nem fail-fast: ambos os paths são best-effort independentes.
+        try {
+          const fr = await sendWhatsAppText(num, freeTextMessage);
+          freeResults.push({ num, ok: !!fr?.ok, msgId: fr?.messageId });
+        } catch (e) {
+          freeResults.push({ num, ok: false, err: e.message });
+        }
       }
-      console.log('[dispatch] Relatório diário (template) → ', results);
+      console.log('[dispatch] Relatório diário (template) → ', tmplResults);
+      console.log('[dispatch] Relatório diário (free-text complementar) → ', freeResults);
     } else {
-      // Path LEGADO — free-text (só entrega pra números na janela 24h)
-      const mensagem = [
-        `🏨 *TorresGuest — Relatório Diário*`,
-        `📅 ${today}`,
-        ``,
-        `🛎 *Check-ins de hoje (${fmtCheckins.length === 1 && fmtCheckins[0].startsWith(' (nenhum') ? 0 : checkinsHoje.length}):*`,
-        fmtCheckins.join('\n'),
-        ``,
-        `🏠 *Em estadia (${fmtEstadia.length === 1 && fmtEstadia[0].startsWith(' (nenhum') ? 0 : emEstadia.length}):*`,
-        fmtEstadia.join('\n'),
-        ``,
-        `🚪 *Check-outs de hoje (${fmtCheckouts.length === 1 && fmtCheckouts[0].startsWith(' (nenhum') ? 0 : checkoutsHoje.length}):*`,
-        fmtCheckouts.join('\n'),
-        ``,
-        `📊 *Total de hóspedes ativos hoje: ${totalAtivos}*`,
-        `✅ Relatório gerado automaticamente.`,
-      ].join('\n');
+      // Path LEGADO — só free-text (rollback emergencial via WA_DAILY_REPORT_USE_TEMPLATE=false).
+      // Só entrega pra números com janela 24h aberta — usar com cuidado.
       for (const num of numbers) {
-        await sendWhatsAppText(num, mensagem);
+        await sendWhatsAppText(num, freeTextMessage);
       }
       console.log('[dispatch] Relatório diário (free-text legado) enviado para', numbers);
     }
