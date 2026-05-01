@@ -115,7 +115,16 @@ function shouldSendGreeting(text) {
 }
 
 function shouldSendThanks(text) {
-  return /\b(obrigado|obrigada|valeu|agradeco|agrade\u00e7o|thanks|thank you)\b/.test(text);
+  // S\u00f3 dispara quando a mensagem \u00e9 PURAMENTE agradecimento curto.
+  // Antes (regex bruta) capturava "...por volta das 14h? obrigada!" e ignorava
+  // a pergunta principal (caso Cecilia 01/05/2026, msgs 1-4 sem checkout).
+  if (!text) return false;
+  const stripped = String(text)
+    .replace(/[\s.!?,;:\-]+/g, '')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '') // emojis
+    .toLowerCase();
+  if (stripped.length > 40) return false;
+  return /^(obrigado|obrigada|valeu|agradeco|agrade\u00e7o|thanks|thankyou|tks|vlw|grato|grata|brigado|brigada|muitoobrigado|muitoobrigada){1,2}$/.test(stripped);
 }
 
 // FIX: these were called but never defined in the original monolith

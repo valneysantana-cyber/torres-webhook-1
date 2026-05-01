@@ -94,7 +94,24 @@ function invalidateCache(phoneId) {
 // Janela de 7 dias cobre: hóspede cancela e volta com dúvida/reembolso/remarcação.
 const RECENT_CANCELLATION_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
-async function resolveTenantByGuestPhone(phone, fallbackTenant) {
+// Hospede-cues: indicadores fortes de que a mensagem vem de hóspede ATIVO numa
+// unidade (não prospect querendo saber do produto). Adicionado 01/05/2026 após
+// caso Cecilia (phone 5511913375485) — disse "estou no 1206" mas não tinha
+// reserva linkada via phone (gap stays_sync OU formato divergente) → caía em
+// cc_sales e bot respondia como vendedor B2B em vez de concierge TorresGuest.
+function hasActiveGuestCues(text) {
+  if (!text) return false;
+  const t = String(text).toLowerCase();
+  return (
+    /\bestou\s+(no|na)\s+(\d{2,5}|flat|apartamento|quarto|suite|suíte|hotel|hospedagem)\b/.test(t) ||
+    /\b(minha|meu)\s+(reserva|estadia|check.?in|check.?out|hospedagem|estad\w+)\b/.test(t) ||
+    /\b(no|na)\s+(quarto|apartamento|suite|suíte|flat|unidade)\s+\d/.test(t) ||
+    /\b(check.?out|check.?in)\s+(às|ate|até|por\s+volta)/.test(t) ||
+    /\bunidade\s+\d/.test(t)
+  );
+}
+
+async function resolveTenantByGuestPhone(phone, fallbackTenant, messageText) {
   if (!phone || !fallbackTenant) return fallbackTenant;
   try {
     const Reservation = require('../models/Reservation');
@@ -134,6 +151,14 @@ async function resolveTenantByGuestPhone(phone, fallbackTenant) {
     }
 
     // 3. Sem reserva ativa nem cancelada recente → prospect cc_sales
+    // GUARD (01/05/2026): se a msg tem sinal forte de hóspede ATUAL ("estou no 1206",
+    // "minha reserva", "checkout até 14h") NÃO cair em cc_sales — provavelmente
+    // hóspede legítimo cuja reserva não foi linkada pelo phone (gap sync OU
+    // formato divergente). Mantém fallback (torres) que tem prompt de concierge.
+    if (messageText && hasActiveGuestCues(messageText)) {
+      console.log('[tenant] phone=' + phone + ' sem reserva mas msg tem hospede-cues → mantendo fallbackTenant=' + fallbackTenant.tenantId + ' (não cc_sales)');
+      return fallbackTenant;
+    }
     const sales = await fetchTenantById('cc_sales');
     if (sales && sales.active !== false) {
       console.log('[tenant] phone=' + phone + ' sem reserva → cc_sales (prospect)');
