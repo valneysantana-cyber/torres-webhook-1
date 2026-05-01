@@ -524,7 +524,7 @@ async function handleIncoming(payload) {
         // ---- AI fallback (contexto + perfil de fidelidade) -------------
         // Shared-infra: resolve tenant dono da reserva ativa deste hóspede
         // (uma WABA atende N tenants; sem isso todos caem em torres).
-        const guestTenant = await resolveTenantByGuestPhone(from, tenant);
+        const guestTenant = await resolveTenantByGuestPhone(from, tenant, body);
         const [context, profile] = await Promise.all([getContext(from), getProfile(from)]);
         const aiReply = await getChatGptFallbackReply(body, from, context, profile, guestTenant);
         if (aiReply) {
