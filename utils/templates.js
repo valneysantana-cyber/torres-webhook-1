@@ -80,8 +80,71 @@ function buildDailyReportVars({ today, checkinsHoje, emEstadia, checkoutsHoje, t
   ];
 }
 
+/**
+ * Monta as 18 variáveis exigidas pelo template `daily_report_v2`.
+ *
+ * Layout: 1 (data) + 1 (count_ci) + 6 (ci_lines) + 1 (count_es) + 3 (es_lines)
+ *       + 1 (count_co) + 4 (co_lines) + 1 (total) = 18 vars.
+ *
+ * Limites menores que v1 imposed pelo Meta (#2388293 — proporção palavras/vars
+ * tem que respeitar threshold). Body de v2 inclui texto institucional pra
+ * compensar o aumento de placeholders vs v1 (8 vars).
+ *
+ * Cada linha de hóspede é UMA variável separada — o template body intercala {{N}}
+ * com `\n` no body fixo, então o resultado renderiza linha-por-linha mesmo dentro
+ * da restrição Meta #132018 (vars não podem ter `\n`/`\t`/4+ spaces).
+ *
+ * Slots vazios são preenchidos com ' ' (single space) — Meta rejeita string
+ * vazia mas aceita 1 espaço; visualmente renderiza como linha em branco discreta.
+ *
+ * Se uma seção excede o limite (8 ci / 5 es / 5 co), o último slot vira
+ * "…e mais N hóspede(s)" preservando a contagem total.
+ *
+ * @param {{
+ *   today: string,
+ *   checkinsHoje: string[],
+ *   emEstadia: string[],
+ *   checkoutsHoje: string[],
+ *   totalAtivos: number,
+ * }} data
+ * @returns {Array<{type:'text', text:string}>}
+ */
+function buildDailyReportV2Vars({ today, checkinsHoje, emEstadia, checkoutsHoje, totalAtivos }) {
+  const MAX_CI = 6, MAX_ES = 3, MAX_CO = 4;
+  const padLines = (lines, max) => {
+    const isEmpty = lines.length === 1 && lines[0].startsWith(' (nenhum');
+    const src = isEmpty ? lines : lines;
+    let out;
+    if (src.length > max) {
+      const more = src.length - (max - 1);
+      out = src.slice(0, max - 1).map(l => sanitizeMetaVar(l).slice(0, 250));
+      out.push(sanitizeMetaVar(`…e mais ${more} hóspede${more > 1 ? 's' : ''}`));
+    } else {
+      out = src.map(l => sanitizeMetaVar(l).slice(0, 250));
+    }
+    while (out.length < max) out.push('—');  // Meta example aprovou com '—'; runtime usa mesmo placeholder
+    return out;
+  };
+  const realCount = (lines) => (lines.length === 1 && lines[0].startsWith(' (nenhum')) ? 0 : lines.length;
+  const ciLines = padLines(checkinsHoje, MAX_CI);
+  const esLines = padLines(emEstadia, MAX_ES);
+  const coLines = padLines(checkoutsHoje, MAX_CO);
+
+  return [
+    { type: 'text', text: sanitizeMetaVar(today) },
+    { type: 'text', text: String(realCount(checkinsHoje)) },
+    ...ciLines.map(t => ({ type: 'text', text: t })),
+    { type: 'text', text: String(realCount(emEstadia)) },
+    ...esLines.map(t => ({ type: 'text', text: t })),
+    { type: 'text', text: String(realCount(checkoutsHoje)) },
+    ...coLines.map(t => ({ type: 'text', text: t })),
+    { type: 'text', text: String(totalAtivos) },
+  ];
+}
+
 module.exports = {
   sanitizeMetaVar,
   joinLinesWithBudget,
   buildDailyReportVars,
+  buildDailyReportV2Vars,
 };

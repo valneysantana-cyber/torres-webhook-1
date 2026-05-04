@@ -15,11 +15,19 @@ const { DISPATCH_NUMBER } = require('../config')
 const { getCurrentDateBRT, resolveGuestName } = require('../utils/formatters');
 const { fetchTodayAllActiveGuests } = require('./stays');
 const { sendWhatsAppText, sendDailyReportTemplate } = require('./whatsapp');
-const { buildDailyReportVars } = require('../utils/templates');
+const { buildDailyReportVars, buildDailyReportV2Vars } = require('../utils/templates');
 
 // Feature flag — quando true, daily report usa Meta template (funciona fora janela 24h).
 // Desligar pra rollback emergencial: `WA_DAILY_REPORT_USE_TEMPLATE=false` no Render.
 const USE_TEMPLATE = (process.env.WA_DAILY_REPORT_USE_TEMPLATE || 'true').toLowerCase() !== 'false';
+
+// Feature flag v2 (introduzida 04/05): quando true, usa template `daily_report_v2`
+// com 1 placeholder por hóspede (cada {{N}} = 1 linha). Resultado: relatório
+// linha-por-linha mesmo via template (sem depender de janela 24h aberta).
+// Ativar: setar AMBAS no Render:
+//   - WA_DAILY_REPORT_USE_V2=true
+//   - WA_DAILY_REPORT_TEMPLATE_NAME=daily_report_v2
+const USE_V2 = (process.env.WA_DAILY_REPORT_USE_V2 || 'false').toLowerCase() === 'true';
 
 function resolveApartmentName(r, listingsMap) {
   const nested = r.listing || r.unit || r.accommodation || {};
@@ -86,7 +94,8 @@ async function dailyCheckinDispatch() {
       // O template usa lista inline com ` · ` por restrição Meta (#132018: vars não podem ter \n).
       // O free-text pode usar \n livremente. Quem tem janela aberta recebe AMBOS — o último renderiza
       // melhor no chat (cada hóspede em sua linha). Quem não tem janela só recebe template.
-      const params = buildDailyReportVars({
+      const buildVars = USE_V2 ? buildDailyReportV2Vars : buildDailyReportVars;
+      const params = buildVars({
         today,
         checkinsHoje: fmtCheckins,
         emEstadia: fmtEstadia,
