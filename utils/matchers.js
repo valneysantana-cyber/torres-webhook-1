@@ -9,9 +9,14 @@ function stripAccents(t) {
 }
 
 function isNumericSelection(text, ...options) {
-    // Fix: require the option to appear as a standalone number (word boundary).
-      // "5" → match; "PS5" or "PS5 na TV" → NO match (digit not isolated).
-        return options.some(opt => new RegExp('(?:^|\\s)' + opt + '(?:\\s|[.,!?]|$)').test(text.trim()));
+  // Fix 2026-05-04: o texto INTEIRO deve ser o dígito (com pontuação opcional).
+  // Antes: '(?:^|\\s)3(?:\\s|...)' matchava "3 pessoas", "para as 3 pessoas?" etc.
+  // Casos reais: Eliana ("...para as 3 pessoas?") → wantsPool=true → resposta sobre
+  // piscina/academia. Vania ("...para 2 pessoas disponivel?") → wantsBreakfast=true
+  // → resposta sobre cafe da manha. Total off-topic.
+  // Agora so matcha "3", "3.", "3?", "3!" — resposta a menu numerado puro.
+  const t = (text || '').trim();
+  return options.some(opt => new RegExp('^' + opt + '[.,!?]?$').test(t));
 }
 
 function shouldSendMenu(text) {
