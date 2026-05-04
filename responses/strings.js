@@ -28,6 +28,18 @@ const RESTAURANT_RESPONSE = `\ud83c\udf7d\ufe0f O Restaurante do Hotel com acess
 const { links: affLinks } = require('../utils/affiliateLinks');
 const FOOD_ORDER_RESPONSE = `\ud83c\udf7d\ufe0f Para fazer pedido no restaurante Don Maitre (no pr\u00f3prio pr\u00e9dio):\n\n\ud83d\udcf2 Card\u00e1pio completo: ${affLinks.donMaitre('food_order')}\n\ud83c\udf9f\ufe0f Cupom 10% off: *CONCIERGECLOUD10*\n\nVale pra sal\u00e3o, room service e take-away. Me avisa se precisar de ajuda com o pedido! \ud83c\udf34`;
 
+// Resposta i18n pra restaurant menu (Don Maitre). Adicionada 2026-05-04 (Valney pediu
+// 4 idiomas matching o site /restaurante.html). Mesmo link affiliate em todas variantes.
+const FOOD_ORDER_RESPONSE_I18N = {
+  pt: FOOD_ORDER_RESPONSE,
+  en: `\ud83c\udf7d\ufe0f To order at Don Maitre restaurant (right inside the building):\n\n\ud83d\udcf2 Full menu: ${affLinks.donMaitre('food_order')}\n\ud83c\udf9f\ufe0f 10% off coupon: *CONCIERGECLOUD10*\n\nAvailable for dine-in, room service and take-away. Let me know if you need help with the order! \ud83c\udf34`,
+  fr: `\ud83c\udf7d\ufe0f Pour commander au restaurant Don Maitre (dans le b\u00e2timent m\u00eame):\n\n\ud83d\udcf2 Carte compl\u00e8te: ${affLinks.donMaitre('food_order')}\n\ud83c\udf9f\ufe0f Coupon 10% de r\u00e9duction: *CONCIERGECLOUD10*\n\nValable en salle, room service et \u00e0 emporter. Dites-moi si vous avez besoin d'aide pour la commande! \ud83c\udf34`,
+  es: `\ud83c\udf7d\ufe0f Para pedir en el restaurante Don Maitre (dentro del propio edificio):\n\n\ud83d\udcf2 Carta completa: ${affLinks.donMaitre('food_order')}\n\ud83c\udf9f\ufe0f Cup\u00f3n 10% de descuento: *CONCIERGECLOUD10*\n\nV\u00e1lido para sal\u00f3n, room service y para llevar. Av\u00edsame si necesitas ayuda con el pedido! \ud83c\udf34`,
+};
+function getFoodOrderResponse(language) {
+  return FOOD_ORDER_RESPONSE_I18N[language] || FOOD_ORDER_RESPONSE_I18N.pt;
+}
+
 const CHECKIN_RESPONSE = `\ud83d\udd50 Check-in & Check-out possuem limites de hor\u00e1rio, sobretudo o check-out, pois o time de governan\u00e7a do hotel pede uma hora para limpeza e higieniza\u00e7\u00e3o.\nCheck-in: a partir das 14h\nCheck-out: at\u00e9 12h\nA recep\u00e7\u00e3o funciona 24h com equipe de seguran\u00e7a para te receber em qualquer hor\u00e1rio. \ud83c\udf34`;
 
 const SECURITY_RESPONSE = `\ud83d\udd10 Contamos com Seguran\u00e7a & Recep\u00e7\u00e3o 24h, controle de acesso e equipe no local o tempo todo.\nPode chegar tranquilo(a), estamos sempre por perto. \ud83c\udf34`;
@@ -149,6 +161,8 @@ module.exports = {
   TOWELS_RESPONSE,
   RESTAURANT_RESPONSE,
   FOOD_ORDER_RESPONSE,
+  FOOD_ORDER_RESPONSE_I18N,
+  getFoodOrderResponse,
   CHECKIN_RESPONSE,
   SECURITY_RESPONSE,
   TRANSFER_RESPONSE,

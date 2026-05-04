@@ -58,6 +58,22 @@ function shouldSendFoodOrder(text) {
   return /(pedir comida|pedido de comida|fazer um pedido|fazer pedido|pedido no restaurante|cardapio|cardápio|pedir refei|delivery|ifood|i food|food order|order food|fome|estou com fome|comida no quarto|room service)/.test(text);
 }
 
+/**
+ * Universal restaurant-menu matcher (PT / EN / FR / ES).
+ * Avaliado ANTES do PT_DISPATCH pra capturar pedidos de cardápio em qualquer
+ * idioma e enviar resposta i18n com link Don Maitre. Adicionado 2026-05-04.
+ *
+ * Examples that match:
+ *   PT: "cardapio do restaurante", "menu do restaurante"
+ *   EN: "restaurant menu", "menu of the restaurant"
+ *   FR: "menu du restaurant", "carte du restaurant"
+ *   ES: "menu del restaurante", "carta del restaurante"
+ */
+function shouldSendRestaurantMenuI18n(text) {
+  const t = stripAccents(text);
+  return /(cardapio.*restaurante|menu.*restaurante|restaurante.*cardapio|restaurante.*menu|restaurant.*menu|menu.*restaurant|carta.*restaurante|carte.*restaurant|restaurante.*carta|restaurant.*carte)/.test(t);
+}
+
 function shouldSendCheckin(text) {
   return (
     isNumericSelection(text, '8') ||
@@ -262,7 +278,15 @@ function shouldSendFrigobarPix(text) {
   const isPaymentOrMenu = /(como.*(pago?|pagar)|preciso.*pag|quanto.*(custa|vale|e)|pix|cardapio)/.test(t);
   const isReservationContext = /(reserva|hosped|estadia|diaria|apartamento|check.?in|check.?out|quarto|bilhete|booking)/.test(t);
   const isRestockIntent = /(repor|reposi|vazio|acabou?|esgotou?|faltou?|sem (bebida|item|agua|cerveja|refrigerante|estoque)|precis.*(repor|abastecer|encher|completar))/.test(t);
-  return (isFrigobarMention || isPaymentOrMenu) && !isReservationContext && !isRestockIntent;
+  // Fix 2026-05-04: "cardapio do restaurante" disparava aqui ("cardapio" matchava
+  // isPaymentOrMenu). Agora qualquer mencao a restaurante/comida pulou para o
+  // matcher correto (shouldSendFoodOrder → FOOD_ORDER_RESPONSE Don Maitre).
+  // Caso reportado: hospede pergunta "cardapio do restaurante" → recebia frigobar.
+  const isRestaurantContext = /(restaurante|delivery|ifood|i food|comida|refeicao|refeicoes|jantar|almoco|menu)/.test(t);
+  return (isFrigobarMention || isPaymentOrMenu)
+    && !isReservationContext
+    && !isRestockIntent
+    && !isRestaurantContext;
 }
 function shouldRequestFrigobarRestock(text) {
   const t = stripAccents(text);
@@ -283,6 +307,7 @@ module.exports = {
   shouldSendTowels,
   shouldSendRestaurant,
   shouldSendFoodOrder,
+  shouldSendRestaurantMenuI18n,
   shouldSendCheckin,
   shouldSendTransfer,
   shouldSendHuman,

@@ -13,6 +13,7 @@ const {
   TOWELS_RESPONSE,
   RESTAURANT_RESPONSE,
   FOOD_ORDER_RESPONSE,
+  getFoodOrderResponse,
   CHECKIN_RESPONSE,
   SECURITY_RESPONSE,
   TRANSFER_RESPONSE,
@@ -45,6 +46,7 @@ const {
   shouldSendTowels,
   shouldSendRestaurant,
   shouldSendFoodOrder,
+  shouldSendRestaurantMenuI18n,
   shouldSendCheckin,
   shouldSendTransfer,
   shouldSendHuman,
@@ -488,6 +490,16 @@ async function handleIncoming(payload) {
           /\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/.test(body)
         ) {
           await replyAndSave(from, getReservationResponse(language), { alsoSendAudio: camFromAudio });
+          continue;
+        }
+
+        // ---- restaurant menu (i18n PT/EN/FR/ES) -------------------------
+        // Captura "cardapio do restaurante" / "restaurant menu" / "menu du
+        // restaurant" / "menu del restaurante" e envia link Don Maitre +
+        // cupom CONCIERGECLOUD10 em qualquer idioma. Adicionado 04/05 —
+        // antes caia em FRIGOBAR_PIX (cardápio do frigobar, errado).
+        if (shouldSendRestaurantMenuI18n(normalized)) {
+          await replyAndSave(from, getFoodOrderResponse(language), { alsoSendAudio: camFromAudio });
           continue;
         }
 
