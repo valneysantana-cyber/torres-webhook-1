@@ -107,17 +107,24 @@ async function dailyCheckinDispatch() {
       for (const num of numbers) {
         const tr = await sendDailyReportTemplate(num, params);
         tmplResults.push({ num, ok: !!tr.ok, msgId: tr.messageId, err: tr.error?.error?.message || tr.error });
-        // Tenta free-text — se janela 24h fechada, Meta dropa silenciosamente (esperado).
-        // Não bloqueia o loop nem fail-fast: ambos os paths são best-effort independentes.
-        try {
-          const fr = await sendWhatsAppText(num, freeTextMessage);
-          freeResults.push({ num, ok: !!fr?.ok, msgId: fr?.messageId });
-        } catch (e) {
-          freeResults.push({ num, ok: false, err: e.message });
+        // Free-text complementar — só faz sentido pro path v1 (que envia template com
+        // formato `·` inline). v2 já entrega cada hóspede numa linha, free-text seria
+        // duplicação visual no chat de quem tem janela 24h aberta. Decisão Valney 04/05.
+        if (!USE_V2) {
+          try {
+            const fr = await sendWhatsAppText(num, freeTextMessage);
+            freeResults.push({ num, ok: !!fr?.ok, msgId: fr?.messageId });
+          } catch (e) {
+            freeResults.push({ num, ok: false, err: e.message });
+          }
         }
       }
       console.log('[dispatch] Relatório diário (template) → ', tmplResults);
-      console.log('[dispatch] Relatório diário (free-text complementar) → ', freeResults);
+      if (!USE_V2) {
+        console.log('[dispatch] Relatório diário (free-text complementar) → ', freeResults);
+      } else {
+        console.log('[dispatch] v2 ativo — free-text complementar SKIPADO (template já entrega linha-por-linha)');
+      }
     } else {
       // Path LEGADO — só free-text (rollback emergencial via WA_DAILY_REPORT_USE_TEMPLATE=false).
       // Só entrega pra números com janela 24h aberta — usar com cuidado.
