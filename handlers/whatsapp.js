@@ -498,7 +498,25 @@ async function handleIncoming(payload) {
         // restaurant" / "menu del restaurante" e envia link Don Maitre +
         // cupom CONCIERGECLOUD10 em qualquer idioma. Adicionado 04/05 —
         // antes caia em FRIGOBAR_PIX (cardápio do frigobar, errado).
+        // DEBUG temp 04/05: trace matcher decisions to find why "Preciso do
+        // cardapio" is falling through to AI fallback. Remove once root-cause found.
+        try {
+          console.log('[match-trace]', JSON.stringify({
+            from, lang: language, body_raw: body, normalized,
+            r_menu_i18n: shouldSendRestaurantMenuI18n(normalized),
+            r_frigobar:  shouldSendFrigobarPix(normalized),
+            r_food:      shouldSendFoodOrder(normalized),
+            r_breakfast: shouldSendBreakfast(normalized),
+            r_pool:      shouldSendPool(normalized),
+            r_thanks:    shouldSendThanks(normalized),
+            r_menu_num:  shouldSendMenu(normalized),
+            r_resv_red:  shouldRedirectToReservationSite(normalized),
+            r_cancel:    shouldHandleCancellationRequest(normalized),
+          }));
+        } catch (_) {}
+
         if (shouldSendRestaurantMenuI18n(normalized)) {
+          console.log('[match-trace] HIT shouldSendRestaurantMenuI18n → FOOD_ORDER i18n');
           await replyAndSave(from, getFoodOrderResponse(language), { alsoSendAudio: camFromAudio });
           continue;
         }
@@ -509,6 +527,7 @@ async function handleIncoming(payload) {
         // O matcher foi expandido (2026-04-09) para capturar perguntas
         // genéricas como "como eu pago" / "preciso saber como pago".
         if (shouldSendFrigobarPix(normalized)) {
+          console.log('[match-trace] HIT shouldSendFrigobarPix → FRIGOBAR_PIX');
           await replyAndSave(from, FRIGOBAR_PIX_RESPONSE, { alsoSendAudio: camFromAudio });
           continue;
         }
