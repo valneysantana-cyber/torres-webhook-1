@@ -63,15 +63,35 @@ function shouldSendFoodOrder(text) {
  * Avaliado ANTES do PT_DISPATCH pra capturar pedidos de cardápio em qualquer
  * idioma e enviar resposta i18n com link Don Maitre. Adicionado 2026-05-04.
  *
- * Examples that match:
- *   PT: "cardapio do restaurante", "menu do restaurante"
- *   EN: "restaurant menu", "menu of the restaurant"
- *   FR: "menu du restaurant", "carte du restaurant"
- *   ES: "menu del restaurante", "carta del restaurante"
+ * V2 2026-05-04 (após teste real Valney): regex original exigia "cardapio +
+ * restaurante" juntos. "Preciso do cardápio" não matchava. Agora:
+ *   - Matcha qualquer pedido de cardápio/menu/carta
+ *   - EXCLUI menção a frigobar/minibar (cai em FRIGOBAR_PIX)
+ *   - EXCLUI menu numerado interno do bot ("menu principal/inicial/opcoes")
+ *
+ * Examples that match (post-V2):
+ *   PT: "cardapio", "preciso do cardapio", "me manda o cardapio"
+ *   EN: "menu", "restaurant menu", "send me the menu"
+ *   FR: "menu", "carte du restaurant", "envoyez la carte"
+ *   ES: "carta", "menu del restaurante"
+ *
+ * Examples that DON'T match:
+ *   "cardapio do frigobar" → frigobar
+ *   "menu de opcoes / menu principal / menu inicial" → menu numerado do bot
  */
 function shouldSendRestaurantMenuI18n(text) {
   const t = stripAccents(text);
-  return /(cardapio.*restaurante|menu.*restaurante|restaurante.*cardapio|restaurante.*menu|restaurant.*menu|menu.*restaurant|carta.*restaurante|carte.*restaurant|restaurante.*carta|restaurant.*carte)/.test(t);
+  // Excludes que NÃO devem enviar restaurante
+  if (/frigobar|minibar|mini.?bar/.test(t)) return false;
+  if (/menu de opc|menu principal|menu inicial|menu de comand/.test(t)) return false;
+  // Matches: cardapio (PT) é forte sozinho; menu/carta exigem ou contexto
+  // "restaurant" ou ser a request principal (frase curta com 1-3 palavras).
+  if (/cardapio/.test(t)) return true;
+  if (/(menu.*restaurant|restaurant.*menu|restaurante.*menu|menu.*restaurante|carte.*restaurant|restaurant.*carte|carta.*restaurante|restaurante.*carta|carta del restaurante|carte du restaurant)/.test(t)) return true;
+  // Frase curta com "menu" ou "carta" ≤ 4 palavras → provavelmente pedido de cardápio
+  const words = t.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= 4 && /\b(menu|carta)\b/.test(t)) return true;
+  return false;
 }
 
 function shouldSendCheckin(text) {
