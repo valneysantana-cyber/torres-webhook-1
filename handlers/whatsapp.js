@@ -575,11 +575,20 @@ async function handleIncoming(payload) {
         // Para entradas com campo `notify`, dispara a notificação em paralelo
         // sem bloquear a resposta ao hóspede (fire-and-forget via .catch).
         if (language === 'pt') {
+          // Complex multi-question detection: 3+ cláusulas com conjunção.
+          // Indica pergunta com vários tópicos (ex: "tem enxoval e podemos usar
+          // sofa-cama e tem geladeira... qual a tensao?"). Nesse caso, PT_DISPATCH
+          // matcher catches só 1-2 tópicos e ignora os outros — UX ruim. Solução:
+          // bypassa PT_DISPATCH e cai no AI fallback que responde holisticamente
+          // com tenant.settings + reservation context.
+          const _clauses = normalized.split(/\s(?:e|ou|tambem|alem)\s/).filter(s => s.trim().length > 5);
+          const isComplexMultiQuestion = _clauses.length >= 3;
+
           // Multi-intent dispatch: hóspede pode perguntar várias coisas numa frase só
           // (ex: "como uso o cofre e como obtenho nota fiscal e quais áreas comuns?").
           // Detecta TODOS os matchers que disparam, e se houver 2+ + conjunção,
           // concatena até 3 respostas. Senão, comportamento single-intent original.
-          const matches = PT_DISPATCH.filter(({ check }) => check(normalized));
+          const matches = isComplexMultiQuestion ? [] : PT_DISPATCH.filter(({ check }) => check(normalized));
           if (matches.length > 0) {
             const hasConjunction = /\s(e|ou|tambem|além)\s|[?.]\s*[a-z]/i.test(normalized);
             const isMultiIntent = matches.length >= 2 && hasConjunction;
