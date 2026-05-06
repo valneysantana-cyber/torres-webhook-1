@@ -146,9 +146,33 @@ function _kwRegex(keyword) {
   return re;
 }
 
+// Categories que SEMPRE disparam — risco real independe do tom da msg
+// (ex: "tem barata?" ainda é Praga; "to passando mal" ainda é Urgência)
+const ALWAYS_CRITICAL = new Set(['Urgência', 'Praga / Inseto']);
+
+// Padrões que indicam pergunta informacional (não problema reportado).
+// Se msg matchear isso E categoria não é always-critical, classifier rejeita
+// pra evitar falso-alerta. Bug prod 06/05: "se tem geladeira" disparava
+// Manutenção crítica porque 'geladeira' é keyword.
+const INFORMATIONAL_INTENT = /\b(tem |se tem |gostaria de (saber|confirmar)|podemos (usar|ter)|posso usar|qual (a |o )?|quais (sao )?|quanto custa|onde (fica|esta)|tem (algum |alguma )?\w+ disponivel|preciso saber|posso ter|posso pedir)\b/;
+
+// Multi-question complexa (3+ clausulas com conjunção): provavelmente
+// informacional misturada — fall-through pra AI fallback que responde holisticamente.
+function isComplexMultiQuestion(text) {
+  const clauses = text.split(/\s(?:e|ou|tambem|alem)\s/).filter(s => s.trim().length > 5);
+  return clauses.length >= 3;
+}
+
 function classifyMessage(text) {
   const normalized = normalizeText(text);
+  const isInformational = INFORMATIONAL_INTENT.test(normalized);
+  const isComplex = isComplexMultiQuestion(normalized);
+
   for (const category of CATEGORIES) {
+    const alwaysCritical = ALWAYS_CRITICAL.has(category.name);
+    // Skip non-critical se msg é informacional ou complexa (várias perguntas).
+    // Always-critical (Praga/Urgência) sempre avalia — incêndio é incêndio.
+    if (!alwaysCritical && (isInformational || isComplex)) continue;
     for (const keyword of category.keywords) {
       if (_kwRegex(keyword).test(normalized)) {
         return category;

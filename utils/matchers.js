@@ -155,9 +155,9 @@ function shouldSendCommonAreas(text) {
 }
 
 function shouldSendBedding(text) {
-  // "Lençol", "fronha", "travesseiro extra", "edredom", "cobertor"
+  // "Lençol", "fronha", "travesseiro extra", "edredom", "cobertor", "enxoval", "sofa-cama"
   // Avaliado APÓS shouldSendTowels (toalha tem matcher próprio)
-  return /\b(lencol|fronha|travesseiro|cobertor|edredom|edredon|colcha|roupa de cama|trocar.{0,10}cama|mais.{0,5}travesseiro|mais.{0,5}cobertor|cama (mais )?dura|cama (mais )?mole|colchao)\b/.test(text);
+  return /\b(lencol|fronha|travesseiro|cobertor|edredom|edredon|colcha|roupa de cama|trocar.{0,10}cama|mais.{0,5}travesseiro|mais.{0,5}cobertor|cama (mais )?dura|cama (mais )?mole|colchao|enxoval|sofa.?cama|sofa cama|cama extra|cama adicional)\b/.test(text);
 }
 
 function shouldHandleDateChange(text) {
