@@ -575,41 +575,47 @@ async function handleIncoming(payload) {
         // Para entradas com campo `notify`, dispara a notificação em paralelo
         // sem bloquear a resposta ao hóspede (fire-and-forget via .catch).
         if (language === 'pt') {
-          // Complex multi-question detection: 3+ cláusulas com conjunção.
-          // Indica pergunta com vários tópicos (ex: "tem enxoval e podemos usar
-          // sofa-cama e tem geladeira... qual a tensao?"). Nesse caso, PT_DISPATCH
-          // matcher catches só 1-2 tópicos e ignora os outros — UX ruim. Solução:
-          // bypassa PT_DISPATCH e cai no AI fallback que responde holisticamente
-          // com tenant.settings + reservation context.
-          const _clauses = normalized.split(/\s(?:e|ou|tambem|alem)\s/).filter(s => s.trim().length > 5);
-          const isComplexMultiQuestion = _clauses.length >= 3;
+          // Multi-intent / multi-question detection — roteia pra AI fallback
+          // quando há sinais de pergunta complexa pra resposta holística:
+          //  (a) 2+ matchers do PT_DISPATCH disparam (vários tópicos)
+          //  (b) 2+ pontos de interrogação no body original (várias perguntas)
+          //  (c) 3+ frases (ponto, exclamação, ?)
+          //
+          // Sem esses sinais, mantém comportamento single-matcher original
+          // (rápido). PT_DISPATCH responde se 1 matcher pegar; se 0, cai em AI.
+          //
+          // Bug histórico: heurística anterior usava só conjunção 'e'/'ou' no
+          // texto normalizado (que stripa pontuação) — perdia "Tem X? Tem Y?".
+          const matches = PT_DISPATCH.filter(({ check }) => check(normalized));
+          const qCount = (body.match(/\?/g) || []).length;
+          const sentenceCount = (body.match(/[.!?]+/g) || []).length;
+          // Conta palavras de consulta (cada uma indica uma pergunta separada).
+          // Captura caso "Estou indo com uma pessoa a mais e gostaria de confirmar
+          // se tem X e se podemos Y e se tem Z... qual W?" — 5 indicators, mas 0 ?.
+          const queryWordRegex = /\b(tem|se|qual|quais|podemos|posso|consigo|gostaria|como|onde|quanto|quantos|preciso|gostaríamos)\b/gi;
+          const queryCount = (body.match(queryWordRegex) || []).length;
+          const isMultiIntent = matches.length >= 2 || qCount >= 2 || sentenceCount >= 3 || queryCount >= 3;
 
-          // Multi-intent dispatch: hóspede pode perguntar várias coisas numa frase só
-          // (ex: "como uso o cofre e como obtenho nota fiscal e quais áreas comuns?").
-          // Detecta TODOS os matchers que disparam, e se houver 2+ + conjunção,
-          // concatena até 3 respostas. Senão, comportamento single-intent original.
-          const matches = isComplexMultiQuestion ? [] : PT_DISPATCH.filter(({ check }) => check(normalized));
-          if (matches.length > 0) {
-            const hasConjunction = /\s(e|ou|tambem|além)\s|[?.]\s*[a-z]/i.test(normalized);
-            const isMultiIntent = matches.length >= 2 && hasConjunction;
-            const toAnswer = isMultiIntent ? matches.slice(0, 3) : [matches[0]];
-
-            // Passa tenant pra reply functions tenant-aware (BREAKFAST/PARKING) lerem settings.
-            // Static responses ignoram args. Vide responses/strings.js buildXxxResponse().
-            const replies = toAnswer.map(m => m.reply(language, tenant));
-            const combined = replies.join('\n\n━━━━━━━━━━\n\n');
-            await replyAndSave(from, combined, { alsoSendAudio: camFromAudio });
-
-            // Notifies fire-and-forget — dedupe pelo nome da função check pra evitar
-            // spam quando vários matchers compartilham notify (ex: bedding + cleaning).
+          if (matches.length > 0 && !isMultiIntent) {
+            // Single-intent: comportamento original
+            const m = matches[0];
+            const dispatchReply = m.reply(language, tenant);
+            await replyAndSave(from, dispatchReply, { alsoSendAudio: camFromAudio });
+            if (m.notify) m.notify(from, body).catch(() => {});
+            continue;
+          }
+          // Multi-intent: dispara TODOS os notifies aplicáveis (pra dispatch
+          // não perder solicitações operacionais como bedding/cleaning) e cai
+          // no AI fallback abaixo, que responde holisticamente.
+          if (isMultiIntent && matches.length > 0) {
             const notifySent = new Set();
-            for (const m of toAnswer) {
+            for (const m of matches) {
               if (m.notify && !notifySent.has(m.check.name)) {
                 notifySent.add(m.check.name);
                 m.notify(from, body).catch(() => {});
               }
             }
-            continue;
+            // intencionalmente NÃO continue — deixa cair no AI fallback
           }
         }
 
