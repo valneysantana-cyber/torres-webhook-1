@@ -68,12 +68,7 @@ Ao chegar, \u00e9 s\u00f3 ir direto na *recep\u00e7\u00e3o 24h do hotel*, aprese
 
 const SAFE_RESPONSE = `\ud83d\udd10 O quarto possui cofre dispon\u00edvel para uso. Em caso de d\u00favida sobre opera\u00e7\u00e3o ou se travar, me avisa o n\u00famero do quarto que oriento ou aciono a recep\u00e7\u00e3o pra te ajudar com o procedimento de seguran\u00e7a. \ud83c\udf34`;
 
-const INVOICE_RESPONSE = `\ud83e\uddfe Pra emiss\u00e3o de *nota fiscal ou recibo*, me envie por favor:
-1. Nome completo da reserva
-2. Data da hospedagem
-3. CPF/CNPJ pra emiss\u00e3o
-
-Encaminho pra equipe administrativa e te retorno com o documento. \ud83c\udf34`;
+const INVOICE_RESPONSE = `\ud83e\uddfe Pra emiss\u00e3o de *nota fiscal ou recibo*, vou conectar voc\u00ea com a *Sofia* (nossa equipe administrativa) que cuida disso:\n\n\ud83d\udcde ${HUMAN_NUMBER_SECONDARY}\n\nEla j\u00e1 foi avisada e vai te chamar em breve. \ud83c\udf34`;
 
 const COMMON_AREAS_RESPONSE = `\ud83c\udfca Como h\u00f3spede TorresGuest, voc\u00ea tem acesso \u00e0s \u00e1reas comuns do hotel: *piscina, academia, restaurante, recep\u00e7\u00e3o 24h e business center*, conforme regras internas e hor\u00e1rios de funcionamento. Qualquer d\u00favida espec\u00edfica, me chama. \ud83c\udf34`;
 
