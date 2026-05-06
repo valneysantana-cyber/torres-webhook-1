@@ -221,7 +221,11 @@ const PT_DISPATCH = [
   { check: shouldSendDocuments,    reply: () => DOCUMENTS_RESPONSE },
   { check: shouldSendHotelAccess,  reply: () => HOTEL_ACCESS_RESPONSE },
   { check: shouldSendSafe,         reply: () => SAFE_RESPONSE },
-  { check: shouldSendInvoice,      reply: () => INVOICE_RESPONSE },
+  {
+    check: shouldSendInvoice,
+    reply: () => INVOICE_RESPONSE,
+    notify: (from, body) => sendRoomRequestNotification(from, body, 'Solicitação de Nota Fiscal'),
+  },
   { check: shouldSendParkingEarly, reply: () => PARKING_EARLY_RESPONSE },
   { check: shouldSendCheckin,      reply: () => CHECKIN_RESPONSE },
   // Hosting course (Hotmart "Desvendando o Airbnb") — prospects que querem ser anfitriões.
