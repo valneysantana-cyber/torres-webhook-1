@@ -101,6 +101,25 @@ function shouldSendCheckin(text) {
   );
 }
 
+/**
+ * Detecta interesse em SER anfitri\u00e3o de Airbnb (prospect/anfitri\u00e3o novo).
+ * Encaminha pro curso "Desvendando o Airbnb" (Hotmart, afilia\u00e7\u00e3o ativa).
+ *
+ * Importante: matcher narrow pra evitar falso-positivo com h\u00f3spede atual da
+ * TorresGuest que mencione "Airbnb" em outro contexto (ex: "wifi do airbnb",
+ * "checkin do airbnb"). Por isso reject early se contexto guest-t\u00edpico.
+ *
+ * Adicionado 2026-05-06.
+ */
+function shouldSendHostingCourse(text) {
+  // Reject cedo: contexto t\u00edpico de h\u00f3spede ATIVO (n\u00e3o prospect anfitri\u00e3o)
+  if (/\b(wifi|wi.?fi|checkin|check.in|checkout|check.out|endereco|recepcao|piscina|cafe.{0,4}manha|toalha|estacionamento|frigobar|minibar|mini.?bar|sua reserva|minha reserva|meu apartamento|meu quarto)\b/.test(text)) {
+    return false;
+  }
+  // Intent claras de quem quer SE TORNAR ou MELHORAR como anfitri\u00e3o
+  return /(como ser anfitriao|ser anfitriao|virar anfitriao|tornar.{0,15}anfitriao|primeiro airbnb|abrir.{0,5}airbnb|ter um airbnb|montar.{0,5}airbnb|sou.{0,5}anfitriao|monetizar.{0,10}imovel|aluguel.{0,15}temporada|ganhar.{0,10}(com |no )airbnb|ganhar dinheiro.{0,15}airbnb|renda.{0,10}(com |no )airbnb|dicas.{0,10}airbnb|dicas.{0,10}anfitriao|curso.{0,10}airbnb|curso.{0,10}anfitriao|superhost|super host|profissionalizar.{0,15}airbnb)/.test(text);
+}
+
 function shouldSendTransfer(text) {
   // \b evita matchar "transferisse"/"transferir"/"transferência" (que indicam pedir
   // transferência pra outro atendente, não transfer aeroporto). Caso real 27/04:
@@ -329,6 +348,7 @@ module.exports = {
   shouldSendFoodOrder,
   shouldSendRestaurantMenuI18n,
   shouldSendCheckin,
+  shouldSendHostingCourse,
   shouldSendTransfer,
   shouldSendHuman,
   shouldHandleCancellationRequest,
