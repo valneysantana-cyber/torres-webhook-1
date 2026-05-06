@@ -127,11 +127,30 @@ const CATEGORIES = [
   },
 ];
 
+// Word-boundary matcher pra evitar falso-positivo de substring.
+// Bug histórico (06/05/2026): "como contrato o concierge?" matchava 'rato' (Praga/Inseto)
+// porque includes('rato') é true em "contrato". Mesmo risco em 'pia' (limpia), 'cobra' (cobrar),
+// 'praga' (compragar), etc. Word boundary corrige sem mudar o resto da lógica.
+//
+// Cache de regexes pra não recompilar a cada mensagem.
+const _regexCache = new Map();
+function _kwRegex(keyword) {
+  let re = _regexCache.get(keyword);
+  if (re) return re;
+  const norm = normalizeText(keyword);
+  // Escape regex specials (apesar de keywords serem só [a-z0-9 ] após normalize, fica robusto)
+  const escaped = norm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // \b funciona porque normalizeText deixa só [a-z0-9 ]; bordas são limites \w
+  re = new RegExp('\\b' + escaped + '\\b');
+  _regexCache.set(keyword, re);
+  return re;
+}
+
 function classifyMessage(text) {
   const normalized = normalizeText(text);
   for (const category of CATEGORIES) {
     for (const keyword of category.keywords) {
-      if (normalized.includes(normalizeText(keyword))) {
+      if (_kwRegex(keyword).test(normalized)) {
         return category;
       }
     }
