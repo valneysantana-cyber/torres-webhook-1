@@ -16,6 +16,18 @@ const {
   getFoodOrderResponse,
   HOSTING_COURSE_RESPONSE,
   CHECKIN_RESPONSE,
+  DOCUMENTS_RESPONSE,
+  HOTEL_ACCESS_RESPONSE,
+  SAFE_RESPONSE,
+  INVOICE_RESPONSE,
+  COMMON_AREAS_RESPONSE,
+  BEDDING_RESPONSE,
+  DATE_CHANGE_RESPONSE,
+  HOTEL_MAINTENANCE_RESPONSE,
+  BREAKFAST_COMPANION_RESPONSE,
+  PARKING_EARLY_RESPONSE,
+  buildBreakfastResponse,
+  buildParkingResponse,
   SECURITY_RESPONSE,
   TRANSFER_RESPONSE,
   LONG_STAY_RESPONSE,
@@ -50,6 +62,16 @@ const {
   shouldSendRestaurantMenuI18n,
   shouldSendCheckin,
   shouldSendHostingCourse,
+  shouldSendDocuments,
+  shouldSendHotelAccess,
+  shouldSendSafe,
+  shouldSendInvoice,
+  shouldSendCommonAreas,
+  shouldSendBedding,
+  shouldHandleDateChange,
+  shouldSendHotelMaintenance,
+  shouldSendBreakfastCompanion,
+  shouldSendParkingEarly,
   shouldSendTransfer,
   shouldSendHuman,
   shouldHandleCancellationRequest,
@@ -174,11 +196,14 @@ async function maybeDeliverDelayedWelcomeKit(from) {
 //  - shouldSendCleaning: agora aciona sendRoomRequestNotification
 //  - shouldSendSnacks: agora aciona sendRoomRequestNotification
 // ───────────────────────────────────────────────────────────────────────────────
+// Signature: reply(language, tenant) — tenant é opcional; só usado por respostas
+// dinâmicas (BREAKFAST, PARKING, etc) pra ler tenant.settings. Static responses
+// ignoram os args.
 const PT_DISPATCH = [
   { check: shouldSendWifi,        reply: () => WIFI_RESPONSE },
-  { check: shouldSendBreakfast,   reply: () => BREAKFAST_RESPONSE },
+  { check: shouldSendBreakfast,   reply: (_lang, tenant) => buildBreakfastResponse(tenant) },
   { check: shouldSendPool,        reply: () => POOL_RESPONSE },
-  { check: shouldSendParking,     reply: () => PARKING_RESPONSE },
+  { check: shouldSendParking,     reply: (_lang, tenant) => buildParkingResponse(tenant) },
   {
     check: shouldSendSnacks,
     reply: () => SNACKS_RESPONSE,
@@ -191,10 +216,27 @@ const PT_DISPATCH = [
   },
   { check: shouldSendFoodOrder,   reply: () => FOOD_ORDER_RESPONSE },
   { check: shouldSendRestaurant,  reply: () => RESTAURANT_RESPONSE },
-  { check: shouldSendCheckin,     reply: () => CHECKIN_RESPONSE },
+  // FAQ coverage (06/05/2026) — críticos avaliados ANTES de shouldSendCheckin
+  // pra evitar colisão (ex: "documentos para checkin" cair em Checkin genérico).
+  { check: shouldSendDocuments,    reply: () => DOCUMENTS_RESPONSE },
+  { check: shouldSendHotelAccess,  reply: () => HOTEL_ACCESS_RESPONSE },
+  { check: shouldSendSafe,         reply: () => SAFE_RESPONSE },
+  { check: shouldSendInvoice,      reply: () => INVOICE_RESPONSE },
+  { check: shouldSendParkingEarly, reply: () => PARKING_EARLY_RESPONSE },
+  { check: shouldSendCheckin,      reply: () => CHECKIN_RESPONSE },
   // Hosting course (Hotmart "Desvendando o Airbnb") — prospects que querem ser anfitriões.
   // Avaliado APÓS shouldSendCheckin pra evitar matchar hóspede atual perguntando sobre check-in.
   { check: shouldSendHostingCourse, reply: () => HOSTING_COURSE_RESPONSE },
+  // Médios
+  { check: shouldSendBreakfastCompanion, reply: () => BREAKFAST_COMPANION_RESPONSE },
+  { check: shouldSendCommonAreas,        reply: () => COMMON_AREAS_RESPONSE },
+  {
+    check: shouldSendBedding,
+    reply: () => BEDDING_RESPONSE,
+    notify: (from, body) => sendRoomRequestNotification(from, body, 'Roupa de cama / enxoval extra'),
+  },
+  { check: shouldHandleDateChange,     reply: () => DATE_CHANGE_RESPONSE },
+  { check: shouldSendHotelMaintenance, reply: () => HOTEL_MAINTENANCE_RESPONSE },
   { check: shouldSendSecurity,    reply: () => SECURITY_RESPONSE },
   {
     check: shouldSendTransfer,
@@ -531,7 +573,9 @@ async function handleIncoming(payload) {
         if (language === 'pt') {
           const match = PT_DISPATCH.find(({ check }) => check(normalized));
           if (match) {
-            const dispatchReply = match.reply(language);
+            // Passa tenant pra reply functions tenant-aware (BREAKFAST/PARKING) lerem settings.
+            // Static responses ignoram args. Vide responses/strings.js buildXxxResponse().
+            const dispatchReply = match.reply(language, tenant);
             await replyAndSave(from, dispatchReply, { alsoSendAudio: camFromAudio });
             if (match.notify) match.notify(from, body).catch(() => {});
             continue;

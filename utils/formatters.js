@@ -10,6 +10,10 @@ function normalizeText(text) {
   return text
     .toLowerCase()
     .normalize('NFD')
+    // Strip combining marks (acentos decompostos) ANTES de cair na regex de espaço.
+    // Bug histórico (06/05/2026): "faço" → NFD "faço" → cedilha vira espaço → "fac o".
+    // Isso quebrava matchers como "como faço pra entrar". Strip primeiro mantém "faco" inteiro.
+    .replace(/[̀-ͯ]/g, '')
     .replace(/[^0-9a-z\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
