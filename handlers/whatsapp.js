@@ -14,6 +14,7 @@ const {
   RESTAURANT_RESPONSE,
   FOOD_ORDER_RESPONSE,
   getFoodOrderResponse,
+  HOSTING_COURSE_RESPONSE,
   CHECKIN_RESPONSE,
   SECURITY_RESPONSE,
   TRANSFER_RESPONSE,
@@ -48,6 +49,7 @@ const {
   shouldSendFoodOrder,
   shouldSendRestaurantMenuI18n,
   shouldSendCheckin,
+  shouldSendHostingCourse,
   shouldSendTransfer,
   shouldSendHuman,
   shouldHandleCancellationRequest,
@@ -190,6 +192,9 @@ const PT_DISPATCH = [
   { check: shouldSendFoodOrder,   reply: () => FOOD_ORDER_RESPONSE },
   { check: shouldSendRestaurant,  reply: () => RESTAURANT_RESPONSE },
   { check: shouldSendCheckin,     reply: () => CHECKIN_RESPONSE },
+  // Hosting course (Hotmart "Desvendando o Airbnb") — prospects que querem ser anfitriões.
+  // Avaliado APÓS shouldSendCheckin pra evitar matchar hóspede atual perguntando sobre check-in.
+  { check: shouldSendHostingCourse, reply: () => HOSTING_COURSE_RESPONSE },
   { check: shouldSendSecurity,    reply: () => SECURITY_RESPONSE },
   {
     check: shouldSendTransfer,

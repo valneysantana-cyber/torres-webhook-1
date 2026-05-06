@@ -40,6 +40,17 @@ function getFoodOrderResponse(language) {
   return FOOD_ORDER_RESPONSE_I18N[language] || FOOD_ORDER_RESPONSE_I18N.pt;
 }
 
+// Curso Hotmart "Desvendando o Airbnb" — afiliação ativa (cookie 180d, 50% comm).
+// Disparado por shouldSendHostingCourse pra prospects que querem ser anfitriões.
+// Link direto Hotmart preserva o código de afiliado B105630974J.
+const HOSTING_COURSE_RESPONSE = `🏠 Tem interesse em ser anfitrião de Airbnb? Recomendamos o curso *Desvendando o Airbnb* — feito por quem opera múltiplas unidades no Brasil:
+
+📚 Acesse: https://go.hotmart.com/B105630974J
+🎯 Aulas práticas: precificação, anúncio, fotos, resenhas, pricing dinâmico
+💰 Investimento baixo · garantia 7 dias
+
+Se quiser trocar uma ideia primeiro, posso te conectar com a Sofia no ${HUMAN_NUMBER_SECONDARY}. 🌴`;
+
 const CHECKIN_RESPONSE = `\ud83d\udd50 Check-in & Check-out possuem limites de hor\u00e1rio, sobretudo o check-out, pois o time de governan\u00e7a do hotel pede uma hora para limpeza e higieniza\u00e7\u00e3o.\nCheck-in: a partir das 14h\nCheck-out: at\u00e9 12h\nA recep\u00e7\u00e3o funciona 24h com equipe de seguran\u00e7a para te receber em qualquer hor\u00e1rio. \ud83c\udf34`;
 
 const SECURITY_RESPONSE = `\ud83d\udd10 Contamos com Seguran\u00e7a & Recep\u00e7\u00e3o 24h, controle de acesso e equipe no local o tempo todo.\nPode chegar tranquilo(a), estamos sempre por perto. \ud83c\udf34`;
@@ -163,6 +174,7 @@ module.exports = {
   FOOD_ORDER_RESPONSE,
   FOOD_ORDER_RESPONSE_I18N,
   getFoodOrderResponse,
+  HOSTING_COURSE_RESPONSE,
   CHECKIN_RESPONSE,
   SECURITY_RESPONSE,
   TRANSFER_RESPONSE,
