@@ -575,13 +575,31 @@ async function handleIncoming(payload) {
         // Para entradas com campo `notify`, dispara a notificação em paralelo
         // sem bloquear a resposta ao hóspede (fire-and-forget via .catch).
         if (language === 'pt') {
-          const match = PT_DISPATCH.find(({ check }) => check(normalized));
-          if (match) {
+          // Multi-intent dispatch: hóspede pode perguntar várias coisas numa frase só
+          // (ex: "como uso o cofre e como obtenho nota fiscal e quais áreas comuns?").
+          // Detecta TODOS os matchers que disparam, e se houver 2+ + conjunção,
+          // concatena até 3 respostas. Senão, comportamento single-intent original.
+          const matches = PT_DISPATCH.filter(({ check }) => check(normalized));
+          if (matches.length > 0) {
+            const hasConjunction = /\s(e|ou|tambem|além)\s|[?.]\s*[a-z]/i.test(normalized);
+            const isMultiIntent = matches.length >= 2 && hasConjunction;
+            const toAnswer = isMultiIntent ? matches.slice(0, 3) : [matches[0]];
+
             // Passa tenant pra reply functions tenant-aware (BREAKFAST/PARKING) lerem settings.
             // Static responses ignoram args. Vide responses/strings.js buildXxxResponse().
-            const dispatchReply = match.reply(language, tenant);
-            await replyAndSave(from, dispatchReply, { alsoSendAudio: camFromAudio });
-            if (match.notify) match.notify(from, body).catch(() => {});
+            const replies = toAnswer.map(m => m.reply(language, tenant));
+            const combined = replies.join('\n\n━━━━━━━━━━\n\n');
+            await replyAndSave(from, combined, { alsoSendAudio: camFromAudio });
+
+            // Notifies fire-and-forget — dedupe pelo nome da função check pra evitar
+            // spam quando vários matchers compartilham notify (ex: bedding + cleaning).
+            const notifySent = new Set();
+            for (const m of toAnswer) {
+              if (m.notify && !notifySent.has(m.check.name)) {
+                notifySent.add(m.check.name);
+                m.notify(from, body).catch(() => {});
+              }
+            }
             continue;
           }
         }
