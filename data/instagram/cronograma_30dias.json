@@ -1,0 +1,488 @@
+{
+  "version": "2026-05-06-v1",
+  "language": "pt-BR",
+  "timezone": "America/Sao_Paulo",
+  "default_publish_hour": 9,
+  "_comment": "30 dias de posts (07/05 a 05/06) extraído de INSTAGRAM_LAUNCH_PLAN_06052026.md. Formato: date ISO, pillar, format, template, data (input pro template), caption, hashtags",
+  "posts": [
+    {
+      "date": "2026-05-07",
+      "publish_hour": 9,
+      "pillar": "launch",
+      "format": "feed_carousel",
+      "template": "narrativa_origem_v1",
+      "data": {
+        "title": "Por que criei o ConciergeCloud",
+        "slides": [
+          {"heading": "Por que criei o ConciergeCloud", "subheading": "História de um anfitrião que cansou de não dormir"},
+          {"heading": "18 meses atrás", "body": "Hóspede chegava 2h da manhã. Mensagem em alemão pedindo wifi. Eu acordava, abria Translate, respondia, voltava pra cama."},
+          {"heading": "Repeti isso por meses", "body": "4 imóveis em São Paulo. Eu era o atendimento 24/7. Sozinho."},
+          {"heading": "Construí pra mim", "body": "WhatsApp + IA + 4 idiomas. Hóspede não percebe que é bot. Eu durmo de novo."},
+          {"heading": "Hoje abro pra você", "body": "ConciergeCloud · de R$97/mês · conciergecloud.com.br"}
+        ]
+      },
+      "caption": "Há 18 meses eu não dormia direito. Construí o ConciergeCloud pra mim — e hoje abro pra qualquer anfitrião do mundo. WhatsApp Concierge em 4 idiomas, 24/7, sem contratar ninguém. 🇧🇷 + 🌎 · de R$97/mês.\n\n👉 conciergecloud.com.br",
+      "hashtags": ["#airbnbhost", "#anfitriao", "#shorttermrental", "#whatsappbusiness", "#saasbrasil", "#hospedagem", "#turismo", "#empreendedorismo"]
+    },
+    {
+      "date": "2026-05-08",
+      "publish_hour": 13,
+      "pillar": "hosts",
+      "format": "reel",
+      "template": "wifi_4_idiomas_v1",
+      "data": {
+        "duration_seconds": 30,
+        "scenes": [
+          {"text": "POV: 3am. Hóspede manda mensagem.", "duration": 3},
+          {"text": "PT: 'Qual a senha do wifi?'", "duration": 3},
+          {"text": "EN: 'What's the wifi password?'", "duration": 3},
+          {"text": "ES: '¿Cuál es la contraseña?'", "duration": 3},
+          {"text": "FR: 'Quel est le mot de passe?'", "duration": 3},
+          {"text": "Bot responde TUDO em 4 idiomas. Você dorme.", "duration": 5},
+          {"text": "ConciergeCloud · de R$97/mês", "duration": 5}
+        ]
+      },
+      "caption": "3am. Wifi. 4 idiomas. Sem contratar ninguém. ⚡\n\nMarca um anfitrião que ainda responde tudo manual 👇",
+      "hashtags": ["#airbnbhost", "#anfitriao", "#shorttermrental", "#whatsappbusiness", "#hospedagem", "#viagem", "#brasil"]
+    },
+    {
+      "date": "2026-05-09",
+      "publish_hour": 11,
+      "pillar": "travel",
+      "format": "feed_single",
+      "template": "hotel_destaque_v1",
+      "data": {
+        "hotel_name": "Transamerica Executive Perdizes",
+        "city": "São Paulo, SP",
+        "discount": "20% OFF · esta semana",
+        "hero_image": "templates/ig/assets/hotel_transamerica.jpg",
+        "cta": "Reserve em conciergecloud.com.br/travel"
+      },
+      "caption": "✈️ Reserva confirmada na hora pelo nosso parceiro Expedia.\n\nTransamerica Executive Perdizes (SP) com 20% OFF essa semana. Suporte em português pelo nosso WhatsApp.\n\n👉 Link na bio · /travel",
+      "hashtags": ["#hoteis", "#viagem", "#saopaulo", "#expedia", "#perdizes", "#travel", "#hospedagem"]
+    },
+    {
+      "date": "2026-05-10",
+      "publish_hour": 19,
+      "pillar": "partners",
+      "format": "feed_carousel",
+      "template": "parceiro_local_v1",
+      "data": {
+        "partner_name": "Don Maitre",
+        "category": "Restaurante italiano · Perdizes, SP",
+        "coupon": "CONCIERGECLOUD10",
+        "discount": "10% off",
+        "slides": [
+          {"image": "templates/ig/assets/donmaitre_capa.jpg", "heading": "Don Maitre · Perdizes"},
+          {"image": "templates/ig/assets/donmaitre_prato.jpg", "heading": "Massas e risotos artesanais"},
+          {"heading": "Cupom CONCIERGECLOUD10", "body": "10% off no pedido pelo WhatsApp · /restaurante"}
+        ]
+      },
+      "caption": "🍝 Domingo à noite em Perdizes? Don Maitre é o restaurante parceiro ConciergeCloud.\n\nUse o cupom CONCIERGECLOUD10 e ganha 10% no pedido pelo WhatsApp.\n\n👉 Link no perfil · /restaurante",
+      "hashtags": ["#perdizes", "#saopaulo", "#restaurantes", "#parceria", "#donmaitre", "#italianfood"]
+    },
+    {
+      "date": "2026-05-11",
+      "publish_hour": 9,
+      "pillar": "launch",
+      "format": "reel",
+      "template": "demo_e2e_v1",
+      "data": {
+        "duration_seconds": 45,
+        "voiceover": "Mostra hóspede mandando msg WhatsApp → bot respondendo → host vendo CRM",
+        "source_video": "loom_demo_90s.mp4"
+      },
+      "caption": "90 segundos pra entender. Hóspede pergunta, bot responde, host vê tudo no CRM.\n\n👉 conciergecloud.com.br",
+      "hashtags": ["#saasbrasil", "#whatsappbusiness", "#airbnbhost", "#demo", "#produto"]
+    },
+    {
+      "date": "2026-05-12",
+      "publish_hour": 11,
+      "pillar": "affiliates",
+      "format": "feed_carousel",
+      "template": "kit_inauguracao_v1",
+      "data": {
+        "title": "Vai inaugurar um Airbnb? R$1.500+ em descontos",
+        "slides": [
+          {"icon": "🛋️", "store": "Tok&Stok", "deal": "10% off · sofás e mesa"},
+          {"icon": "🛏️", "store": "Westwing", "deal": "8% off · roupa de cama premium"},
+          {"icon": "🏠", "store": "MadeiraMadeira", "deal": "Frete grátis acima de R$300"},
+          {"icon": "🐾", "store": "Cobasi", "deal": "15% off · pet dos hóspedes"}
+        ],
+        "cta": "Curadoria completa em /anfitrioes"
+      },
+      "caption": "💰 Curadoria de cupons pra anfitriões em fase de inauguração de imóvel.\n\nA gente só põe loja no site onde tem afiliação ativa — preço pra você é o mesmo, comissão paga ConciergeCloud Travel.\n\n👉 Lista completa em /anfitrioes",
+      "hashtags": ["#airbnbhost", "#decoração", "#anfitriao", "#economia", "#cupom", "#airbnb"]
+    },
+    {
+      "date": "2026-05-13",
+      "publish_hour": 9,
+      "pillar": "hosts",
+      "format": "feed_carousel",
+      "template": "5_perguntas_v1",
+      "data": {
+        "title": "5 perguntas que seu hóspede sempre faz às 3h",
+        "slides": [
+          {"number": 1, "question": "Qual a senha do wifi?"},
+          {"number": 2, "question": "Como faço o check-in?"},
+          {"number": 3, "question": "Tem estacionamento?"},
+          {"number": 4, "question": "Posso fazer late checkout?"},
+          {"number": 5, "question": "Onde tem comida 24h?"}
+        ],
+        "cta": "ConciergeCloud responde tudo isso em 4 idiomas. Link na bio."
+      },
+      "caption": "5 perguntas que TODO hóspede faz às 3h da manhã 😴\n\nMarca um amigo anfitrião que ainda responde tudo manual 👇",
+      "hashtags": ["#airbnbhost", "#anfitriao", "#shorttermrental", "#hospedagem", "#humor", "#meme"]
+    },
+    {
+      "date": "2026-05-14",
+      "publish_hour": 9,
+      "pillar": "launch",
+      "format": "feed_carousel",
+      "template": "vs_concorrente_v1",
+      "data": {
+        "title": "Hospitable vs ConciergeCloud — comparação honesta",
+        "slides": [
+          {"feature": "Canal principal", "competitor": "Inbox Airbnb", "us": "WhatsApp ✅"},
+          {"feature": "Idiomas", "competitor": "EN only", "us": "PT/EN/ES/FR ✅"},
+          {"feature": "Preço entrada", "competitor": "US$40+/mo", "us": "R$97/mês (~US$19) ✅"},
+          {"feature": "Multi-imóvel", "competitor": "Por imóvel", "us": "Até 5 no Pro ✅"}
+        ]
+      },
+      "caption": "Plataforma grande automatiza inbox da Airbnb. Mas em 2026, hóspede manda mensagem é no WhatsApp. É lá que tem que automatizar.\n\n#whileTheyAutomateAirbnbInbox #weAutomateWhereGuestsActuallyTalk",
+      "hashtags": ["#saasbrasil", "#airbnbhost", "#anfitriao", "#hospedagem", "#startup", "#whatsappbusiness"]
+    },
+    {
+      "date": "2026-05-15",
+      "publish_hour": 13,
+      "pillar": "travel",
+      "format": "reel",
+      "template": "voos_cvc_v1",
+      "data": {
+        "duration_seconds": 30,
+        "destinations": ["Salvador R$899", "Recife R$1.250", "Fernando de Noronha R$2.450"],
+        "voiceover": "POV viagem econômica pelo nosso parceiro CVC"
+      },
+      "caption": "✈️ Voos nacionais com até 40% OFF essa semana via parceiro CVC.\n\n👉 Link na bio · /travel",
+      "hashtags": ["#viagem", "#voos", "#cvc", "#brasil", "#turismo", "#promocao"]
+    },
+    {
+      "date": "2026-05-16",
+      "publish_hour": 11,
+      "pillar": "hosts",
+      "format": "feed_single",
+      "template": "depoimento_imovel_v1",
+      "data": {
+        "image": "templates/ig/assets/quarto_torresguest.jpg",
+        "quote": "Tudo isso é atendido pelo bot. Eu não toco no celular.",
+        "credit": "Valney · 4 imóveis em SP · TorresGuest"
+      },
+      "caption": "Foto real de um quarto da TorresGuest (4 imóveis em SP).\n\nWifi · check-in · café · piscina · governança · táxi → tudo o bot resolve em 4 idiomas.\n\n👉 Quer pro seu? conciergecloud.com.br",
+      "hashtags": ["#airbnbhost", "#anfitriao", "#torresguest", "#saopaulo", "#airbnb"]
+    },
+    {
+      "date": "2026-05-17",
+      "publish_hour": 19,
+      "pillar": "partners",
+      "format": "feed_carousel",
+      "template": "tour_local_v1",
+      "data": {
+        "partner_name": "Don Maitre",
+        "slides": [
+          {"image": "templates/ig/assets/donmaitre_fachada.jpg"},
+          {"image": "templates/ig/assets/donmaitre_salao.jpg"},
+          {"image": "templates/ig/assets/donmaitre_prato2.jpg"}
+        ]
+      },
+      "caption": "🍝 Tour pelo Don Maitre em Perdizes — ambiente, pratos, atendimento de respeito.\n\nReserva pelo WhatsApp + cupom CONCIERGECLOUD10 = 10% off.\n\n👉 /restaurante",
+      "hashtags": ["#perdizes", "#saopaulo", "#restaurantes", "#italianfood", "#parceria"]
+    },
+    {
+      "date": "2026-05-18",
+      "publish_hour": 9,
+      "pillar": "launch",
+      "format": "feed_carousel",
+      "template": "antes_depois_v1",
+      "data": {
+        "title": "Antes vs Depois — agenda do anfitrião",
+        "slides": [
+          {"side": "antes", "label": "Antes do ConciergeCloud", "items": ["3am: msg em alemão", "5am: msg em inglês", "7am: msg em espanhol", "Acorda exausto"]},
+          {"side": "depois", "label": "Com ConciergeCloud", "items": ["3am: bot responde", "5am: bot responde", "7am: bot responde", "Acorda descansado ☀️"]}
+        ]
+      },
+      "caption": "ANTES vs DEPOIS de virar cliente ConciergeCloud.\n\nDe R$97/mês. Vale 1 noite de sono perdida 😴\n\n👉 conciergecloud.com.br",
+      "hashtags": ["#airbnbhost", "#anfitriao", "#whatsappbusiness", "#saaspraanfitriao", "#hospedagem"]
+    },
+    {
+      "date": "2026-05-20",
+      "publish_hour": 8,
+      "pillar": "launch",
+      "format": "reel",
+      "template": "producthunt_day_v1",
+      "data": {
+        "duration_seconds": 60,
+        "is_pinned": true,
+        "voiceover": "Hoje subi no Product Hunt — pede pra você votar e comentar"
+      },
+      "caption": "🚀 PRODUCT HUNT DAY!\n\nHoje 20/05 ConciergeCloud sobe no Product Hunt. Se você gostou do que viu, vai lá votar e deixar um comentário — me ajuda muito.\n\n👉 producthunt.com/posts/conciergecloud (link na bio temporário)",
+      "hashtags": ["#producthunt", "#saaslaunch", "#startup", "#brasil", "#airbnbhost"]
+    },
+    {
+      "date": "2026-05-21",
+      "publish_hour": 11,
+      "pillar": "affiliates",
+      "format": "feed_carousel",
+      "template": "kit_inauguracao_v1",
+      "data": {
+        "title": "Kit inauguração de Airbnb · R$1.500+ economia",
+        "slides": [
+          {"icon": "🛋️", "store": "Tok&Stok", "deal": "10% sofá+mesa"},
+          {"icon": "🛏️", "store": "Westwing", "deal": "8% roupa cama"},
+          {"icon": "🏠", "store": "MadeiraMadeira", "deal": "Frete grátis +R$300"},
+          {"icon": "🍳", "store": "Hotmart", "deal": "Curso anfitrião 30% off"}
+        ]
+      },
+      "caption": "💼 Bater o pé com R$1.500 em economia logo no setup do Airbnb. Curadoria de quem já fez.\n\n👉 /anfitrioes",
+      "hashtags": ["#airbnbhost", "#decoração", "#economia", "#anfitriao"]
+    },
+    {
+      "date": "2026-05-22",
+      "publish_hour": 11,
+      "pillar": "hosts",
+      "format": "feed_single",
+      "template": "depoimento_cliente_v1",
+      "data": {
+        "image": "templates/ig/assets/depoimento1.jpg",
+        "quote": "Em 30 dias o bot resolveu 87% das mensagens. Eu virei supervisor.",
+        "credit": "Cliente beta · 3 imóveis · Salvador"
+      },
+      "caption": "Depoimento de quem já é cliente: 87% das mensagens resolvidas pelo bot em 30 dias.\n\n👉 Vira cliente também: conciergecloud.com.br",
+      "hashtags": ["#airbnbhost", "#anfitriao", "#depoimento", "#saaspraanfitriao"]
+    },
+    {
+      "date": "2026-05-23",
+      "publish_hour": 13,
+      "pillar": "travel",
+      "format": "feed_carousel",
+      "template": "top_destinos_v1",
+      "data": {
+        "title": "Top 4 destinos nacionais com ofertas",
+        "slides": [
+          {"image": "templates/ig/assets/destino_natal.jpg", "city": "Natal", "deal": "Hotel + voo R$2.380"},
+          {"image": "templates/ig/assets/destino_jeri.jpg", "city": "Jericoacoara", "deal": "Pousada 4 diárias R$1.890"},
+          {"image": "templates/ig/assets/destino_floripa.jpg", "city": "Florianópolis", "deal": "Resort 7d R$3.450"},
+          {"image": "templates/ig/assets/destino_arraial.jpg", "city": "Arraial do Cabo", "deal": "Pousada 3d R$890"}
+        ]
+      },
+      "caption": "🏖️ 4 destinos com pacote inteiro reservável no link da bio /travel.\n\nTodos parceiros oficiais Booking + CVC. Comissão paga ConciergeCloud Travel pra crescer o produto.",
+      "hashtags": ["#viagem", "#brasil", "#promocao", "#nordeste", "#sul"]
+    },
+    {
+      "date": "2026-05-24",
+      "publish_hour": 9,
+      "pillar": "launch",
+      "format": "reel",
+      "template": "tutorial_setup_v1",
+      "data": {
+        "duration_seconds": 45,
+        "steps": ["1. Conecta WhatsApp", "2. Personaliza respostas", "3. Ativa e descansa"]
+      },
+      "caption": "Setup em 5 minutos — gravei aqui o passo a passo. Não precisa de TI.\n\n👉 conciergecloud.com.br/implantacao",
+      "hashtags": ["#tutorial", "#whatsappbusiness", "#anfitriao", "#saaspraanfitriao"]
+    },
+    {
+      "date": "2026-05-25",
+      "publish_hour": 19,
+      "pillar": "partners",
+      "format": "feed_single",
+      "template": "parceiro_local_v1",
+      "data": {
+        "partner_name": "Don Maitre",
+        "image": "templates/ig/assets/donmaitre_noite.jpg",
+        "coupon": "CONCIERGECLOUD10"
+      },
+      "caption": "🍷 Sábado de gastronomia em Perdizes? Don Maitre + cupom CONCIERGECLOUD10.\n\n👉 /restaurante",
+      "hashtags": ["#perdizes", "#saopaulo", "#italianfood", "#parceria"]
+    },
+    {
+      "date": "2026-05-26",
+      "publish_hour": 11,
+      "pillar": "affiliates",
+      "format": "feed_carousel",
+      "template": "10_lojas_v1",
+      "data": {
+        "title": "10 lojas onde anfitrião economiza",
+        "slides": [
+          {"store": "Cobasi"}, {"store": "Petlove"}, {"store": "Tok&Stok"}, {"store": "Westwing"},
+          {"store": "MadeiraMadeira"}, {"store": "Hotmart"}, {"store": "Magalu"}, {"store": "Casas Bahia"},
+          {"store": "Lomadee"}, {"store": "Booking.com"}
+        ]
+      },
+      "caption": "10 lojas afiliadas em curadoria de anfitrião. Mesmo preço, comissão financia o produto.\n\n👉 /anfitrioes",
+      "hashtags": ["#airbnbhost", "#anfitriao", "#economia", "#cupom"]
+    },
+    {
+      "date": "2026-05-27",
+      "publish_hour": 13,
+      "pillar": "hosts",
+      "format": "reel",
+      "template": "pov_3am_v1",
+      "data": {
+        "duration_seconds": 30,
+        "scenes": [
+          {"text": "POV: 3am. Hóspede no Airbnb."},
+          {"text": "'Where is the wifi password?'"},
+          {"text": "Sem ConciergeCloud: você acordando, cara cansada"},
+          {"text": "Com ConciergeCloud: bot responde automático em 3 idiomas"},
+          {"text": "conciergecloud.com.br · de R$97/mês"}
+        ]
+      },
+      "caption": "Cara, 3am não é hora de aprender alemão 🥲\n\n👉 conciergecloud.com.br",
+      "hashtags": ["#airbnbhost", "#anfitriao", "#meme", "#saaspraanfitriao", "#whatsappbusiness"]
+    },
+    {
+      "date": "2026-05-28",
+      "publish_hour": 19,
+      "pillar": "launch",
+      "format": "story",
+      "template": "ig_live_ama_v1",
+      "data": {
+        "is_live": true,
+        "duration_minutes": 30,
+        "title": "AMA — perguntas sobre automatizar Airbnb"
+      },
+      "caption": "🎙️ HOJE 19h ao vivo aqui no IG: AMA com Valney sobre automatizar atendimento Airbnb.\n\nManda pergunta no story 👆",
+      "hashtags": ["#aoVivo", "#ama", "#airbnbhost", "#anfitriao"]
+    },
+    {
+      "date": "2026-05-29",
+      "publish_hour": 11,
+      "pillar": "launch",
+      "format": "feed_carousel",
+      "template": "resultados_30d_v1",
+      "data": {
+        "title": "Resultados 30 dias",
+        "slides": [
+          {"metric": "X", "label": "seguidores"},
+          {"metric": "Y", "label": "leads"},
+          {"metric": "Z", "label": "assinantes"},
+          {"metric": "Q", "label": "ROAS"}
+        ],
+        "_note": "Substituir X/Y/Z/Q por dados reais antes de publicar"
+      },
+      "caption": "Transparência: 30 dias depois do soft launch. Acertos, erros, próximos passos.\n\n👉 conciergecloud.com.br",
+      "hashtags": ["#startupbrasil", "#saasbrasil", "#transparencia", "#empreendedorismo"]
+    },
+    {
+      "date": "2026-05-30",
+      "publish_hour": 11,
+      "pillar": "travel",
+      "format": "feed_single",
+      "template": "hotel_destaque_v1",
+      "data": {
+        "hotel_name": "Comfort Hotel Santos",
+        "city": "Santos, SP",
+        "discount": "30% OFF · fim de semana família",
+        "hero_image": "templates/ig/assets/comfort_santos.jpg",
+        "cta": "Reserve em /travel"
+      },
+      "caption": "🏖️ Fim de semana com a família em Santos? Comfort Hotel com 30% off no nosso parceiro Expedia.\n\n👉 Link na bio · /travel",
+      "hashtags": ["#hoteis", "#santos", "#viagem", "#familia", "#litoral"]
+    },
+    {
+      "date": "2026-05-31",
+      "publish_hour": 11,
+      "pillar": "hosts",
+      "format": "feed_carousel",
+      "template": "3_erros_v1",
+      "data": {
+        "title": "3 erros caros que vi anfitriões cometendo no WhatsApp",
+        "slides": [
+          {"number": 1, "error": "Demorar mais de 1h pra responder", "fix": "Bot responde em 3 segundos"},
+          {"number": 2, "error": "Mandar áudio quando hóspede mandou texto", "fix": "Bot espelha o canal"},
+          {"number": 3, "error": "Esquecer de avisar do check-out", "fix": "Bot lembra automático na véspera"}
+        ]
+      },
+      "caption": "3 erros caros que custam reviews ruins. ConciergeCloud resolve os 3.\n\n👉 conciergecloud.com.br",
+      "hashtags": ["#airbnbhost", "#anfitriao", "#whatsappbusiness", "#dicas"]
+    },
+    {
+      "date": "2026-06-01",
+      "publish_hour": 19,
+      "pillar": "partners",
+      "format": "feed_carousel",
+      "template": "parceiro_local_v1",
+      "data": {
+        "partner_name": "Parceiro #2 (a definir)",
+        "slides": [
+          {"placeholder": "Aguardando fechamento de 2º parceiro · lavanderia/limpeza/portaria"}
+        ],
+        "_note": "Editar antes de publicar — Don Maitre se necessário"
+      },
+      "caption": "🤝 Nosso 2º parceiro local entra essa semana — fica de olho.\n\n👉 /restaurante (parceiros atuais)",
+      "hashtags": ["#parceria", "#saopaulo", "#localbusiness"]
+    },
+    {
+      "date": "2026-06-02",
+      "publish_hour": 13,
+      "pillar": "affiliates",
+      "format": "reel",
+      "template": "achei_cupom_v1",
+      "data": {
+        "duration_seconds": 30,
+        "voiceover": "Achei R$200 de cupom pra anfitrião iniciante"
+      },
+      "caption": "💸 R$200 de cupom encadeado pra quem tá começando como anfitrião. Mostro no link.\n\n👉 /anfitrioes",
+      "hashtags": ["#airbnbhost", "#anfitriao", "#cupom", "#economia"]
+    },
+    {
+      "date": "2026-06-03",
+      "publish_hour": 9,
+      "pillar": "launch",
+      "format": "feed_carousel",
+      "template": "multilingue_real_v1",
+      "data": {
+        "title": "Multilíngue ao vivo · conversa real",
+        "slides": [
+          {"lang": "PT", "guest": "Boa noite! Qual a senha?", "bot": "Boa noite! Wifi: ConciergeCloud2026"},
+          {"lang": "EN", "guest": "Good evening, wifi password?", "bot": "Good evening! Wifi: ConciergeCloud2026"},
+          {"lang": "ES", "guest": "Buenas noches, contraseña?", "bot": "¡Buenas noches! Wifi: ConciergeCloud2026"},
+          {"lang": "FR", "guest": "Bonsoir, mot de passe?", "bot": "Bonsoir! Wifi: ConciergeCloud2026"}
+        ]
+      },
+      "caption": "Print real (anonimizado) · 4 hóspedes, 4 idiomas, 1 bot.\n\n👉 conciergecloud.com.br",
+      "hashtags": ["#multilingue", "#airbnbhost", "#whatsappbusiness", "#anfitriao"]
+    },
+    {
+      "date": "2026-06-04",
+      "publish_hour": 11,
+      "pillar": "hosts",
+      "format": "feed_single",
+      "template": "marca_amigo_v1",
+      "data": {
+        "image": "templates/ig/assets/anfitriao_3am.jpg",
+        "headline": "Ainda atendendo guest às 3am? Marca um amigo anfitrião 👇"
+      },
+      "caption": "Marca um anfitrião que ainda não dorme 😴\n\n#airbnbhost",
+      "hashtags": ["#airbnbhost", "#anfitriao", "#meme", "#humor"]
+    },
+    {
+      "date": "2026-06-05",
+      "publish_hour": 9,
+      "pillar": "launch",
+      "format": "feed_carousel",
+      "template": "resultados_mes1_v1",
+      "data": {
+        "title": "Mês 1 fechado · gates do plano-mãe?",
+        "slides": [
+          {"gate": "500 followers IG", "actual": "TBD", "status": "?"},
+          {"gate": "15 sign-ups orgânicos", "actual": "TBD", "status": "?"},
+          {"gate": "1 reel >10k views", "actual": "TBD", "status": "?"},
+          {"gate": "Decisão liberar Ads mês 2", "actual": "TBD", "status": "?"}
+        ]
+      },
+      "caption": "Mês 1 fechado. Bati os gates do plano-mãe ou não? Transparência total no carrossel.\n\n👉 conciergecloud.com.br",
+      "hashtags": ["#startupbrasil", "#transparencia", "#saasbrasil", "#empreendedorismo"]
+    }
+  ]
+}
