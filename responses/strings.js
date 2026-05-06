@@ -53,6 +53,91 @@ Se quiser trocar uma ideia primeiro, posso te conectar com a Sofia no ${HUMAN_NU
 
 const CHECKIN_RESPONSE = `\ud83d\udd50 Check-in & Check-out possuem limites de hor\u00e1rio, sobretudo o check-out, pois o time de governan\u00e7a do hotel pede uma hora para limpeza e higieniza\u00e7\u00e3o.\nCheck-in: a partir das 14h\nCheck-out: at\u00e9 12h\nA recep\u00e7\u00e3o funciona 24h com equipe de seguran\u00e7a para te receber em qualquer hor\u00e1rio. \ud83c\udf34`;
 
+// \u2500\u2500 FAQ coverage gaps (06/05/2026) \u2014 10 templates novos \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Phase 1 cr\u00edticos: Documents, HotelAccess, Safe, Invoice
+// Phase 2 m\u00e9dios: CommonAreas, Bedding, DateChange, HotelMaintenance,
+// BreakfastCompanion, ParkingEarly. Tom cauteloso/multi-tenant.
+
+const DOCUMENTS_RESPONSE = `\ud83d\udcc4 Para o check-in, todos os h\u00f3spedes precisam apresentar *documento oficial com foto* (RG, CNH ou passaporte) na recep\u00e7\u00e3o.
+
+Em caso de menores de idade, traga tamb\u00e9m o documento da crian\u00e7a ou adolescente. Qualquer d\u00favida, me chama. \ud83c\udf34`;
+
+const HOTEL_ACCESS_RESPONSE = `\ud83c\udfe8 Sua hospedagem \u00e9 em um *flat privativo administrado pela TorresGuest*, dentro da estrutura do hotel.
+
+Ao chegar, \u00e9 s\u00f3 ir direto na *recep\u00e7\u00e3o 24h do hotel*, apresentar seu documento com foto e informar o nome da reserva. A recep\u00e7\u00e3o faz seu cadastro de entrada. \ud83c\udf34`;
+
+const SAFE_RESPONSE = `\ud83d\udd10 O quarto possui cofre dispon\u00edvel para uso. Em caso de d\u00favida sobre opera\u00e7\u00e3o ou se travar, me avisa o n\u00famero do quarto que oriento ou aciono a recep\u00e7\u00e3o pra te ajudar com o procedimento de seguran\u00e7a. \ud83c\udf34`;
+
+const INVOICE_RESPONSE = `\ud83e\uddfe Pra emiss\u00e3o de *nota fiscal ou recibo*, me envie por favor:
+1. Nome completo da reserva
+2. Data da hospedagem
+3. CPF/CNPJ pra emiss\u00e3o
+
+Encaminho pra equipe administrativa e te retorno com o documento. \ud83c\udf34`;
+
+const COMMON_AREAS_RESPONSE = `\ud83c\udfca Como h\u00f3spede TorresGuest, voc\u00ea tem acesso \u00e0s \u00e1reas comuns do hotel: *piscina, academia, restaurante, recep\u00e7\u00e3o 24h e business center*, conforme regras internas e hor\u00e1rios de funcionamento. Qualquer d\u00favida espec\u00edfica, me chama. \ud83c\udf34`;
+
+const BEDDING_RESPONSE = `\ud83d\udecf\ufe0f Posso verificar disponibilidade de itens extras de cama (travesseiro, cobertor, len\u00e7ol, fronha). Me envia o n\u00famero do quarto e o item que precisa, que aciono a governan\u00e7a. \ud83c\udf34`;
+
+const DATE_CHANGE_RESPONSE = `\ud83d\udcc5 Sobre altera\u00e7\u00e3o de datas: a possibilidade depende da pol\u00edtica da reserva, disponibilidade e canal onde foi feita.
+
+Me envia por favor:
+1. Nome completo da reserva
+2. Data atual da reserva
+3. Nova data desejada
+4. Canal (Booking, Airbnb, Expedia, Decolar ou TorresGuest)
+
+Vou verificar e te retornar. \ud83c\udf34`;
+
+const HOTEL_MAINTENANCE_RESPONSE = `\ud83d\udd27 O hotel pode passar por melhorias e manuten\u00e7\u00f5es pontuais, geralmente em hor\u00e1rio comercial. Caso qualquer obra ou ru\u00eddo impacte sua estadia, me avisa imediatamente que acompanho junto \u00e0 equipe do hotel. \ud83c\udf34`;
+
+const BREAKFAST_COMPANION_RESPONSE = `\u2615 Pra incluir acompanhante ou caf\u00e9 extra, recomendamos consultar diretamente a *recep\u00e7\u00e3o do hotel* \u2014 eles confirmam disponibilidade e valores atualizados na hora. Se preferir, me avisa o n\u00famero do quarto que verifico junto \u00e0 equipe. \ud83c\udf34`;
+
+const PARKING_EARLY_RESPONSE = `\ud83d\ude97 A possibilidade de deixar o carro antes do hor\u00e1rio de check-in depende da disponibilidade e libera\u00e7\u00e3o da recep\u00e7\u00e3o do hotel no momento da chegada. Recomendamos confirmar diretamente na recep\u00e7\u00e3o quando chegar. \ud83c\udf34`;
+
+// \u2500\u2500 Tenant-aware builders \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Quando tenantId !== 'torres' E tenant.settings tem o campo, montamos resposta
+// din\u00e2mica baseada nas configs do anfitri\u00e3o. Caso contr\u00e1rio fallback pra
+// resposta hardcoded da TorresGuest (compat).
+
+function buildBreakfastResponse(tenant) {
+  const isTorres = !tenant || tenant.tenantId === 'torres' || !tenant.settings || !tenant.settings.breakfast;
+  if (isTorres) return BREAKFAST_RESPONSE;
+  const b = tenant.settings.breakfast;
+  if (b.enabled === false || b.type === 'none') {
+    return `\u2615 A propriedade *n\u00e3o oferece caf\u00e9 da manh\u00e3*. Posso te indicar op\u00e7\u00f5es pr\u00f3ximas se quiser. \ud83c\udf34`;
+  }
+  const hours = b.hours || '06h30 \u00e0s 10h00';
+  const location = b.location ? `, no ${b.location}` : '';
+  if (b.type === 'included') {
+    return `\u2615 O caf\u00e9 da manh\u00e3 est\u00e1 *incluso na sua reserva*${location}.\n\ud83d\udd52 ${hours}.\nAproveite e bom dia! \ud83c\udf34`;
+  }
+  if (b.type === 'paid') {
+    return `\u2615 A propriedade oferece caf\u00e9 da manh\u00e3 *com cobran\u00e7a extra*${location}.\n\ud83d\udd52 ${hours}.${b.cost ? '\n\ud83d\udcb0 Valor: ' + b.cost : ''}\nQualquer d\u00favida, me avisa. \ud83c\udf34`;
+  }
+  return `\u2615 Caf\u00e9 da manh\u00e3 dispon\u00edvel${location}.\n\ud83d\udd52 ${hours}.${b.note ? '\n' + b.note : ''} \ud83c\udf34`;
+}
+
+function buildParkingResponse(tenant) {
+  const isTorres = !tenant || tenant.tenantId === 'torres' || !tenant.settings || !tenant.settings.parking;
+  if (isTorres) return PARKING_RESPONSE;
+  const p = tenant.settings.parking;
+  if (p.type === 'none') {
+    return `\ud83d\ude97 A propriedade *n\u00e3o oferece estacionamento*. Posso te indicar op\u00e7\u00f5es pr\u00f3ximas se precisar. \ud83c\udf34`;
+  }
+  const loc = p.location ? ` ${p.location}` : '';
+  if (p.type === 'valet-included') {
+    return `\ud83d\ude97 Estacionamento com manobrista${loc}, *sem custo adicional* pra h\u00f3spedes.${p.note ? ' ' + p.note : ''} \ud83c\udf34`;
+  }
+  if (p.type === 'valet-paid') {
+    return `\ud83d\ude97 Estacionamento com manobrista${loc}.${p.cost ? ' Valor: ' + p.cost + '.' : ''}${p.note ? ' ' + p.note : ''} \ud83c\udf34`;
+  }
+  if (p.type === 'external') {
+    return `\ud83d\ude97 Estacionamento *externo*${loc ? ', em ' + p.location : ''}.${p.cost ? ' Valor: ' + p.cost + '.' : ''}${p.note ? ' ' + p.note : ''} \ud83c\udf34`;
+  }
+  return PARKING_RESPONSE;
+}
+
 const SECURITY_RESPONSE = `\ud83d\udd10 Contamos com Seguran\u00e7a & Recep\u00e7\u00e3o 24h, controle de acesso e equipe no local o tempo todo.\nPode chegar tranquilo(a), estamos sempre por perto. \ud83c\udf34`;
 
 const TRANSFER_RESPONSE = `\u2708\ufe0f Transfer Aeroporto\nOferecemos apoio com transfer sob demanda e com custo adicional.\nMe avise seu voo e hor\u00e1rio que conecto voc\u00ea direto com nossa concierge no ${HUMAN_NUMBER_PRIMARY} ou ${HUMAN_NUMBER_SECONDARY} para finalizar os detalhes. \ud83c\udf34`;
@@ -68,7 +153,7 @@ const INTERNET_RESPONSE = `\ud83d\udce1 Internet\nO Wi-Fi do hotel \u00e9 fibra,
 const LUGGAGE_RESPONSE = `\ud83e\uddf3 Guarda de malas\nPrecisando deixar bagagem antes do check-in ou depois do check-out?\nTemos um acordo com o Sr. Alberto (chefe do restaurante) para guardar as malas de nossos hospedes conforme disponibilidade. \nMe informe hor\u00e1rios que j\u00e1 deixo alinhado com ele. \ud83c\udf34`;
 
 const GREETING_RESPONSE = (name) =>
-  `Perfeito, ${name || 'tudo bem'} \ud83d\ude0a\n\nMe diga o que voc\u00ea precisa, ou digite *menu* para ver as op\u00e7\u00f5es. \ud83c\udf34`;
+  `Ol\u00e1${name ? ', ' + name : ''}! \ud83d\ude0a Sou o concierge digital da TorresGuest e vou te ajudar por aqui.\n\nMe diga o que voc\u00ea precisa, ou digite *menu* para ver as op\u00e7\u00f5es. \ud83c\udf34`;
 
 const THANKS_RESPONSE = `Imagina! \ud83d\ude0a\n\nQualquer coisa que precisar, estou por aqui para te ajudar. \ud83c\udf34`;
 
@@ -176,6 +261,19 @@ module.exports = {
   getFoodOrderResponse,
   HOSTING_COURSE_RESPONSE,
   CHECKIN_RESPONSE,
+  // FAQ coverage 06/05/2026
+  DOCUMENTS_RESPONSE,
+  HOTEL_ACCESS_RESPONSE,
+  SAFE_RESPONSE,
+  INVOICE_RESPONSE,
+  COMMON_AREAS_RESPONSE,
+  BEDDING_RESPONSE,
+  DATE_CHANGE_RESPONSE,
+  HOTEL_MAINTENANCE_RESPONSE,
+  BREAKFAST_COMPANION_RESPONSE,
+  PARKING_EARLY_RESPONSE,
+  buildBreakfastResponse,
+  buildParkingResponse,
   SECURITY_RESPONSE,
   TRANSFER_RESPONSE,
   LOCATION_RESPONSE,

@@ -120,6 +120,73 @@ function shouldSendHostingCourse(text) {
   return /(como ser anfitriao|ser anfitriao|virar anfitriao|tornar.{0,15}anfitriao|primeiro airbnb|abrir.{0,5}airbnb|ter um airbnb|montar.{0,5}airbnb|sou.{0,5}anfitriao|monetizar.{0,10}imovel|aluguel.{0,15}temporada|ganhar.{0,10}(com |no )airbnb|ganhar dinheiro.{0,15}airbnb|renda.{0,10}(com |no )airbnb|dicas.{0,10}airbnb|dicas.{0,10}anfitriao|curso.{0,10}airbnb|curso.{0,10}anfitriao|superhost|super host|profissionalizar.{0,15}airbnb)/.test(text);
 }
 
+// ── FAQ coverage gaps cobertos 06/05/2026 ──────────────────────────────────
+// 4 críticos (Documents/HotelAccess/Safe/Invoice) + 6 médios (CommonAreas,
+// Bedding, DateChange, HotelMaintenance, BreakfastCompanion, ParkingEarly).
+// Todos validados via smoke test; matchers narrow pra evitar substring colisão
+// (vide fix do classifier 06/05).
+
+function shouldSendDocuments(text) {
+  // "Preciso levar documento?", "que docs", "criança precisa documento", "RG/CNH/passaporte"
+  return /\b(documento|documentos|preciso (de )?levar (rg|cnh|doc)|que documento|quais documento|levar rg|levar cnh|levar passaporte|crianca.{0,5}(precisa|documento)|menor.{0,5}documento|doc.{0,3}com foto)\b/.test(text);
+}
+
+function shouldSendHotelAccess(text) {
+  // "Como faço pra entrar?", "É hotel ou TorresGuest?", "Como acesso", "Como chego"
+  // Excludes "como acesso o wifi" — wifi tem matcher próprio
+  if (/\b(wifi|wi.?fi|internet)\b/.test(text)) return false;
+  return /\b(como (faco|faço|fazer) (pra |para )?(entrar|acessar)|como (eu )?entro|como acesso o hotel|hospedagem.{0,20}(hotel|torres|voces|com voces|ou voces)|reserva.{0,15}(com o hotel|com hotel|com torres|com voces|ou hotel)|fala(r)? com quem|com quem (eu )?falo na chegada|recepcao do hotel|primeiro acesso)\b/.test(text);
+}
+
+function shouldSendSafe(text) {
+  // "Cofre", "como uso o cofre", "cofre travou"
+  return /\b(cofre|caixa.forte|safe(box)?)\b/.test(text);
+}
+
+function shouldSendInvoice(text) {
+  // "Nota fiscal", "NF", "recibo", "comprovante"
+  return /\b(nota fiscal|nf|nfe|nfse|recibo|comprovante.{0,10}(pagamento|hospedagem)|emitir nota|emitem nota|preciso (de )?nota|preciso (de )?recibo)\b/.test(text);
+}
+
+function shouldSendCommonAreas(text) {
+  // "Áreas comuns", "que áreas posso usar"
+  // Avaliado APÓS shouldSendPool, shouldSendBreakfast, shouldSendRestaurant — mais específicos
+  return /\b(areas? comuns?|que areas?|quais areas?|usar (o |as )?(estrutura|hotel|areas?)|estrutura do hotel|posso usar (o |as )?hotel|posso usar (o |as )?areas)\b/.test(text);
+}
+
+function shouldSendBedding(text) {
+  // "Lençol", "fronha", "travesseiro extra", "edredom", "cobertor"
+  // Avaliado APÓS shouldSendTowels (toalha tem matcher próprio)
+  return /\b(lencol|fronha|travesseiro|cobertor|edredom|edredon|colcha|roupa de cama|trocar.{0,10}cama|mais.{0,5}travesseiro|mais.{0,5}cobertor|cama (mais )?dura|cama (mais )?mole|colchao)\b/.test(text);
+}
+
+function shouldHandleDateChange(text) {
+  // "Quero remarcar", "alterar data", "mudar data", "trocar data"
+  // NÃO confundir com cancelamento — explícito sobre alteração
+  return /\b(remarcar|alterar.{0,5}data|alterar.{0,5}reserva|mudar.{0,5}data|trocar.{0,5}data|adiar.{0,10}reserva|antecipar.{0,10}reserva|estender.{0,10}reserva|prorrogar.{0,10}reserva|mudar (a )?reserva pra)\b/.test(text);
+}
+
+function shouldSendHotelMaintenance(text) {
+  // Hóspede pergunta proativamente sobre obras/reformas no hotel
+  // NÃO confundir com classifier 'Manutenção' (problema NO quarto)
+  return /\b(tem obra|obra no hotel|reforma no hotel|vai ter obra|vai ter reforma|barulho de obra|construcao no predio|obra (no )?predio)\b/.test(text);
+}
+
+function shouldSendBreakfastCompanion(text) {
+  // "Café acompanhante", "café extra", "visitante café", "levar visita café"
+  // Avaliado APÓS shouldSendBreakfast
+  return /\b(cafe.{0,15}(acompanhante|visitante|visita|extra|amigo|adicional)|acompanhante.{0,10}cafe|levar.{0,10}cafe|mais (uma )?pessoa.{0,10}cafe|cafe pra mais|cafe pra dois|cafe pra duas)\b/.test(text);
+}
+
+function shouldSendParkingEarly(text) {
+  // "Posso deixar carro antes do checkin?", "estacionar antes"
+  // Pre-condição: tem que falar de carro/estacionamento
+  if (!/\b(carro|veiculo|estacion|estacionar|estacionamento)\w*/.test(text)) return false;
+  // E menção a "antes" + check-in
+  return /\bantes\s+(do\s+|de\s+|o\s+)?check/.test(text)
+    || (/\b(antes|antecipad|adiantad)/.test(text) && /check.?in/.test(text));
+}
+
 function shouldSendTransfer(text) {
   // \b evita matchar "transferisse"/"transferir"/"transferência" (que indicam pedir
   // transferência pra outro atendente, não transfer aeroporto). Caso real 27/04:
@@ -349,6 +416,16 @@ module.exports = {
   shouldSendRestaurantMenuI18n,
   shouldSendCheckin,
   shouldSendHostingCourse,
+  shouldSendDocuments,
+  shouldSendHotelAccess,
+  shouldSendSafe,
+  shouldSendInvoice,
+  shouldSendCommonAreas,
+  shouldSendBedding,
+  shouldHandleDateChange,
+  shouldSendHotelMaintenance,
+  shouldSendBreakfastCompanion,
+  shouldSendParkingEarly,
   shouldSendTransfer,
   shouldSendHuman,
   shouldHandleCancellationRequest,
