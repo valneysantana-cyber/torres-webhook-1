@@ -1,0 +1,60 @@
+# Render Blueprint — IG Pipeline @conciergecloud.app
+#
+# Define apenas os 2 Cron Jobs do pipeline Instagram.
+# torres-webhook-1 (web service) NÃO é gerenciado por este blueprint —
+# segue sendo provisionado via UI / commits direto na master.
+#
+# Os Cron Jobs herdam MONGODB_URI do torres-webhook-1 via fromService
+# (Render copia o valor internamente; nunca expõe pro cliente).
+#
+# IG_CC_BUSINESS_ID e IG_CC_ACCESS_TOKEN são marcados sync:false porque
+# precisam ser setados manualmente após gerar Long-Lived Token na Meta.
+
+services:
+  - type: cron
+    name: ig-publisher-cc
+    runtime: node
+    region: oregon
+    plan: starter
+    repo: https://github.com/valneysantana-cyber/torres-webhook
+    branch: feat/ig-pipeline
+    schedule: "*/15 12-22 * * *"
+    buildCommand: npm install
+    startCommand: node scripts/instagram/run-publisher.js
+    envVars:
+      - key: MONGODB_URI
+        fromService:
+          type: web
+          name: torres-webhook-1
+          envVarKey: MONGODB_URI
+      - key: IG_CC_AUTO_PUBLISH
+        value: "false"
+      - key: IG_CC_BUSINESS_ID
+        sync: false
+      - key: IG_CC_ACCESS_TOKEN
+        sync: false
+      - key: IG_CC_APP_ID
+        value: "1667526337778117"
+
+  - type: cron
+    name: ig-metrics-cc
+    runtime: node
+    region: oregon
+    plan: starter
+    repo: https://github.com/valneysantana-cyber/torres-webhook
+    branch: feat/ig-pipeline
+    schedule: "0 2 * * *"
+    buildCommand: npm install
+    startCommand: node scripts/instagram/run-metrics.js
+    envVars:
+      - key: MONGODB_URI
+        fromService:
+          type: web
+          name: torres-webhook-1
+          envVarKey: MONGODB_URI
+      - key: IG_CC_BUSINESS_ID
+        sync: false
+      - key: IG_CC_ACCESS_TOKEN
+        sync: false
+      - key: IG_CC_APP_ID
+        value: "1667526337778117"
