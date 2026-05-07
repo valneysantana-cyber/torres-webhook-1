@@ -22,7 +22,9 @@
  */
 
 const API_VERSION = 'v23.0';
-const BASE = `https://graph.facebook.com/${API_VERSION}`;
+// Tokens com prefixo IGAA* (Instagram Business API with Instagram Login, 2024+)
+// usam graph.instagram.com — NAO graph.facebook.com (que e pro fluxo antigo via FB Page).
+const BASE = `https://graph.instagram.com/${API_VERSION}`;
 
 const IG_BUSINESS_ID = process.env.IG_CC_BUSINESS_ID || '';
 const ACCESS_TOKEN = process.env.IG_CC_ACCESS_TOKEN || '';
