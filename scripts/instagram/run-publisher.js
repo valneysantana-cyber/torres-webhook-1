@@ -3,8 +3,12 @@
  * Standalone runner — publica posts due da fila IG ConciergeCloud.
  *
  * Configurar como Render Cron Job:
- *   schedule: */15 12-22 * * *   (a cada 15min entre 9-19h BRT = 12-22h UTC)
+ *   schedule: 0,15,30,45 12-22 * * *   (a cada 15min entre 9-19h BRT = 12-22h UTC)
  *   command:  node scripts/instagram/run-publisher.js
+ *
+ * NOTA: o formato expandido `0,15,30,45` é equivalente a `*<barra>15` em cron,
+ * mas evita o bug clássico de JSDoc (asterisco-barra fecha bloco de comentário,
+ * causando SyntaxError no Node). Render aceita os 2 formatos no field schedule.
  *
  * Pré-req envs (Render):
  *   MONGODB_URI
