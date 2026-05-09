@@ -30,6 +30,7 @@ const {
   buildParkingResponse,
   SECURITY_RESPONSE,
   TRANSFER_RESPONSE,
+  getTransferResponse,
   LONG_STAY_RESPONSE,
   CLEANING_RESPONSE,
   INTERNET_RESPONSE,
@@ -244,7 +245,7 @@ const PT_DISPATCH = [
   { check: shouldSendSecurity,    reply: () => SECURITY_RESPONSE },
   {
     check: shouldSendTransfer,
-    reply: () => TRANSFER_RESPONSE,
+    reply: (lang) => getTransferResponse(lang),
     notify: (from, body) => sendTransferAlert(from, body),
   },
   { check: shouldSendLocation,    reply: (lang) => getLocationResponse(lang) },

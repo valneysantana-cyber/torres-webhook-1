@@ -135,7 +135,25 @@ function buildParkingResponse(tenant) {
 
 const SECURITY_RESPONSE = `\ud83d\udd10 Contamos com Seguran\u00e7a & Recep\u00e7\u00e3o 24h, controle de acesso e equipe no local o tempo todo.\nPode chegar tranquilo(a), estamos sempre por perto. \ud83c\udf34`;
 
-const TRANSFER_RESPONSE = `\u2708\ufe0f Transfer Aeroporto\nOferecemos apoio com transfer sob demanda e com custo adicional.\nMe avise seu voo e hor\u00e1rio que conecto voc\u00ea direto com nossa concierge no ${HUMAN_NUMBER_PRIMARY} ou ${HUMAN_NUMBER_SECONDARY} para finalizar os detalhes. \ud83c\udf34`;
+// Transfer / t\u00e1xi \u2014 agora oferece DUAS op\u00e7\u00f5es:
+//   1) Uber direto (auto-servi\u00e7o, imediato) \u2014 UTM ConciergeCloud pra tracking
+//   2) Transfer organizado com motorista cadastrado pelo anfitri\u00e3o (premium)
+// Adicionado fallback Uber em 09/05/2026 conforme spec contratual de cobertura
+// "Pedido de t\u00e1xi (com fallback Uber)" do plano Pro/Agency.
+const UBER_FALLBACK_URL = 'https://m.uber.com/?utm_source=conciergecloud&utm_medium=whatsapp_bot&utm_campaign=taxi_fallback';
+
+const TRANSFER_RESPONSE = `\u2708\ufe0f Transfer / T\u00e1xi\nDuas op\u00e7\u00f5es pra voc\u00ea:\n\n\ud83d\ude96 *Uber agora* (auto-servi\u00e7o):\n${UBER_FALLBACK_URL}\n\n\ud83d\udc64 *Transfer organizado* (motorista de confian\u00e7a, custo adicional):\nMe avise seu voo e hor\u00e1rio que conecto voc\u00ea direto com nossa concierge no ${HUMAN_NUMBER_PRIMARY} ou ${HUMAN_NUMBER_SECONDARY} pra finalizar os detalhes. \ud83c\udf34`;
+
+const TRANSFER_RESPONSE_I18N = {
+  pt: TRANSFER_RESPONSE,
+  en: `\u2708\ufe0f Transfer / Taxi\nTwo options for you:\n\n\ud83d\ude96 *Uber now* (self-service):\n${UBER_FALLBACK_URL}\n\n\ud83d\udc64 *Scheduled transfer* (trusted driver, additional cost):\nSend me your flight and time and I'll connect you with our concierge at ${HUMAN_NUMBER_PRIMARY} or ${HUMAN_NUMBER_SECONDARY} to sort the details. \ud83c\udf34`,
+  fr: `\u2708\ufe0f Transfert / Taxi\nDeux options pour vous:\n\n\ud83d\ude96 *Uber maintenant* (auto-service):\n${UBER_FALLBACK_URL}\n\n\ud83d\udc64 *Transfert programm\u00e9* (chauffeur de confiance, co\u00fbt suppl\u00e9mentaire):\nEnvoyez-moi votre vol et l'heure, je vous mets en relation avec notre concierge au ${HUMAN_NUMBER_PRIMARY} ou ${HUMAN_NUMBER_SECONDARY} pour les d\u00e9tails. \ud83c\udf34`,
+  es: `\u2708\ufe0f Traslado / Taxi\nDos opciones para ti:\n\n\ud83d\ude96 *Uber ahora* (auto-servicio):\n${UBER_FALLBACK_URL}\n\n\ud83d\udc64 *Traslado programado* (conductor de confianza, costo adicional):\nAv\u00edsame tu vuelo y horario, te conecto con nuestra concierge en ${HUMAN_NUMBER_PRIMARY} o ${HUMAN_NUMBER_SECONDARY} para los detalles. \ud83c\udf34`,
+};
+
+function getTransferResponse(language) {
+  return TRANSFER_RESPONSE_I18N[language] || TRANSFER_RESPONSE_I18N.pt;
+}
 
 const LOCATION_RESPONSE = `\ud83d\udccd Diferenciais TorresGuest\n\u2022 Flats dentro de um hotel completo (piscina, academia, restaurante)\n\u2022 Localiza\u00e7\u00e3o excelente em Perdizes, S\u00e3o Paulo/SP\n\u2022 Pr\u00f3ximo ao Allianz Parque, PUC-SP e Shopping Bourbon\n\u2022 Atendimento pr\u00f3ximo e humanizado, estilo concierge\n\nIdeal para lazer ou trabalho. Precisa de algo espec\u00edfico? S\u00f3 chamar! \ud83c\udf34`;
 
@@ -271,6 +289,8 @@ module.exports = {
   buildParkingResponse,
   SECURITY_RESPONSE,
   TRANSFER_RESPONSE,
+  TRANSFER_RESPONSE_I18N,
+  getTransferResponse,
   LOCATION_RESPONSE,
   LONG_STAY_RESPONSE,
   CLEANING_RESPONSE,
