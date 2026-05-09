@@ -452,13 +452,31 @@ async function handleIncoming(payload) {
           }
         }
 
+        // ---- resolve guest tenant EARLY (antes dos matchers torres-flavored) ----
+        // Bug observado 08/05/2026: prospect cc_sales mandando "Qual o preço?" pro
+        // WhatsApp ConciergeCloud caía no `shouldRedirectToReservationSite` e o
+        // classifier categoria "Reserva" — ambos torres-hardcoded — e respondia
+        // sobre torresguest.com.br/Sofia. Resolver o guestTenant aqui permite
+        // gatear matchers torres-only (`isTorresContext`) e deixar non-torres
+        // cair direto no AI fallback (que recebe o systemPrompt do tenant).
+        const guestTenant = await resolveTenantByGuestPhone(from, tenant, body);
+        const isTorresContext = !guestTenant || guestTenant.tenantId === 'torres';
+        if (!isTorresContext) {
+          console.log('[tenant-guest] from=' + from + ' → ' + guestTenant.tenantId + ' (skip torres-flavored matchers)');
+        }
+
         // ---- escalation classifier (prioridade máxima p/ fluxo normal) --
-        const escalation = classifyMessage(body);
-        if (escalation) {
-          console.log('[classifier] escalacao detectada:', escalation.name, escalation.level);
-          await replyAndSave(from, escalation.guestReply, { alsoSendAudio: camFromAudio });
-          if (!escalation.noAlert) await sendEscalationAlert(from, body, escalation);
-          continue;
+        // Categorias do classifier (Reserva, Recepção, etc.) usam guestReply
+        // torres-hardcoded ("Sofia +55 13 99615-5505", "*9 ou *1 no telefone do
+        // quarto"). Skip pra non-torres — cai no AI fallback do tenant correto.
+        if (isTorresContext) {
+          const escalation = classifyMessage(body);
+          if (escalation) {
+            console.log('[classifier] escalacao detectada:', escalation.name, escalation.level);
+            await replyAndSave(from, escalation.guestReply, { alsoSendAudio: camFromAudio });
+            if (!escalation.noAlert) await sendEscalationAlert(from, body, escalation);
+            continue;
+          }
         }
 
         // ---- greeting ---------------------------------------------------
@@ -535,10 +553,15 @@ async function handleIncoming(payload) {
         }
 
         // ---- reservation site redirect ----------------------------------
+        // Resposta canned em PT/EN/ES cita literalmente torresguest.com.br.
+        // Skip pra non-torres — prospect cc_sales perguntando "qual o preço?"
+        // não pode receber direcionamento pra site de hospedagem alheio.
         if (
-          shouldRedirectToReservationSite(normalized) ||
-          /\b\d{1,2}[\/.-]\d{1,2}\b/.test(body) ||
-          /\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/.test(body)
+          isTorresContext && (
+            shouldRedirectToReservationSite(normalized) ||
+            /\b\d{1,2}[\/.-]\d{1,2}\b/.test(body) ||
+            /\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/.test(body)
+          )
         ) {
           await replyAndSave(from, getReservationResponse(language), { alsoSendAudio: camFromAudio });
           continue;
@@ -620,9 +643,7 @@ async function handleIncoming(payload) {
         }
 
         // ---- AI fallback (contexto + perfil de fidelidade) -------------
-        // Shared-infra: resolve tenant dono da reserva ativa deste hóspede
-        // (uma WABA atende N tenants; sem isso todos caem em torres).
-        const guestTenant = await resolveTenantByGuestPhone(from, tenant, body);
+        // guestTenant já resolvido lá em cima (pra gatear matchers torres-only).
         const [context, profile] = await Promise.all([getContext(from), getProfile(from)]);
         const aiReply = await getChatGptFallbackReply(body, from, context, profile, guestTenant);
         if (aiReply) {
