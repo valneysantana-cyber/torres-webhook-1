@@ -479,6 +479,24 @@ async function handleIncoming(payload) {
           }
         }
 
+        // ═══════════════════════════════════════════════════════════════════
+        // BLOCO TORRES-FLAVORED — só executa pra tenant torres
+        // ─────────────────────────────────────────────────────────────────
+        // Todos os matchers abaixo (greeting, menu, frigobar PIX/restock,
+        // restaurant Don Maitre, reservation flows, PT_DISPATCH, etc) usam
+        // respostas hardcoded torresguest.com.br/Sofia/PIX CNPJ TorresGuest
+        // OU pressupõem hóspede com reserva ativa numa unidade física.
+        // Pra prospects cc_sales (perguntando "quanto custa?", "quero falar
+        // com atendimento") essas respostas vazam contexto do cliente errado.
+        //
+        // Bug confirmado 09/05/2026: prospect Nailton (13 99163-2189) perguntou
+        // "Quanto custa?" pro WhatsApp ConciergeCloud → recebeu cardápio do
+        // frigobar TorresGuest com PIX CNPJ 62.169.624/0001-94.
+        //
+        // Non-torres (cc_sales, futuros tenants) cai direto no AI fallback
+        // que recebe o systemPrompt do próprio tenant.
+        // ═══════════════════════════════════════════════════════════════════
+        if (isTorresContext) {
         // ---- greeting ---------------------------------------------------
         // Pure greeting only (no '?'). Greeting+question falls through to the AI.
         const words = normalized.trim().split(/\s+/);
@@ -554,14 +572,10 @@ async function handleIncoming(payload) {
 
         // ---- reservation site redirect ----------------------------------
         // Resposta canned em PT/EN/ES cita literalmente torresguest.com.br.
-        // Skip pra non-torres — prospect cc_sales perguntando "qual o preço?"
-        // não pode receber direcionamento pra site de hospedagem alheio.
         if (
-          isTorresContext && (
-            shouldRedirectToReservationSite(normalized) ||
-            /\b\d{1,2}[\/.-]\d{1,2}\b/.test(body) ||
-            /\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/.test(body)
-          )
+          shouldRedirectToReservationSite(normalized) ||
+          /\b\d{1,2}[\/.-]\d{1,2}\b/.test(body) ||
+          /\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/.test(body)
         ) {
           await replyAndSave(from, getReservationResponse(language), { alsoSendAudio: camFromAudio });
           continue;
@@ -641,6 +655,7 @@ async function handleIncoming(payload) {
             // intencionalmente NÃO continue — deixa cair no AI fallback
           }
         }
+        } // end if (isTorresContext) — todos matchers acima são torres-flavored
 
         // ---- AI fallback (contexto + perfil de fidelidade) -------------
         // guestTenant já resolvido lá em cima (pra gatear matchers torres-only).
