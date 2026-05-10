@@ -419,33 +419,52 @@ async function handleIncoming(payload) {
         // Variações de free-text ("quero", "não") caem no classifier/AI normal —
         // antes match permissivo causou falso-positivo: "quero falar com humano"
         // foi interpretado como "Fazer agora" e respondeu com link de checkin.
+        // FIX 10/05/2026: stays_sync.js (cron VPS) é quem dispara o template
+        // automático e grava no Atlas reservations com fields { staysId,
+        // confirmationCode, guestPhone (já limpo), autoCheckinSentAt }. NÃO grava
+        // os fields da mongoose Reservation model (guestPhoneClean,
+        // staysReservationId — aqueles vêm do email parser). O lookup antigo
+        // procurava SÓ pelos fields mongoose → match falhava → bot ficava mudo
+        // (caso Wandress 09/05 noite, KZ02J). Agora aceitamos AMBOS os shapes.
         if (Reservation && body) {
           const txt = body.trim().toLowerCase();
           const isYes = txt === 'fazer agora';
           const isNo = txt === 'na recepção' || txt === 'na recepcao';
           if (isYes || isNo) {
             try {
+              const since = new Date(Date.now() - 48 * 3600 * 1000);
               const recent = await Reservation.findOne({
-                guestPhoneClean: from,
-                autoCheckinSentAt: { $gte: new Date(Date.now() - 48 * 3600 * 1000) },
+                $or: [
+                  { guestPhoneClean: from },           // emailMonitor (mongoose) shape
+                  { guestPhone: from },                // stays_sync (Atlas raw) shape
+                ],
+                autoCheckinSentAt: { $gte: since },
               }).sort({ autoCheckinSentAt: -1 }).lean();
-              if (recent && recent.staysReservationId) {
+              const reservationCode = recent && (
+                recent.staysReservationId ||  // mongoose shape (email parser)
+                recent.confirmationCode ||    // stays_sync shape (preferred — humano-amigável)
+                recent.staysId                // fallback ObjectId
+              );
+              if (recent && reservationCode) {
                 const publicUrl = process.env.PUBLIC_URL || 'https://conciergecloud.com.br';
+                const menuHint = '\n\n💡 Em qualquer momento durante a hospedagem, digite *MENU* aqui pra ver todas as opções (Wi-Fi, café, piscina, transfer, recepção, etc).';
                 if (isYes) {
-                  const url = `${publicUrl}/checkin/${recent.staysReservationId}`;
+                  const url = `${publicUrl}/checkin/${reservationCode}`;
                   await replyAndSave(from,
-                    `Perfeito! 📲 Aqui está seu pré-check-in:\n\n${url}\n\nLeva 2 minutos. Seus dados são protegidos conforme a LGPD. 🔒`,
+                    `Perfeito! 📲 Aqui está seu pré-check-in:\n\n${url}\n\nLeva 2 minutos. Seus dados são protegidos conforme a LGPD. 🔒${menuHint}`,
                     { alsoSendAudio: camFromAudio }
                   );
                 } else {
                   await replyAndSave(from,
-                    `Combinado! 🏨 Quando chegar, é só ir direto à recepção do hotel.\n\n📄 *Importante:* leve um documento oficial com foto (RG, CNH ou passaporte) — é exigido pra liberar seu cartão de acesso.\n\nRecepção 24h. Qualquer dúvida, me chama por aqui. 😊`,
+                    `Combinado! 🏨 Quando chegar, é só ir direto à recepção do hotel.\n\n📄 *Importante:* leve um documento oficial com foto (RG, CNH ou passaporte) — é exigido pra liberar seu cartão de acesso.\n\nRecepção 24h. Qualquer dúvida, me chama por aqui. 😊${menuHint}`,
                     { alsoSendAudio: camFromAudio }
                   );
                 }
-                console.log(`[checkin-reply] phone=${from} choice=${isYes?'yes':'no'} reservation=${recent.staysReservationId}`);
+                console.log(`[checkin-reply] phone=${from} choice=${isYes?'yes':'no'} reservation=${reservationCode}`);
                 continue;
               }
+              // Lookup falhou (sem reserva matching nas últimas 48h) — loga e cai no fluxo normal
+              console.warn(`[checkin-reply] phone=${from} clicou "${txt}" mas sem reserva matching nas últimas 48h — fallthrough`);
             } catch (e) {
               console.warn('[checkin-reply] lookup failed (fallthrough):', e.message);
             }
