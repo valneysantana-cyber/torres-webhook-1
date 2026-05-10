@@ -86,6 +86,7 @@ function buildSystemPromptFromSettings(tenant) {
   }
   lines.push('');
   lines.push('Regras:');
+  lines.push('- ⚠️ REGRA CRÍTICA — CONTATO HUMANO: NUNCA invente ou recupere números de telefone do contexto. Se user pedir contato (falar com Valney, Sofia, fundador, atendente, humano, time comercial, suporte), use APENAS este número fixo: WhatsApp Sofia +55 13 99615-5505 (link wa.me/5513996155505). NUNCA use o número do remetente como contato. Se você não tem certeza absoluta de um número, NÃO INVENTE — apenas direcione pra Sofia.');
   lines.push('- Nunca comece respostas com "Olá", "Oi", "Bom dia", "Boa tarde" ou qualquer saudação.');
   lines.push('- Responda direto ao ponto, de forma natural, como uma conversa contínua.');
   lines.push('- Responda de forma curta, útil, natural e acolhedora.');
@@ -142,6 +143,7 @@ Regras:
 - Responda sempre no mesmo idioma do hóspede (português, inglês ou espanhol).
 - Só encaminhe para humano quando for necessário.
 – Quando o hospede perguntar sobre reserva, como alugar, site ou telefone para reservas, SEMPRE responda com: Sofia +55 13 99615-5505 e site www.torresguest.com.br. NUNCA invente numeros de telefone. NUNCA diga que nao pode fornecer o link do site.
+- ⚠️ REGRA CRÍTICA — CONTATO HUMANO: Quando user pedir contato (falar com Valney, Sofia, fundador, atendente, humano, time, suporte, comercial, vendas, qualquer pessoa), use APENAS este número fixo: WhatsApp Sofia +55 13 99615-5505 (link wa.me/5513996155505). NUNCA use o número do remetente como contato — ele NUNCA aparece no contexto da mensagem, então se você mencionar "+55 11 99..." ou qualquer outro número que não seja a Sofia, é alucinação. Resposta-padrão: "te conecto com a Sofia, nosso atendimento humano: wa.me/5513996155505 — ela responde rapidinho e te ajuda no que precisar."
 - REGRA CRÍTICA — Pedidos que dependem de aprovação operacional (late checkout / saída depois das 12h, early check-in / entrada antes das 14h, troca de quarto, mudança de reserva, prorrogação da estadia, decoração especial, refund/reembolso, autorização de visita, qualquer pedido fora do padrão): você NÃO tem capacidade de aprovar, consultar o anfitrião nem voltar depois. NUNCA prometa "vou verificar", "vou confirmar", "um momento", "já te aviso", "vou checar com a equipe" — isso é alucinação porque você é stateless. Nesses casos, responda EXATAMENTE neste padrão: informe a regra padrão (ex: "checkout é até 12h"), explique que pra avaliar exceção precisa falar com a Sofia, e passe o WhatsApp dela: +55 13 99615-5505. Exemplo correto pra "posso fazer checkout às 14h?": "checkout é até 12h. pra avaliar uma extensão, fala com a Sofia no WhatsApp +55 13 99615-5505 — ela consegue confirmar com a equipe."
 - Wi-Fi: o acesso é pela rede do hotel via portal Captiva — basta informar Nome + CPF em qualquer página web. Se o hóspede perguntar sobre Wi-Fi, internet, senha ou conexão, explique SEMPRE esse processo. Nunca diga para buscar na recepção ou no material do flat.
 - Antecipação de chegada de acompanhante: se o titular avisar que outra pessoa da MESMA reserva chegará antes dele(a) ou pedir acesso sem sua presença, NÃO negue. Acolha e oriente o(a) titular a encaminhar pra acompanhante o link de pré-checkin da reserva (formato https://conciergecloud.com.br/checkin/{codigo_da_reserva}) — o formulário coleta documento com foto, nome completo e horário de chegada, e a recepção é avisada automaticamente. Nunca recomende que o(a) acompanhante "aguarde" o titular.
@@ -228,7 +230,11 @@ async function getChatGptFallbackReply(userMessage, phone, context = [], profile
     basePrompt = SYSTEM_PROMPT;
   }
   const systemContent = profileBlock ? `${basePrompt}${profileBlock}` : basePrompt;
-  const userInput = `${historyBlock}Telefone: ${phone}\nMensagem: ${userMessage}`;
+  // ⚠️ NÃO incluir o phone do remetente no userInput — AI alucina usando-o como
+  // contato humano quando user pede "fala com o Valney/Sofia/atendente". Bug
+  // descoberto 08/05/2026: bot retornou "WhatsApp do Valney: <phone do user>"
+  // pra prospect cc_sales que perguntou contato. Phone é metadata, não conteúdo.
+  const userInput = `${historyBlock}Mensagem: ${userMessage}`;
 
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',

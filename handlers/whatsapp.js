@@ -30,6 +30,7 @@ const {
   buildParkingResponse,
   SECURITY_RESPONSE,
   TRANSFER_RESPONSE,
+  getTransferResponse,
   LONG_STAY_RESPONSE,
   CLEANING_RESPONSE,
   INTERNET_RESPONSE,
@@ -244,7 +245,7 @@ const PT_DISPATCH = [
   { check: shouldSendSecurity,    reply: () => SECURITY_RESPONSE },
   {
     check: shouldSendTransfer,
-    reply: () => TRANSFER_RESPONSE,
+    reply: (lang) => getTransferResponse(lang),
     notify: (from, body) => sendTransferAlert(from, body),
   },
   { check: shouldSendLocation,    reply: (lang) => getLocationResponse(lang) },
@@ -419,48 +420,103 @@ async function handleIncoming(payload) {
         // Variações de free-text ("quero", "não") caem no classifier/AI normal —
         // antes match permissivo causou falso-positivo: "quero falar com humano"
         // foi interpretado como "Fazer agora" e respondeu com link de checkin.
+        // FIX 10/05/2026: stays_sync.js (cron VPS) é quem dispara o template
+        // automático e grava no Atlas reservations com fields { staysId,
+        // confirmationCode, guestPhone (já limpo), autoCheckinSentAt }. NÃO grava
+        // os fields da mongoose Reservation model (guestPhoneClean,
+        // staysReservationId — aqueles vêm do email parser). O lookup antigo
+        // procurava SÓ pelos fields mongoose → match falhava → bot ficava mudo
+        // (caso Wandress 09/05 noite, KZ02J). Agora aceitamos AMBOS os shapes.
         if (Reservation && body) {
           const txt = body.trim().toLowerCase();
           const isYes = txt === 'fazer agora';
           const isNo = txt === 'na recepção' || txt === 'na recepcao';
           if (isYes || isNo) {
             try {
+              const since = new Date(Date.now() - 48 * 3600 * 1000);
               const recent = await Reservation.findOne({
-                guestPhoneClean: from,
-                autoCheckinSentAt: { $gte: new Date(Date.now() - 48 * 3600 * 1000) },
+                $or: [
+                  { guestPhoneClean: from },           // emailMonitor (mongoose) shape
+                  { guestPhone: from },                // stays_sync (Atlas raw) shape
+                ],
+                autoCheckinSentAt: { $gte: since },
               }).sort({ autoCheckinSentAt: -1 }).lean();
-              if (recent && recent.staysReservationId) {
+              const reservationCode = recent && (
+                recent.staysReservationId ||  // mongoose shape (email parser)
+                recent.confirmationCode ||    // stays_sync shape (preferred — humano-amigável)
+                recent.staysId                // fallback ObjectId
+              );
+              if (recent && reservationCode) {
                 const publicUrl = process.env.PUBLIC_URL || 'https://conciergecloud.com.br';
+                const menuHint = '\n\n💡 Em qualquer momento durante a hospedagem, digite *MENU* aqui pra ver todas as opções (Wi-Fi, café, piscina, transfer, recepção, etc).';
                 if (isYes) {
-                  const url = `${publicUrl}/checkin/${recent.staysReservationId}`;
+                  const url = `${publicUrl}/checkin/${reservationCode}`;
                   await replyAndSave(from,
-                    `Perfeito! 📲 Aqui está seu pré-check-in:\n\n${url}\n\nLeva 2 minutos. Seus dados são protegidos conforme a LGPD. 🔒`,
+                    `Perfeito! 📲 Aqui está seu pré-check-in:\n\n${url}\n\nLeva 2 minutos. Seus dados são protegidos conforme a LGPD. 🔒${menuHint}`,
                     { alsoSendAudio: camFromAudio }
                   );
                 } else {
                   await replyAndSave(from,
-                    `Combinado! 🏨 Quando chegar, é só ir direto à recepção do hotel.\n\n📄 *Importante:* leve um documento oficial com foto (RG, CNH ou passaporte) — é exigido pra liberar seu cartão de acesso.\n\nRecepção 24h. Qualquer dúvida, me chama por aqui. 😊`,
+                    `Combinado! 🏨 Quando chegar, é só ir direto à recepção do hotel.\n\n📄 *Importante:* leve um documento oficial com foto (RG, CNH ou passaporte) — é exigido pra liberar seu cartão de acesso.\n\nRecepção 24h. Qualquer dúvida, me chama por aqui. 😊${menuHint}`,
                     { alsoSendAudio: camFromAudio }
                   );
                 }
-                console.log(`[checkin-reply] phone=${from} choice=${isYes?'yes':'no'} reservation=${recent.staysReservationId}`);
+                console.log(`[checkin-reply] phone=${from} choice=${isYes?'yes':'no'} reservation=${reservationCode}`);
                 continue;
               }
+              // Lookup falhou (sem reserva matching nas últimas 48h) — loga e cai no fluxo normal
+              console.warn(`[checkin-reply] phone=${from} clicou "${txt}" mas sem reserva matching nas últimas 48h — fallthrough`);
             } catch (e) {
               console.warn('[checkin-reply] lookup failed (fallthrough):', e.message);
             }
           }
         }
 
-        // ---- escalation classifier (prioridade máxima p/ fluxo normal) --
-        const escalation = classifyMessage(body);
-        if (escalation) {
-          console.log('[classifier] escalacao detectada:', escalation.name, escalation.level);
-          await replyAndSave(from, escalation.guestReply, { alsoSendAudio: camFromAudio });
-          if (!escalation.noAlert) await sendEscalationAlert(from, body, escalation);
-          continue;
+        // ---- resolve guest tenant EARLY (antes dos matchers torres-flavored) ----
+        // Bug observado 08/05/2026: prospect cc_sales mandando "Qual o preço?" pro
+        // WhatsApp ConciergeCloud caía no `shouldRedirectToReservationSite` e o
+        // classifier categoria "Reserva" — ambos torres-hardcoded — e respondia
+        // sobre torresguest.com.br/Sofia. Resolver o guestTenant aqui permite
+        // gatear matchers torres-only (`isTorresContext`) e deixar non-torres
+        // cair direto no AI fallback (que recebe o systemPrompt do tenant).
+        const guestTenant = await resolveTenantByGuestPhone(from, tenant, body);
+        const isTorresContext = !guestTenant || guestTenant.tenantId === 'torres';
+        if (!isTorresContext) {
+          console.log('[tenant-guest] from=' + from + ' → ' + guestTenant.tenantId + ' (skip torres-flavored matchers)');
         }
 
+        // ---- escalation classifier (prioridade máxima p/ fluxo normal) --
+        // Categorias do classifier (Reserva, Recepção, etc.) usam guestReply
+        // torres-hardcoded ("Sofia +55 13 99615-5505", "*9 ou *1 no telefone do
+        // quarto"). Skip pra non-torres — cai no AI fallback do tenant correto.
+        if (isTorresContext) {
+          const escalation = classifyMessage(body);
+          if (escalation) {
+            console.log('[classifier] escalacao detectada:', escalation.name, escalation.level);
+            await replyAndSave(from, escalation.guestReply, { alsoSendAudio: camFromAudio });
+            if (!escalation.noAlert) await sendEscalationAlert(from, body, escalation);
+            continue;
+          }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // BLOCO TORRES-FLAVORED — só executa pra tenant torres
+        // ─────────────────────────────────────────────────────────────────
+        // Todos os matchers abaixo (greeting, menu, frigobar PIX/restock,
+        // restaurant Don Maitre, reservation flows, PT_DISPATCH, etc) usam
+        // respostas hardcoded torresguest.com.br/Sofia/PIX CNPJ TorresGuest
+        // OU pressupõem hóspede com reserva ativa numa unidade física.
+        // Pra prospects cc_sales (perguntando "quanto custa?", "quero falar
+        // com atendimento") essas respostas vazam contexto do cliente errado.
+        //
+        // Bug confirmado 09/05/2026: prospect Nailton (13 99163-2189) perguntou
+        // "Quanto custa?" pro WhatsApp ConciergeCloud → recebeu cardápio do
+        // frigobar TorresGuest com PIX CNPJ 62.169.624/0001-94.
+        //
+        // Non-torres (cc_sales, futuros tenants) cai direto no AI fallback
+        // que recebe o systemPrompt do próprio tenant.
+        // ═══════════════════════════════════════════════════════════════════
+        if (isTorresContext) {
         // ---- greeting ---------------------------------------------------
         // Pure greeting only (no '?'). Greeting+question falls through to the AI.
         const words = normalized.trim().split(/\s+/);
@@ -535,6 +591,7 @@ async function handleIncoming(payload) {
         }
 
         // ---- reservation site redirect ----------------------------------
+        // Resposta canned em PT/EN/ES cita literalmente torresguest.com.br.
         if (
           shouldRedirectToReservationSite(normalized) ||
           /\b\d{1,2}[\/.-]\d{1,2}\b/.test(body) ||
@@ -618,11 +675,10 @@ async function handleIncoming(payload) {
             // intencionalmente NÃO continue — deixa cair no AI fallback
           }
         }
+        } // end if (isTorresContext) — todos matchers acima são torres-flavored
 
         // ---- AI fallback (contexto + perfil de fidelidade) -------------
-        // Shared-infra: resolve tenant dono da reserva ativa deste hóspede
-        // (uma WABA atende N tenants; sem isso todos caem em torres).
-        const guestTenant = await resolveTenantByGuestPhone(from, tenant, body);
+        // guestTenant já resolvido lá em cima (pra gatear matchers torres-only).
         const [context, profile] = await Promise.all([getContext(from), getProfile(from)]);
         const aiReply = await getChatGptFallbackReply(body, from, context, profile, guestTenant);
         if (aiReply) {
