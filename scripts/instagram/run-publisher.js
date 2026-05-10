@@ -20,9 +20,14 @@
  * Cron seguinte só pega posts ready de novo (não republica).
  *
  * Exit code:
- *   0 = sucesso (mesmo que 0 posts publicados)
+ *   0 = sucesso (mesmo que 0 posts publicados OU skip intencional)
  *   1 = erro fatal (DB não conecta, etc)
- *   2 = config faltando (IG_CC envs ou auto_publish off)
+ *
+ * Histórico: até 09/05/2026 o skip retornava exit 2, mas isso fazia o Render
+ * marcar o cron como ❌ "Failed run" a cada 15min mesmo quando o skip era
+ * comportamento esperado (IG_CC_AUTO_PUBLISH=false em modo dry-run). Agora o
+ * motivo do skip fica só nos logs (`resultado: {"skipped":"..."}`) e o exit
+ * code reflete sucesso operacional.
  */
 
 const mongoose = require('mongoose');
@@ -49,7 +54,7 @@ async function main() {
     console.log('[ig-pub] mongo desconectado');
 
     if (result.skipped) {
-      process.exit(2);
+      console.log(`[ig-pub] skip intencional (motivo=${result.skipped}) — exit 0`);
     }
     process.exit(0);
   } catch (err) {
