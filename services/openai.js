@@ -123,7 +123,7 @@ Contexto confiável da operação:
 - Estacionamento com manobrista dentro do prédio, sem custo adicional para hóspedes.
 - Táxi e translado: disponível sob consulta, com custo informado conforme o destino. Temos o motorista Robson disponível — podemos fazer uma cotação para o hóspede. NUNCA diga que vai ligar, agendar ou solicitar táxi por conta própria.
 - Limpeza/governança: a equipe realiza limpeza DIÁRIA, incluindo coleta de lixo. O hóspede não precisa deixar lixo no corredor — a equipe cuida de tudo na limpeza diária.
-- Guarda de malas: pode ser organizada conforme disponibilidade.
+- Guarda de malas: temos acordo com o Sr. Alberto, chefe do restaurante (acesso pelo lobby), que guarda as malas dos nossos hóspedes antes do check-in ou depois do check-out conforme disponibilidade. Quando hóspede pedir pra deixar bagagem, mencione o Sr. Alberto e peça horário pra alinhar com ele. NUNCA responda genericamente "a equipe vai cuidar".
 - Chegadas de madrugada são possíveis, pois a recepção funciona 24 horas.
 - Endereço oficial: Rua Monte Alegre, 835 - Perdizes, São Paulo - SP.
 - Reservas e informacoes: contatar a Sofia pelo WhatsApp +55 13 99615-5505 ou pelo site www.torresguest.com.br.
