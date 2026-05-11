@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Inventário de Quartos · ConciergeCloud</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<style>
+  :root{
+    --bg:#f6f8fc; --card:#fff; --text:#222; --muted:#6c7a8c; --border:#e5e9f0;
+    --accent:#1e3a5f; --accent2:#F0A500; --ok:#3ba55d; --warn:#d97706; --danger:#dc2626;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;background:var(--bg);color:var(--text)}
+  header{background:var(--accent);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  header .brand{display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:700}
+  header .nav a{color:rgba(255,255,255,.85);text-decoration:none;font-size:.9rem;margin-left:18px}
+  header .nav a.active{color:#fff;border-bottom:2px solid var(--accent2);padding-bottom:3px}
+  .container{max-width:1280px;margin:24px auto;padding:0 20px}
+  h1{margin:0 0 4px 0;font-size:1.6rem}
+  .subtitle{color:var(--muted);font-size:.9rem;margin-bottom:18px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:10px}
+  .btn{padding:8px 14px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;font-size:.88rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{background:#f2f6fb}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.primary:hover{background:#162a44}
+  .btn.warn{background:#fff3e0;border-color:#ffb74d;color:#8a4b00}
+  .btn.danger{background:#fee;border-color:#fbb;color:#a00}
+  select.btn{background:#fff}
+  .tabs{display:flex;gap:8px;margin-bottom:16px;border-bottom:2px solid var(--border)}
+  .tab{padding:10px 18px;border:none;background:none;font-size:.95rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent2)}
+  .section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;overflow:auto}
+  table{width:100%;border-collapse:collapse;font-size:.9rem}
+  th,td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--border)}
+  th{background:#f1f5fa;font-weight:600;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.4px;position:sticky;top:0;z-index:2}
+  th.item-label,td.item-label{text-align:left;padding-left:12px;font-weight:500;min-width:180px;background:#fafcfe;position:sticky;left:0;z-index:1}
+  th.item-label{z-index:3}
+  td.item-label small{display:block;color:var(--muted);font-size:.72rem;font-weight:400}
+  .qty-cell{min-width:78px}
+  .qty-input{width:60px;padding:5px 6px;border:1px solid var(--border);border-radius:5px;text-align:center;font-size:.9rem;font-variant-numeric:tabular-nums}
+  .qty-input:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 2px rgba(240,165,0,.18)}
+  .qty-input.dirty{background:#fff7e0;border-color:var(--accent2)}
+  .qty-input.saved{background:#e8f7ee;border-color:var(--ok);transition:background 1.2s,border-color 1.2s}
+  .qty-input.low{background:#fde8e8;border-color:var(--danger)}
+  .total-row td{background:#f8fafc;font-weight:600}
+  .price-tag{display:inline-block;background:#eef4fb;color:var(--accent);padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500;margin-left:6px}
+  .room-summary{background:#f9fafc;padding:10px 14px;margin-bottom:12px;border-radius:8px;border:1px solid var(--border);display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+  .room-summary b{color:var(--accent)}
+  .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:600}
+  .badge.ok{background:#dcfce7;color:#166534}
+  .badge.warn{background:#fef3c7;color:#92400e}
+  .badge.low{background:#fee2e2;color:#991b1b}
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--ok);color:#fff;padding:12px 18px;border-radius:8px;font-size:.9rem;box-shadow:0 4px 12px rgba(0,0,0,.15);opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none;z-index:99}
+  #toast.show{opacity:1;transform:translateY(0)}
+  #toast.error{background:var(--danger)}
+  footer{text-align:center;color:var(--muted);font-size:.8rem;padding:20px;margin-top:30px;border-top:1px solid var(--border)}
+  footer a{color:var(--accent);text-decoration:none}
+  @media (max-width:760px){
+    th,td{padding:6px 4px;font-size:.78rem}
+    th.item-label,td.item-label{min-width:130px}
+    .qty-input{width:48px;padding:4px 4px;font-size:.82rem}
+    h1{font-size:1.3rem}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="brand" style="text-decoration:none;color:inherit"><span>🏠</span><span>ConciergeCloud</span></a>
+  <div class="nav">
+    <a href="/dashboard.html">Dashboard</a>
+    <a href="/admin/checkins.html">Pré-check-ins</a>
+    <a href="/inventario.html" class="active">Inventário</a>
+    <a href="/search.html">Buscar Hóspedes</a>
+  </div>
+</header>
+
+<div class="container">
+
+  <h1>📦 Inventário de Quartos</h1>
+  <div class="subtitle">Enxoval + Frigobar · 8 quartos · ajuste de quantidade salva automaticamente</div>
+
+  <div class="toolbar">
+    <label><b>Tenant:</b>
+      <select id="tenantSelect" class="btn"><option value="torres">torres</option></select>
+    </label>
+    <label><b>Quarto:</b>
+      <select id="roomSelect" class="btn"></select>
+    </label>
+    <button class="btn" onclick="loadInventory()">🔄 Recarregar</button>
+    <button class="btn warn" onclick="exportCSV()">📥 Exportar CSV</button>
+    <button class="btn danger" onclick="resetInventory()" title="Recria todos quartos com defaults">♻️ Reset</button>
+    <span style="margin-left:auto;color:var(--muted);font-size:.82rem">Última atualização: <b id="lastUpdated">—</b></span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-view="all" onclick="setView('all')">📊 Visão Geral (todos quartos)</button>
+    <button class="tab" data-view="room" onclick="setView('room')">🏨 Por Quarto</button>
+    <button class="tab" data-view="log" onclick="setView('log')">📜 Histórico</button>
+  </div>
+
+  <!-- VIEW ALL: matriz item × quarto -->
+  <div id="view-all" class="section">
+    <h2 style="margin-top:0">🛏️ Enxoval — todos os quartos</h2>
+    <table id="tableEnxovalAll">
+      <thead><tr><th class="item-label">Item</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <h2 style="margin-top:24px">🥤 Frigobar — todos os quartos</h2>
+    <table id="tableFrigobarAll">
+      <thead><tr><th class="item-label">Item</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- VIEW ROOM: detalhe single -->
+  <div id="view-room" class="section" style="display:none">
+    <div class="room-summary" id="roomSummary">
+      <span><b id="roomName">—</b></span>
+      <span>Enxoval: <b id="enxovalCount">—</b> peças</span>
+      <span>Frigobar: <b id="frigobarCount">—</b> itens · <span class="badge ok" id="frigobarValue">R$ 0,00</span></span>
+    </div>
+    <h2 style="margin-top:0">🛏️ Enxoval</h2>
+    <table id="tableEnxovalRoom">
+      <thead><tr><th class="item-label">Item</th><th>Saldo inicial</th><th>Quantidade atual</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <h2 style="margin-top:24px">🥤 Frigobar</h2>
+    <table id="tableFrigobarRoom">
+      <thead><tr><th class="item-label">Item</th><th>Preço</th><th>Quantidade</th><th>Subtotal</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- VIEW LOG: histórico -->
+  <div id="view-log" class="section" style="display:none">
+    <h2 style="margin-top:0">📜 Histórico de mudanças</h2>
+    <div style="color:var(--muted);font-size:.85rem;margin-bottom:10px">Últimas 200 alterações</div>
+    <table id="tableLog">
+      <thead><tr><th>Data/Hora</th><th>Quarto</th><th>Categoria</th><th>Item</th><th>Nova qtd</th><th>Usuário</th></tr></thead>
+      <tbody><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:30px">Carregando…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="toast">Salvo!</div>
+
+<footer>
+  © 2026 ConciergeCloud · <a href="/dashboard.html">← Voltar ao Dashboard</a>
+</footer>
+
+<script>
+const BASE = '/crm';
+let STATE = { catalog: null, rooms: [], currentRoom: null, view: 'all' };
+
+function toast(msg, kind){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = kind === 'error' ? 'show error' : 'show';
+  setTimeout(()=>{ t.className = t.className.replace('show',''); }, 1800);
+}
+function fmtBRL(n){ return (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtDateTime(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+async function api(path, opts){
+  const r = await fetch(BASE + path, Object.assign({headers:{'Content-Type':'application/json'}}, opts||{}));
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+async function loadInventory(){
+  const tenantId = document.getElementById('tenantSelect').value;
+  try{
+    const data = await api('/inventory?tenantId=' + encodeURIComponent(tenantId));
+    STATE.catalog = data.catalog;
+    STATE.rooms = data.rooms;
+    const roomSel = document.getElementById('roomSelect');
+    roomSel.innerHTML = data.rooms.map(r => `<option value="${r.room}">${r.room}</option>`).join('');
+    STATE.currentRoom = STATE.currentRoom || data.rooms[0]?.room;
+    if(STATE.currentRoom) roomSel.value = STATE.currentRoom;
+    const last = data.rooms.map(r => r.updatedAt).filter(Boolean).sort().pop();
+    document.getElementById('lastUpdated').textContent = fmtDateTime(last);
+    renderAll();
+    if(STATE.view === 'room') renderRoom();
+  } catch(e){
+    toast('Erro ao carregar: ' + e.message, 'error');
+  }
+}
+
+function setView(v){
+  STATE.view = v;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
+  document.getElementById('view-all').style.display = v === 'all' ? '' : 'none';
+  document.getElementById('view-room').style.display = v === 'room' ? '' : 'none';
+  document.getElementById('view-log').style.display = v === 'log' ? '' : 'none';
+  if(v === 'room') renderRoom();
+  if(v === 'log') loadLog();
+}
+
+// ---------- VIEW ALL (matriz item × quarto) ----------
+function buildMatrixTable(tableId, items, category){
+  const tbl = document.getElementById(tableId);
+  const thead = tbl.querySelector('thead tr');
+  const tbody = tbl.querySelector('tbody');
+  // Header
+  thead.innerHTML = '<th class="item-label">Item</th>' + STATE.rooms.map(r => `<th>${r.room}</th>`).join('') + '<th>Total</th>';
+  // Rows
+  let html = '';
+  for(const it of items){
+    const priceTag = it.price ? `<span class="price-tag">${fmtBRL(it.price)}</span>` : '';
+    let total = 0;
+    let cells = '';
+    for(const r of STATE.rooms){
+      const qty = (r[category] && r[category][it.key] != null) ? r[category][it.key] : 0;
+      total += qty;
+      const isLow = category === 'enxoval' && qty < it.qty * 0.5;
+      cells += `<td class="qty-cell"><input type="number" min="0" max="999" class="qty-input${isLow?' low':''}" value="${qty}" data-room="${encodeURIComponent(r.room)}" data-category="${category}" data-item="${it.key}" data-initial="${it.qty}" onchange="saveCell(this)" oninput="this.classList.add('dirty')"></td>`;
+    }
+    html += `<tr><td class="item-label">${it.label}${priceTag}${it.qty ? `<small>saldo inicial: ${it.qty}</small>` : ''}</td>${cells}<td><b>${total}</b></td></tr>`;
+  }
+  // Total row
+  const totals = STATE.rooms.map(r => items.reduce((s,it)=> s + ((r[category] && r[category][it.key]) || 0), 0));
+  const grand = totals.reduce((a,b)=>a+b, 0);
+  html += `<tr class="total-row"><td class="item-label"><b>TOTAL ${category === 'enxoval' ? 'peças' : 'itens'}</b></td>${totals.map(t=>`<td>${t}</td>`).join('')}<td><b>${grand}</b></td></tr>`;
+  // Valor total frigobar
+  if(category === 'frigobar'){
+    const values = STATE.rooms.map(r => items.reduce((s,it)=> s + (((r.frigobar && r.frigobar[it.key]) || 0) * (it.price || 0)), 0));
+    const grandV = values.reduce((a,b)=>a+b,0);
+    html += `<tr class="total-row"><td class="item-label"><b>VALOR ESTOQUE</b></td>${values.map(v=>`<td>${fmtBRL(v)}</td>`).join('')}<td><b>${fmtBRL(grandV)}</b></td></tr>`;
+  }
+  tbody.innerHTML = html;
+}
+function renderAll(){
+  if(!STATE.catalog) return;
+  buildMatrixTable('tableEnxovalAll', STATE.catalog.enxoval, 'enxoval');
+  buildMatrixTable('tableFrigobarAll', STATE.catalog.frigobar, 'frigobar');
+}
+
+// ---------- VIEW ROOM ----------
+function renderRoom(){
+  const room = document.getElementById('roomSelect').value;
+  STATE.currentRoom = room;
+  const r = STATE.rooms.find(x => x.room === room);
+  if(!r) return;
+  document.getElementById('roomName').textContent = room;
+  // Enxoval
+  let enxovalCount = 0;
+  let html = '';
+  for(const it of STATE.catalog.enxoval){
+    const qty = (r.enxoval && r.enxoval[it.key] != null) ? r.enxoval[it.key] : 0;
+    enxovalCount += qty;
+    const pct = (qty / it.qty) * 100;
+    const status = pct >= 80 ? '<span class="badge ok">OK</span>' : pct >= 40 ? '<span class="badge warn">Repor</span>' : '<span class="badge low">Crítico</span>';
+    html += `<tr><td class="item-label">${it.label}</td><td>${it.qty}</td><td class="qty-cell"><input type="number" min="0" max="999" class="qty-input${qty < it.qty * 0.5 ? ' low' : ''}" value="${qty}" data-room="${encodeURIComponent(room)}" data-category="enxoval" data-item="${it.key}" data-initial="${it.qty}" onchange="saveCell(this)" oninput="this.classList.add('dirty')"></td><td>${status}</td></tr>`;
+  }
+  document.querySelector('#tableEnxovalRoom tbody').innerHTML = html;
+  // Frigobar
+  let frigobarCount = 0;
+  let frigobarValue = 0;
+  html = '';
+  for(const it of STATE.catalog.frigobar){
+    const qty = (r.frigobar && r.frigobar[it.key] != null) ? r.frigobar[it.key] : 0;
+    frigobarCount += qty;
+    const sub = qty * (it.price || 0);
+    frigobarValue += sub;
+    html += `<tr><td class="item-label">${it.label}</td><td>${fmtBRL(it.price)}</td><td class="qty-cell"><input type="number" min="0" max="999" class="qty-input" value="${qty}" data-room="${encodeURIComponent(room)}" data-category="frigobar" data-item="${it.key}" data-initial="0" onchange="saveCell(this)" oninput="this.classList.add('dirty')"></td><td><b>${fmtBRL(sub)}</b></td></tr>`;
+  }
+  document.querySelector('#tableFrigobarRoom tbody').innerHTML = html;
+  document.getElementById('enxovalCount').textContent = enxovalCount;
+  document.getElementById('frigobarCount').textContent = frigobarCount;
+  document.getElementById('frigobarValue').textContent = fmtBRL(frigobarValue);
+}
+
+// ---------- SAVE ----------
+async function saveCell(input){
+  const room = decodeURIComponent(input.dataset.room);
+  const category = input.dataset.category;
+  const item = input.dataset.item;
+  const qty = parseInt(input.value, 10) || 0;
+  const tenantId = document.getElementById('tenantSelect').value;
+  try{
+    await api('/inventory/' + encodeURIComponent(room), {
+      method: 'PUT',
+      body: JSON.stringify({ tenantId, category, item, qty })
+    });
+    // atualiza STATE
+    const r = STATE.rooms.find(x => x.room === room);
+    if(r){ r[category] = r[category] || {}; r[category][item] = qty; r.updatedAt = new Date().toISOString(); }
+    input.classList.remove('dirty');
+    input.classList.add('saved');
+    setTimeout(()=> input.classList.remove('saved'), 1500);
+    toast('✓ ' + room + ' · ' + item + ' = ' + qty);
+    // re-render totals leves
+    if(STATE.view === 'all') renderAll();
+    if(STATE.view === 'room') renderRoom();
+  } catch(e){
+    toast('Erro ao salvar: ' + e.message, 'error');
+    input.classList.add('low');
+  }
+}
+
+// ---------- LOG ----------
+async function loadLog(){
+  const tenantId = document.getElementById('tenantSelect').value;
+  try{
+    const log = await api('/inventory/log?tenantId=' + encodeURIComponent(tenantId) + '&limit=200');
+    const tbody = document.querySelector('#tableLog tbody');
+    if(!log.length){ tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:30px">Sem alterações registradas ainda.</td></tr>'; return; }
+    tbody.innerHTML = log.map(l => {
+      const itemLabel = STATE.catalog && STATE.catalog[l.category]?.find(x => x.key === l.item)?.label || l.item;
+      return `<tr><td>${fmtDateTime(l.ts)}</td><td>${l.room}</td><td>${l.category === 'enxoval' ? '🛏️ Enxoval' : '🥤 Frigobar'}</td><td style="text-align:left;padding-left:12px">${itemLabel}</td><td><b>${l.qty}</b></td><td>${l.updatedBy || '—'}</td></tr>`;
+    }).join('');
+  } catch(e){
+    document.querySelector('#tableLog tbody').innerHTML = '<tr><td colspan="6" style="color:var(--danger);text-align:center">Erro: ' + e.message + '</td></tr>';
+  }
+}
+
+// ---------- RESET ----------
+async function resetInventory(){
+  if(!confirm('Reset apaga TODAS as quantidades atuais e recria os 8 quartos com saldo inicial padrão.\n\nTem certeza?')) return;
+  const tenantId = document.getElementById('tenantSelect').value;
+  try{
+    await api('/inventory/reset', { method: 'POST', body: JSON.stringify({ tenantId }) });
+    toast('Inventário resetado');
+    await loadInventory();
+  } catch(e){ toast('Erro: ' + e.message, 'error'); }
+}
+
+// ---------- EXPORT CSV ----------
+function exportCSV(){
+  const rows = [['Quarto','Categoria','Item','Saldo Inicial','Qtd Atual','Preço unit','Subtotal']];
+  for(const r of STATE.rooms){
+    for(const cat of ['enxoval','frigobar']){
+      for(const it of STATE.catalog[cat]){
+        const qty = (r[cat] && r[cat][it.key] != null) ? r[cat][it.key] : 0;
+        rows.push([r.room, cat, it.label, it.qty || 0, qty, it.price || '', it.price ? (qty * it.price).toFixed(2) : '']);
+      }
+    }
+  }
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'inventario_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+document.getElementById('roomSelect').addEventListener('change', () => renderRoom());
+document.getElementById('tenantSelect').addEventListener('change', loadInventory);
+loadInventory();
+</script>
+</body>
+</html>
