@@ -48,7 +48,16 @@ function shouldSendTowels(text) {
 }
 
 function shouldSendRestaurant(text) {
-  return isNumericSelection(text, '7') || /(restaurante do hotel|restaurante no hotel|almoco|jantar|refeicao|refeicoes)/.test(text);
+  if (isNumericSelection(text, '7')) return true;
+  // 1) Match explícito de "restaurante do hotel/no hotel/no predio"
+  if (/(restaurante do hotel|restaurante no hotel|restaurante do predio|restaurante no predio)/.test(text)) return true;
+  // 2) Refeições / horários — termo "restaurante" + qualquer cue
+  // Bug 12/05/2026 (Dio Cavalcanti): "O Restaurante fica aberto até que horas?"
+  // não matchava → caía no AI fallback que devolveu "Agora são 21:50".
+  if (/\brestaurante\b/.test(text) && /\b(aberto|abre|fechad|horario|hora|hrs|hr|que horas|ate que|funciona|funcionamento|servico|cardapio|menu|reserv)\b/.test(text)) return true;
+  // 3) Refeições standalone (substantivo OU verbo: almoco/almocar, janta/jantar)
+  if (/(almoc[oa]r?|jant(a|ar)|refeic\w+|cafe da manha|brunch)\b/.test(text)) return true;
+  return false;
 }
 
 // Pedido/delivery — encaminha pra landing do Don Maitre (parceiro) com cupom.
