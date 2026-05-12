@@ -107,18 +107,51 @@ function hasActiveGuestCues(text) {
     /\b(minha|meu)\s+(reserva|estadia|check.?in|check.?out|hospedagem|estad\w+)\b/.test(t) ||
     /\b(no|na)\s+(quarto|apartamento|suite|suíte|flat|unidade)\s+\d/.test(t) ||
     /\b(check.?out|check.?in)\s+(às|ate|até|por\s+volta)/.test(t) ||
-    /\bunidade\s+\d/.test(t)
+    /\bunidade\s+\d/.test(t) ||
+    // Amenities / comodidades — hóspede já hospedado se queixando da unidade.
+    // Adicionado 12/05/2026 após caso Rhavi (JV05J): bot caiu em cc_sales e
+    // respondeu como vendedor pra "O quarto não tem shampoo".
+    /\b(o |a |meu |minha )?(quarto|banheiro|apartamento|unidade|flat|suite|suíte)\s+(n[aã]o\s+)?(tem|t[aá]|est[aá]\s+sem)\b/.test(t) ||
+    // amenities — referência direta a item de quarto (com ou sem palavras "tem mais", "sem", "falta")
+    /\b(shampoo|sabonete|condicionador|chinelo|amenities|amenidade)\b/.test(t) ||
+    /\bpapel\s+higi/.test(t) ||
+    /\btoalha\s+(de\s+)?(banho|rosto|piso)/.test(t) ||
+    /\b(sem|falta|faltando|cad[eê]|onde\s+(t[aá]|tem)|tem\s+mais)\s+(toalha|len[çc]ol|fronha|secador|escova)/.test(t) ||
+    /\b(preciso|queria|gostaria)\s+(de\s+)?(mais\s+)?(toalha|len[çc]ol|fronha|shampoo|sabonete|papel\s+higi|amenities|amenidade)/.test(t)
   );
+}
+
+// Brazilian mobile phones têm 2 formatos comuns:
+//   • 12 dígitos: 55DDXXXXXXXX (formato antigo / desktop / OTAs antigas)
+//   • 13 dígitos: 55DD9XXXXXXXX (formato moderno com 9-prefix, padrão Meta WhatsApp)
+// Se a reserva foi salva num formato e a msg WhatsApp chega no outro, o match
+// exato falha. Gera as duas variantes pra busca com $in.
+// Caso real (Rhavi, JV05J, 12/05/2026): WA enviou 554199404012 mas reserva tinha
+// 5541999404012 — exact match falhou e tenant resolveu pra cc_sales (prospect).
+function phoneVariants(phone) {
+  if (!phone) return [];
+  const digits = String(phone).replace(/\D/g, '');
+  const out = new Set([digits]);
+  // BR mobile padrão 55 + DDD (2) + 9 (mobile prefix) + 8 dígitos = 13 dígitos
+  if (digits.length === 13 && digits.startsWith('55') && digits[4] === '9') {
+    // 13 → 12 (remove o 9)
+    out.add(digits.slice(0, 4) + digits.slice(5));
+  } else if (digits.length === 12 && digits.startsWith('55')) {
+    // 12 → 13 (insere o 9 após DDD)
+    out.add(digits.slice(0, 4) + '9' + digits.slice(4));
+  }
+  return [...out];
 }
 
 async function resolveTenantByGuestPhone(phone, fallbackTenant, messageText) {
   if (!phone || !fallbackTenant) return fallbackTenant;
   try {
     const Reservation = require('../models/Reservation');
+    const phones = phoneVariants(phone);
 
-    // 1. Busca reserva ATIVA (não cancelada) mais recente
+    // 1. Busca reserva ATIVA (não cancelada) mais recente — tenta TODAS variantes
     const active = await Reservation.findOne({
-      guestPhoneClean: phone,
+      guestPhoneClean: { $in: phones },
       status: { $nin: ['cancelado', 'no-show'] },
     }).sort({ checkInDate: -1, createdAt: -1 }).lean();
 
@@ -132,7 +165,7 @@ async function resolveTenantByGuestPhone(phone, fallbackTenant, messageText) {
     // Mantém o tenant original pra hóspede cancelado conversar sobre
     // reembolso/remarcação no contexto certo, em vez de virar prospect SaaS.
     const recentCancel = await Reservation.findOne({
-      guestPhoneClean: phone,
+      guestPhoneClean: { $in: phones },
       status: { $in: ['cancelado', 'no-show'] },
     }).sort({ updatedAt: -1, checkInDate: -1 }).lean();
 
@@ -219,5 +252,7 @@ module.exports = {
   resolveTenantByAccommodation,
   fetchTenantById,
   invalidateCache,
+  phoneVariants,
+  hasActiveGuestCues,
   TORRES_DEFAULT,
 };
