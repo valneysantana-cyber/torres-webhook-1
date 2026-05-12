@@ -23,7 +23,7 @@ const SNACKS_RESPONSE = `\ud83c\udf6b Os Snacks e Conveni\u00eancia\nDeixamos no
 
 const TOWELS_RESPONSE = `\ud83e\uddf3 A Troca de Toalhas para estadias acima de dois dias, \u00e9 feita a cada 48h.\nSe precisar antes, \u00e9 s\u00f3 me avisar que agilizo com a governan\u00e7a. \ud83c\udf34`;
 
-const RESTAURANT_RESPONSE = `\ud83c\udf7d\ufe0f O Restaurante do Hotel com acesso pelo lobby oferece refei\u00e7\u00f5es \u00e0 la carte ao longo do dia.\nPerfeito para quem quer comer bem sem sair do pr\u00e9dio. Se quiser sugest\u00f5es, me chama! \ud83c\udf34`;
+const RESTAURANT_RESPONSE = `\ud83c\udf7d\ufe0f *Restaurante Don Maitre* (no pr\u00f3prio pr\u00e9dio, acesso pelo lobby)\n\nCozinha italiana \u00e0 la carte \u2014 almo\u00e7o, jantar e room service.\n\n\ud83d\udcdd Card\u00e1pio completo + fotos: https://conciergecloud.com.br/restaurante.html\n\u260e\ufe0f Pedidos: ligue (11) 3801-3750 \u2192 pe\u00e7a *Ramal 2013* (Don Maitre)\n\ud83c\udf9f\ufe0f Cupom *CONCIERGECLOUD10* \u2014 10% off no pedido\n\nVale pra sal\u00e3o, room service e take-away. Qualquer d\u00favida, me chama! \ud83c\udf34`;
 
 const { links: affLinks } = require('../utils/affiliateLinks');
 const FOOD_ORDER_RESPONSE = `\ud83c\udf7d\ufe0f Para fazer pedido no restaurante Don Maitre (no pr\u00f3prio pr\u00e9dio):\n\n\ud83d\udcf2 Card\u00e1pio completo: ${affLinks.donMaitre('food_order')}\n\ud83c\udf9f\ufe0f Cupom 10% off: *CONCIERGECLOUD10*\n\nVale pra sal\u00e3o, room service e take-away. Me avisa se precisar de ajuda com o pedido! \ud83c\udf34`;
