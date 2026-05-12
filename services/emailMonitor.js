@@ -301,6 +301,18 @@ async function processEmail(parsed) {
     return;
   }
 
+  // GUARD 12/05/2026: SMM (Central de Mensagens Stays) agora responde
+  // diretamente no canal de origem (Booking/Airbnb/Expedia). Pipeline
+  // legacy email->WhatsApp foi desativado pra evitar resposta duplicada
+  // (conflito identificado: hospede recebia BREAKFAST_RESPONSE no WA E
+  // resposta paralela no canal). Email continua sendo monitorado pra
+  // route 1 (Stays new-reservation -> pre-checkin) que e desacoplada.
+  const { OTA_GUEST_MESSAGE_DISABLED } = require('../config');
+  if (OTA_GUEST_MESSAGE_DISABLED === 'true') {
+    console.log(`[email] OTA guest message handling DISABLED (env OTA_GUEST_MESSAGE_DISABLED=true) - ${ota} skipped. SMM responde no canal.`);
+    return;
+  }
+
   console.log(`[email] OTA detected: ${ota}`);
 
   // Parse the email content (extract guest message, reservation data, etc.)
