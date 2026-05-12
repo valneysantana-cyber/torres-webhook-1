@@ -28,7 +28,11 @@ function shouldSendWifi(text) {
 }
 
 function shouldSendBreakfast(text) {
-  return isNumericSelection(text, '2') || /(cafe da manha|breakfast|desjejum)/.test(text);
+  if (isNumericSelection(text, '2')) return true;
+  // Variações: "cafe da manha", "cafe manha" (sem da), "cafeda manha" (typo Ricardo
+  // Airbnb 12/05/2026 "caféda manhã" grudado), "café-da-manhã" (com hífen),
+  // "breakfast", "desjejum"
+  return /(cafe?\s*(da|de)?\s*manh[aã]|breakfast|desjejum)/.test(text);
 }
 
 function shouldSendPool(text) {
