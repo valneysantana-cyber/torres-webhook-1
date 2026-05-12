@@ -48,4 +48,10 @@ module.exports = {
   // ---- MongoDB + Reservation Integration ------------------------------------
   MONGODB_URI: process.env.MONGODB_URI || '',
   WHATSAPP_GUEST_REPLY: process.env.WHATSAPP_GUEST_REPLY || 'true',
+  // Pipeline IMAP → OTA guest message handling: desativado por padrão 12/05/2026
+  // após SMM (Central de Mensagens Stays) assumir o papel de responder no canal
+  // de origem (Booking/Airbnb/Expedia). Pipeline IMAP continua processando
+  // notificações de NOVA RESERVA (route 1 — Stays.net) pra disparar pré-checkin.
+  // Setar OTA_GUEST_MESSAGE_DISABLED=false pra reativar o caminho legacy.
+  OTA_GUEST_MESSAGE_DISABLED: process.env.OTA_GUEST_MESSAGE_DISABLED || 'true',
 };
