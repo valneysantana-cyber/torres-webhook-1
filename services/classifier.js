@@ -2,11 +2,16 @@
 
 const { normalizeText } = require('../utils/formatters');
 
+// Contato de acompanhamento — Sofia (recepção TorresGuest WhatsApp)
+// Adicionado em todas as categorias OPERACIONAIS/CRITICAS que disparam dispatch,
+// pra que hóspede tenha como acompanhar o atendimento (pedido 12/05/2026).
+const SOFIA_CONTACT_LINE = '\n\n📞 Para acompanhar, fale com a Sofia (recepção TorresGuest): https://wa.me/5513996155505';
+
 const CATEGORIES = [
   {
     level: 'CRITICO', emoji: '\u{1F534}', name: 'Urg\u00eancia',
     keywords: ['urgente','socorro','travado','presa','preso','bloqueada','bloqueado','emergencia','emerg\u00eancia','imediato','imediatamente','nao aguenta','n\u00e3o aguenta','precisando agora','acidente','machuc','sangr','desmaio','mal estar'],
-    guestReply: 'Entendido! Acionei nossa equipe com prioridade m\u00e1xima \u2014 algu\u00e9m entrar\u00e1 em contato com voc\u00ea em instantes! \u{1F534}',
+    guestReply: 'Entendido! Acionei nossa equipe com prioridade m\u00e1xima \u2014 algu\u00e9m entrar\u00e1 em contato com voc\u00ea em instantes! \u{1F534}' + SOFIA_CONTACT_LINE,
   },
   {
     level: 'CRITICO',
@@ -28,7 +33,7 @@ const CATEGORIES = [
       'lagarto','lagartixa','lagarta',
       'praga','pragas','infestacao','infesta\u00e7\u00e3o',
     ],
-    guestReply: 'Entendido! Acionei nossa equipe agora mesmo com prioridade m\u00e1xima \u2014 algu\u00e9m entrar\u00e1 em contato em instantes para resolver o problema no seu apartamento! \u{1F6A8}',
+    guestReply: 'Entendido! Acionei nossa equipe agora mesmo com prioridade m\u00e1xima \u2014 algu\u00e9m entrar\u00e1 em contato em instantes para resolver o problema no seu apartamento! \u{1F6A8}' + SOFIA_CONTACT_LINE,
   },
   {
     level: 'CRITICO', emoji: '\u{1F534}', name: 'Manuten\u00e7\u00e3o',
@@ -52,22 +57,22 @@ const CATEGORIES = [
       'ar quente','calor no quarto','mofo','cheiro ruim','cheiro estranho',
       'descarga','sanitario','sanit\u00e1rio','problema no banheiro'
     ],
-    guestReply: 'Entendido! Acionei nossa equipe de manuten\u00e7\u00e3o agora mesmo \u2014 vamos resolver isso o mais r\u00e1pido poss\u00edvel. \u{1F527}',
+    guestReply: 'Entendido! Acionei nossa equipe de manuten\u00e7\u00e3o agora mesmo \u2014 vamos resolver isso o mais r\u00e1pido poss\u00edvel. \u{1F527}' + SOFIA_CONTACT_LINE,
   },
   {
     level: 'OPERACIONAL', emoji: '\u{1F7E1}', name: 'Acesso / Check-in',
     keywords: ['nao consigo entrar','n\u00e3o consigo entrar','nao abriu','n\u00e3o abriu','perdi a chave','perdi o cartao','perdi o cart\u00e3o','cartao parou','cart\u00e3o parou','cartao nao','cart\u00e3o n\u00e3o','problema com a chave','chave nao','chave n\u00e3o','esqueci a chave','nao abre','n\u00e3o abre'],
-    guestReply: 'Claro! Vou acionar nossa recep\u00e7\u00e3o agora mesmo para te atender. Algu\u00e9m entrar\u00e1 em contato em breve! \u{1F60A}',
+    guestReply: 'Claro! Vou acionar nossa recep\u00e7\u00e3o agora mesmo para te atender. Algu\u00e9m entrar\u00e1 em contato em breve! \u{1F60A}' + SOFIA_CONTACT_LINE,
   },
   {
     level: 'OPERACIONAL', emoji: '\u{1F7E1}', name: 'Limpeza',
     keywords: ['limpeza','limpar','sujo','suja','toalha','roupa de cama','lencol','len\u00e7ol','fronha','travesseiro','falta toalha','sem toalha','quarto sujo','banheiro sujo','lixo','amenidades','sabonete','shampoo','papel higienico','papel higi\u00eanico','mais toalha'],
-    guestReply: 'Anotei! Vou solicitar nosso servi\u00e7o de limpeza para o seu apartamento. Em breve algu\u00e9m passar\u00e1 por l\u00e1. \u{1F9F9}',
+    guestReply: 'Anotei! Vou solicitar nosso servi\u00e7o de limpeza e amenities para o seu apartamento. Em breve algu\u00e9m passar\u00e1 por l\u00e1. \u{1F9F9}' + SOFIA_CONTACT_LINE,
   },
   {
     level: 'OPERACIONAL', emoji: '\u{1F7E1}', name: 'Reclama\u00e7\u00e3o',
     keywords: ['pessimo','p\u00e9simo','p\u00e9ssimo','horrivel','horr\u00edvel','absurdo','inaceitavel','inaceit\u00e1vel','decepcionado','decep\u00e7\u00e3o','revoltado','nao to gostando','n\u00e3o to gostando','mal atendido','falta de respeito','quero reclamar','muito ruim','insatisfeito'],
-    guestReply: 'Lamentamos muito pelo inconveniente. Encaminhei para nossa ger\u00eancia \u2014 entrar\u00e3o em contato para resolver isso da melhor forma. \u{1F64F}',
+    guestReply: 'Lamentamos muito pelo inconveniente. Encaminhei para nossa ger\u00eancia \u2014 entrar\u00e3o em contato para resolver isso da melhor forma. \u{1F64F}' + SOFIA_CONTACT_LINE,
   },
   {
     level: 'OPERACIONAL', emoji: '\u{1F4E6}', name: 'Objetos Esquecidos',
@@ -82,7 +87,7 @@ const CATEGORIES = [
       'esqueceu no quarto','esqueceu no hotel','deixou no quarto','deixou no hotel',
       'esqueci algo la','esqueci alguma coisa no hotel','deixei algo no quarto'
     ],
-    guestReply: 'Entendido! Estou direcionando para nossa equipe entrar em contato sobre seus pertences. Em breve algu\u00e9m te retornar\u00e1! \u{1F4E6}',
+    guestReply: 'Entendido! Estou direcionando para nossa equipe entrar em contato sobre seus pertences. Em breve algu\u00e9m te retornar\u00e1! \u{1F4E6}' + SOFIA_CONTACT_LINE,
   },
   {
     level: 'INFO', emoji: '\u{1F4DE}', name: 'Contato Recep\u00e7\u00e3o', noAlert: true,
@@ -154,7 +159,16 @@ const ALWAYS_CRITICAL = new Set(['Urgência', 'Praga / Inseto']);
 // Se msg matchear isso E categoria não é always-critical, classifier rejeita
 // pra evitar falso-alerta. Bug prod 06/05: "se tem geladeira" disparava
 // Manutenção crítica porque 'geladeira' é keyword.
-const INFORMATIONAL_INTENT = /\b(tem |se tem |gostaria de (saber|confirmar)|podemos (usar|ter)|posso usar|qual (a |o )?|quais (sao )?|quanto custa|onde (fica|esta)|tem (algum |alguma )?\w+ disponivel|preciso saber|posso ter|posso pedir)\b/;
+//
+// 12/05/2026: "tem " removido da lista — capturava muitos falsos negativos
+// ("o quarto nao tem shampoo", "tem mais toalha?"). Substituído por padrões
+// mais específicos que distinguem pergunta informacional de queixa.
+const INFORMATIONAL_INTENT = /\b(se tem |gostaria de (saber|confirmar)|podemos (usar|ter)|posso usar|qual (a |o )?|quais (sao )?|quanto custa|onde (fica|esta)|tem (algum |alguma )?\w+ disponivel|preciso saber|posso ter|posso pedir|voces tem|vcs tem)\b/;
+
+// Negação ou queixa sobre o quarto/itens → NUNCA é informacional, mesmo se
+// caísse num padrão acima. "nao tem shampoo", "sem toalha", "falta sabonete",
+// "preciso de mais X" são queixas operacionais que devem acionar dispatch.
+const COMPLAINT_OVERRIDE = /\b(nao\s+tem|sem\s+(toalha|len[cç]ol|fronha|shampoo|sabonete|papel|amenities|amenidade|chinelo|condicionador)|falta(ndo)?\s+(toalha|len[cç]ol|fronha|shampoo|sabonete|papel|amenities|amenidade|chinelo|condicionador)|cad[eê]\s+(o |a |meu |minha )?(shampoo|sabonete|toalha|papel)|preciso\s+de\s+(mais\s+)?(toalha|len[cç]ol|fronha|shampoo|sabonete|papel|amenities|amenidade|chinelo)|tem\s+mais\s+(toalha|len[cç]ol|fronha|shampoo|sabonete|papel))\b/;
 
 // Multi-question complexa (3+ clausulas com conjunção): provavelmente
 // informacional misturada — fall-through pra AI fallback que responde holisticamente.
@@ -165,8 +179,11 @@ function isComplexMultiQuestion(text) {
 
 function classifyMessage(text) {
   const normalized = normalizeText(text);
-  const isInformational = INFORMATIONAL_INTENT.test(normalized);
-  const isComplex = isComplexMultiQuestion(normalized);
+  const isComplaint = COMPLAINT_OVERRIDE.test(normalized);
+  // Queixa concreta sobre quarto/items NUNCA é tratada como informacional —
+  // bypass do guard pra que dispatch sempre dispare nessas situações.
+  const isInformational = !isComplaint && INFORMATIONAL_INTENT.test(normalized);
+  const isComplex = !isComplaint && isComplexMultiQuestion(normalized);
 
   for (const category of CATEGORIES) {
     const alwaysCritical = ALWAYS_CRITICAL.has(category.name);
