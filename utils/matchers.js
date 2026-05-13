@@ -110,7 +110,8 @@ function shouldSendRestaurantMenuI18n(text) {
 function shouldSendCheckin(text) {
   return (
     isNumericSelection(text, '8') ||
-    /(checkin|check-in|checkout|check-out|horario de checkin|horario de checkout|entrada|saida|sa\u00edda)/.test(text)
+    // Inclui "check in" / "check out" com espa\u00e7o (ap\u00f3s normalizeText h\u00edfen vira espa\u00e7o \u2014 bug fix 13/05/2026).
+    /(check\s*-?\s*in|check\s*-?\s*out|checkin|checkout|horario de check\s*-?\s*in|horario de check\s*-?\s*out|entrada|saida|sa\u00edda)/.test(text)
   );
 }
 
