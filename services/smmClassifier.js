@@ -205,24 +205,56 @@ async function classifyAndRespond(args) {
     };
   }
 
-  // (0.6) Pedidos de reposição física (água) → dispatch pra equipe da Sofia
+  // (0.6) Pedidos de reposição física de amenities → dispatch pra equipe Sofia
   // executar fisicamente. Aplica a TODOS os canais porque é ação humana.
-  // Adicionado 13/05/2026 após caso real "Para repor água?" — Valney
-  // respondeu manualmente porque não havia rule.
+  // Adicionado 13/05/2026 após casos reais:
+  //   - "Para repor água?" (caso 1) — Valney respondeu manualmente
+  //   - "Tem shampoo?" (caso 2) — classifier Limpeza respondeu mas sem dispatch
   //
   // Usa normalizeText (strip diacríticos) porque \b em JS regex falha com
-  // "água" — "ã" não é \w → boundary quebra. Após NFD vira "agua" e \b funciona.
+  // "água"/"manhã"/etc — "ã" não é \w → boundary quebra. NFD strip resolve.
   {
-    const tn = normalized; // 'agua' (sem acento, lowercase)
-    const hasWater = /\bagua\b/.test(tn);
-    const intent = /\b(repor|reposicao|trocar|colocar|acabou|terminou|sem|falta|preciso|gostaria\s+de\s+mais|mais\s+(uma|um|de)|tem\s+(como|mais)|pode|nova\s+garrafa|trocar?|garrafa)\b/.test(tn);
-    if (hasWater && intent) {
+    const tn = normalized;
+    // Items de amenities físicas que governança/Sofia repõe
+    const items = {
+      agua: /\bagua\b/,
+      shampoo: /\bshampoo\b/,
+      sabonete: /\bsabonete\b/,
+      condicionador: /\bcondicionador\b/,
+      papel_higienico: /\bpapel\s+higienico\b/,
+      toalha: /\btoalha(s)?\b/,
+      lencol: /\blenco(l|is)\b/,
+      fronha: /\bfronha(s)?\b/,
+      cobertor: /\bcobertor(es)?\b/,
+      chinelo: /\bchinelo(s)?\b/,
+      escova_dente: /\bescova(\s+de\s+dente)?\b|\bcreme\s+dental\b|\bpasta\s+dente\b/,
+      amenidades: /\bamenidades?\b|\bamenities\b/,
+    };
+    // Verbos/expressões de intenção (precisa OU tem item + presença)
+    const intent = /\b(repor|reposicao|trocar|colocar|acabou|terminou|sem|falta|faltando|preciso|precisamos|gostaria|queria|mais|tem(\s+como|\s+mais)?|cad[eê]|onde|pode|trazer|providenciar?|nova|novo|nao\s+tem|nao\s+ha|nova\s+garrafa|garrafa)\b/;
+    let matchedItem = null;
+    for (const [key, rx] of Object.entries(items)) {
+      if (rx.test(tn)) { matchedItem = key; break; }
+    }
+    // Exclusões: perguntas geográficas que mencionam "agua" mas não são pedido
+    // (água termal, parque aquático, fonte de água, etc).
+    const isLocationLike = /\b(termal|aquatic|aquatico|parque|fonte|cachoeira|lago|rio|praia|piscina|onde\s+fica|onde\s+tem|mais\s+proxima)\b/.test(tn);
+    // Pra item match + intent OU pergunta direta com "?" no item ("Tem shampoo?")
+    const isQuestion = text.includes('?');
+    if (matchedItem && !isLocationLike && (intent.test(tn) || isQuestion)) {
+      const labels = {
+        agua: 'água', shampoo: 'shampoo', sabonete: 'sabonete', condicionador: 'condicionador',
+        papel_higienico: 'papel higiênico', toalha: 'toalha', lencol: 'lençol', fronha: 'fronha',
+        cobertor: 'cobertor', chinelo: 'chinelo', escova_dente: 'escova/creme dental', amenidades: 'amenidades',
+      };
+      const label = labels[matchedItem] || matchedItem;
+      const icon = matchedItem === 'agua' ? '💧' : '🧴';
       return {
-        reply: '💧 Anotei! Já estou solicitando à governança a reposição de água no seu apartamento. Em breve alguém passa por aí. 🌴',
-        source: 'dispatch:water_refill',
+        reply: `${icon} Anotei! Já estou solicitando à governança a reposição de ${label} no seu apartamento. Em breve alguém passa por aí. 🌴`,
+        source: 'dispatch:amenity_refill:' + matchedItem,
         channel,
         dispatchAlert: true,
-        dispatchBody: '💧 *Reposição de água — pedido do hóspede*\n👤 ' + (guestName || 'sem nome') + ' (' + channel + ')\n💬 "' + String(text).slice(0, 200) + '"\n\nProvidenciar água no quarto. Thread no dashboard:\nhttps://conciergecloud.com.br/admin/mensagens.html',
+        dispatchBody: `🧴 *Reposição de ${label} — pedido do hóspede*\n👤 ${guestName || 'sem nome'} (${channel})\n💬 "${String(text).slice(0, 200)}"\n\nProvidenciar ${label} no quarto. Thread no dashboard:\nhttps://conciergecloud.com.br/admin/mensagens.html`,
       };
     }
   }
