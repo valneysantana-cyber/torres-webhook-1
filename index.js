@@ -180,6 +180,26 @@ app.post('/internal/smm-classify', async (req, res) => {
       lang: lang || 'pt',
       allowAi: allowAi === true || allowAi === 'true',
     });
+
+    // Se classifier marcou pra dispatch — manda alerta WhatsApp pra Sofia
+    // (caso de pedido de contato externo no Airbnb, etc).
+    if (result.dispatchAlert && result.dispatchBody) {
+      try {
+        const { sendWhatsAppText } = require('./services/whatsapp');
+        const { DISPATCH_NUMBER } = require('./config');
+        const numbers = (DISPATCH_NUMBER || '').split(',').map(n => n.trim()).filter(Boolean);
+        for (const num of numbers) {
+          await sendWhatsAppText(num, result.dispatchBody);
+        }
+        console.log('[smm-classify] dispatch alert enviado pra ' + numbers.length + ' número(s)');
+      } catch (e) {
+        console.error('[smm-classify] dispatch alert failed:', e.message);
+      }
+    }
+
+    // Não vazar internals do dispatch pro caller
+    delete result.dispatchAlert;
+    delete result.dispatchBody;
     res.json(result);
   } catch (err) {
     console.error('[smm-classify]', err.message);
