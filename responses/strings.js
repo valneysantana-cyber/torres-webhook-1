@@ -159,7 +159,7 @@ const LOCATION_RESPONSE = `\ud83d\udccd Diferenciais TorresGuest\n\u2022 Flats d
 
 const LONG_STAY_RESPONSE = `\ud83d\udcb0 Estadias longas\nTemos condi\u00e7\u00f5es especiais para per\u00edodos estendidos.\nMe conta quantas noites e datas que converso com a equipe no ${HUMAN_NUMBER_PRIMARY}/${HUMAN_NUMBER_SECONDARY} e j\u00e1 retorno com a proposta. \ud83c\udf34`;
 
-const CLEANING_RESPONSE = `\ud83e\uddf9 Limpeza / Governan\u00e7a\nA limpeza \u00e9 realizada pela equipe do hotel.\nAvise com 24h de anteced\u00eancia o melhor hor\u00e1rio e eu agendo pra voc\u00ea. \ud83c\udf34`;
+const CLEANING_RESPONSE = `\ud83e\uddf9 Limpeza / Governan\u00e7a\nA limpeza \u00e9 realizada pela equipe do hotel, geralmente entre 10:00 e 15:00.\nSe precisar de um hor\u00e1rio espec\u00edfico ou prefere n\u00e3o ser inc\u00f3modado nesse intervalo, me avise com 24h de anteced\u00eancia que eu agendo pra voc\u00ea. \ud83c\udf34`;
 
 const INTERNET_RESPONSE = `\ud83d\udce1 Internet\nO Wi-Fi do hotel \u00e9 fibra, ideal para trabalho remoto e streaming.\nSe notar qualquer instabilidade, me chama que aciono o time t\u00e9cnico na hora. \ud83c\udf34`;
 
