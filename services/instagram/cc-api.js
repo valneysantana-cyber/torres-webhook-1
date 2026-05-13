@@ -244,6 +244,14 @@ async function publishFromQueueDoc(doc) {
     throw new Error(`Format desconhecido: ${format}`);
   }
 
+  // Fix 13/05/2026: aguardar container ficar FINISHED pra TODOS os formatos.
+  // Antes só reel chamava waitForContainer. Feed_single/carousel/story podem
+  // pegar erro 9007 ("Media ID is not available") se o publish disparar antes
+  // do Meta finalizar o processamento da imagem.
+  if (format !== 'reel') {
+    await waitForContainer(containerId, 60 * 1000, 2000); // 60s timeout, polls 2s
+  }
+
   const published = await publish(containerId);
   const perma = await getPermalink(published.id).catch(() => ({}));
 
