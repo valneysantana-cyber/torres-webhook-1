@@ -33,6 +33,7 @@ const {
   shouldSendSafe,
   shouldSendInvoice,
   shouldSendCheckin,
+  shouldSendPreCheckinWhoCan,
   shouldSendHostingCourse,
   shouldSendCommonAreas,
   shouldSendBedding,
@@ -63,6 +64,7 @@ const {
   INVOICE_RESPONSE,
   PARKING_EARLY_RESPONSE,
   CHECKIN_RESPONSE,
+  PRE_CHECKIN_WHO_CAN_RESPONSE,
   HOSTING_COURSE_RESPONSE,
   BREAKFAST_COMPANION_RESPONSE,
   COMMON_AREAS_RESPONSE,
@@ -107,6 +109,9 @@ function getDispatchTable() {
     { check: shouldSendInvoice,     reply: () => INVOICE_RESPONSE, source: 'invoice' },
 
     // ── Check-in/out timing (ANTES de current_time pra "que horas check-in") ──
+    // Pré-checkin "quem pode fazer" ANTES de shouldSendCheckin (pra não cair em
+    // resposta genérica sobre horário). Caso Sofia 13/05/2026.
+    { check: shouldSendPreCheckinWhoCan, reply: () => PRE_CHECKIN_WHO_CAN_RESPONSE, source: 'pre_checkin_who_can' },
     { check: shouldSendCheckin,     reply: () => CHECKIN_RESPONSE, source: 'checkin' },
     { check: shouldSendParkingEarly, reply: () => PARKING_EARLY_RESPONSE, source: 'parking_early' },
 
