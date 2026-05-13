@@ -53,6 +53,10 @@ Se quiser trocar uma ideia primeiro, posso te conectar com a Sofia no ${HUMAN_NU
 
 const CHECKIN_RESPONSE = `\ud83d\udd50 Check-in & Check-out possuem limites de hor\u00e1rio, sobretudo o check-out, pois o time de governan\u00e7a do hotel pede uma hora para limpeza e higieniza\u00e7\u00e3o.\nCheck-in: a partir das 14h\nCheck-out: at\u00e9 12h\nA recep\u00e7\u00e3o funciona 24h com equipe de seguran\u00e7a para te receber em qualquer hor\u00e1rio. \ud83c\udf34`;
 
+// Resposta pra pergunta "Ele/ela pode fazer o checkin?" \u2014 adicionada 13/05/2026
+// ap\u00f3s caso real Sofia (Airbnb) que perguntou se marido pode fazer pr\u00e9-checkin.
+const PRE_CHECKIN_WHO_CAN_RESPONSE = `\ud83d\udccb *Sim, qualquer titular ou acompanhante da reserva pode fazer o pr\u00e9-check-in online* \u2014 e \u00e9 super r\u00e1pido (3 minutos).\n\n\ud83d\udcf2 Assim que a reserva for confirmada, enviamos o link do pr\u00e9-check-in no e-mail/WhatsApp do titular. \u00c9 s\u00f3 compartilhar com quem for chegar primeiro e ele preenche os dados (documento, foto) por l\u00e1.\n\nQualquer d\u00favida no preenchimento, me chama! \ud83c\udf34`;
+
 // \u2500\u2500 FAQ coverage gaps (06/05/2026) \u2014 10 templates novos \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 // Phase 1 cr\u00edticos: Documents, HotelAccess, Safe, Invoice
 // Phase 2 m\u00e9dios: CommonAreas, Bedding, DateChange, HotelMaintenance,
@@ -274,6 +278,7 @@ module.exports = {
   getFoodOrderResponse,
   HOSTING_COURSE_RESPONSE,
   CHECKIN_RESPONSE,
+  PRE_CHECKIN_WHO_CAN_RESPONSE,
   // FAQ coverage 06/05/2026
   DOCUMENTS_RESPONSE,
   HOTEL_ACCESS_RESPONSE,

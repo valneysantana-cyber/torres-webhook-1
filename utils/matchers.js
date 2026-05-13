@@ -115,6 +115,20 @@ function shouldSendCheckin(text) {
   );
 }
 
+// Pergunta sobre QUEM pode fazer o pr\u00e9-checkin (titular vs outro adulto).
+// Caso real 13/05/2026: Sofia (Airbnb) perguntou "Ele pode realizar o checkin?"
+// referindo-se ao marido fazer pr\u00e9-checkin antes \u2014 bot respondeu sobre HOR\u00c1RIO
+// em vez de explicar quem pode fazer + processo online.
+function shouldSendPreCheckinWhoCan(text) {
+  // "Quem pode/quem realiza" \u2014 standalone (n\u00e3o precisa subject expl\u00edcito)
+  if (/\bquem\s+(pode\s+)?(fazer|realizar|efetuar|providenciar|preencher|faz|realiza|efetua|preenche)\s+(o\s+)?(pre[\s-]?check|check)/.test(text)) return true;
+  // Caso geral: subject + action (Ele/ela pode realizar checkin?)
+  const subject = /\b(ele|ela|meu\s+marido|minha\s+esposa|companheir|namorad|outra\s+pessoa|acompanhante|familiar|amigo|hospede|h[o\u00f3]spede|conjuge|c[o\u00f4]njuge|filho|filha)\b/.test(text);
+  const action = /\b(pode|posso|podemos|consegue|conseguimos|pode-se)\s+(fazer|realizar|efetuar|providenciar|preencher)\s+(o\s+)?(pre[\s-]?check|pre[\s-]?checkin|check\s*-?\s*in|cadastro|formul[a\u00e1]rio)/.test(text) ||
+                 /\b(outra\s+pessoa\s+pode|pode\s+(ser\s+)?outra)/.test(text);
+  return subject && action;
+}
+
 /**
  * Detecta interesse em SER anfitri\u00e3o de Airbnb (prospect/anfitri\u00e3o novo).
  * Encaminha pro curso "Desvendando o Airbnb" (Hotmart, afilia\u00e7\u00e3o ativa).
@@ -429,6 +443,7 @@ module.exports = {
   shouldSendFoodOrder,
   shouldSendRestaurantMenuI18n,
   shouldSendCheckin,
+  shouldSendPreCheckinWhoCan,
   shouldSendHostingCourse,
   shouldSendDocuments,
   shouldSendHotelAccess,
