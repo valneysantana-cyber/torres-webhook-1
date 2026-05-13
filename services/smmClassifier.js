@@ -205,6 +205,28 @@ async function classifyAndRespond(args) {
     };
   }
 
+  // (0.6) Pedidos de reposição física (água) → dispatch pra equipe da Sofia
+  // executar fisicamente. Aplica a TODOS os canais porque é ação humana.
+  // Adicionado 13/05/2026 após caso real "Para repor água?" — Valney
+  // respondeu manualmente porque não havia rule.
+  //
+  // Usa normalizeText (strip diacríticos) porque \b em JS regex falha com
+  // "água" — "ã" não é \w → boundary quebra. Após NFD vira "agua" e \b funciona.
+  {
+    const tn = normalized; // 'agua' (sem acento, lowercase)
+    const hasWater = /\bagua\b/.test(tn);
+    const intent = /\b(repor|reposicao|trocar|colocar|acabou|terminou|sem|falta|preciso|gostaria\s+de\s+mais|mais\s+(uma|um|de)|tem\s+(como|mais)|pode|nova\s+garrafa|trocar?|garrafa)\b/.test(tn);
+    if (hasWater && intent) {
+      return {
+        reply: '💧 Anotei! Já estou solicitando à governança a reposição de água no seu apartamento. Em breve alguém passa por aí. 🌴',
+        source: 'dispatch:water_refill',
+        channel,
+        dispatchAlert: true,
+        dispatchBody: '💧 *Reposição de água — pedido do hóspede*\n👤 ' + (guestName || 'sem nome') + ' (' + channel + ')\n💬 "' + String(text).slice(0, 200) + '"\n\nProvidenciar água no quarto. Thread no dashboard:\nhttps://conciergecloud.com.br/admin/mensagens.html',
+      };
+    }
+  }
+
   // (1) Escalation classifier (Urgência/Praga/Manutenção/Limpeza/etc) — tem Sofia line nativo
   try {
     const escalation = classifyMessage(text);
