@@ -173,12 +173,37 @@ function sanitizeForChannel(text, channel) {
  * @param {boolean} [args.allowAi]    — se true, AI fallback quando nada match (default false)
  * @returns {Promise<{reply: string|null, source: string, channel: string}>}
  */
+// Detecta pedido de contato externo no Airbnb. Airbnb bloqueia URLs/telefones/
+// "WhatsApp" — respostas com contato viram inúteis após sanitize. Fluxo correto:
+// 1) Reply neutra ao hóspede ("conecto com humano em instantes")
+// 2) Dispatch WhatsApp pra Sofia/operacional responder no canal manualmente
+function isAirbnbContactRequest(text) {
+  const t = normalizeText(text);
+  return /\b(qual\s+(e|o|a)\s+(o\s+)?(numero|telefone|contato|whats|wa|zap)|qual\s+o\s+whats|como\s+(eu\s+)?(falo|chamo|converso|contato)|telefone|n[uú]mero\s+(da|do|de)|whats\s*a?p?p?|\bwpp\b|fale\s+com\s+(a\s+)?(sofia|valney|atendimento|recep[cç][aã]o)|conversar\s+(com|por))\b/.test(t);
+}
+
 async function classifyAndRespond(args) {
   const { text, channel = 'unknown', guestName = '', tenant = null, history = [], lang = 'pt', allowAi = false } = args || {};
   if (!text || !String(text).trim()) {
     return { reply: null, source: 'noop:empty', channel };
   }
   const normalized = normalizeText(text);
+
+  // (0.5) Airbnb-only: pedido de contato externo → dispatch + reply neutra.
+  // Adicionado 13/05/2026 após observação real: hóspedes Sofia, Jade etc.
+  // pedem "Qual é o número?", "Como falo com a Sofia?" — Airbnb bloqueia
+  // qualquer resposta com URL/fone/palavra "WhatsApp" via sanitize, então
+  // a resposta automatizada vira inútil ("fale com Sofia no atendimento").
+  // Em vez disso: aciona humano via dispatch WA + responde neutra ao hóspede.
+  if (channel === 'airbnb' && isAirbnbContactRequest(text)) {
+    return {
+      reply: 'Já te conectei com nossa equipe! 😊 Em instantes alguém responde por aqui mesmo. Aguenta firme!',
+      source: 'dispatch:airbnb_contact_request',
+      channel,
+      dispatchAlert: true,
+      dispatchBody: '🚨 *Airbnb — Pedido de contato externo*\n👤 Hóspede: ' + (guestName || 'sem nome') + '\n💬 "' + String(text).slice(0, 200) + '"\n\nAirbnb bloqueia URLs/telefones — responda diretamente no Stays SMM:\nhttps://conciergecloud.com.br/admin/mensagens.html',
+    };
+  }
 
   // (1) Escalation classifier (Urgência/Praga/Manutenção/Limpeza/etc) — tem Sofia line nativo
   try {
