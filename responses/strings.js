@@ -23,7 +23,7 @@ const SNACKS_RESPONSE = `\ud83c\udf6b Os Snacks e Conveni\u00eancia\nDeixamos no
 
 const TOWELS_RESPONSE = `\ud83e\uddf3 A Troca de Toalhas para estadias acima de dois dias, \u00e9 feita a cada 48h.\nSe precisar antes, \u00e9 s\u00f3 me avisar que agilizo com a governan\u00e7a. \ud83c\udf34`;
 
-const RESTAURANT_RESPONSE = `\ud83c\udf7d\ufe0f O Restaurante do Hotel com acesso pelo lobby oferece refei\u00e7\u00f5es \u00e0 la carte ao longo do dia.\nPerfeito para quem quer comer bem sem sair do pr\u00e9dio. Se quiser sugest\u00f5es, me chama! \ud83c\udf34`;
+const RESTAURANT_RESPONSE = `\ud83c\udf7d\ufe0f *Restaurante Don Maitre* (no pr\u00f3prio pr\u00e9dio, acesso pelo lobby)\n\nCozinha italiana \u00e0 la carte \u2014 almo\u00e7o, jantar e room service.\n\n\ud83d\udcdd Card\u00e1pio completo + fotos: https://conciergecloud.com.br/restaurante.html\n\u260e\ufe0f Pedidos: ligue (11) 3801-3750 \u2192 pe\u00e7a *Ramal 2013* (Don Maitre)\n\ud83c\udf9f\ufe0f Cupom *CONCIERGECLOUD10* \u2014 10% off no pedido\n\nVale pra sal\u00e3o, room service e take-away. Qualquer d\u00favida, me chama! \ud83c\udf34`;
 
 const { links: affLinks } = require('../utils/affiliateLinks');
 const FOOD_ORDER_RESPONSE = `\ud83c\udf7d\ufe0f Para fazer pedido no restaurante Don Maitre (no pr\u00f3prio pr\u00e9dio):\n\n\ud83d\udcf2 Card\u00e1pio completo: ${affLinks.donMaitre('food_order')}\n\ud83c\udf9f\ufe0f Cupom 10% off: *CONCIERGECLOUD10*\n\nVale pra sal\u00e3o, room service e take-away. Me avisa se precisar de ajuda com o pedido! \ud83c\udf34`;
@@ -52,6 +52,10 @@ const HOSTING_COURSE_RESPONSE = `🏠 Tem interesse em ser anfitrião de Airbnb?
 Se quiser trocar uma ideia primeiro, posso te conectar com a Sofia no ${HUMAN_NUMBER_SECONDARY}. 🌴`;
 
 const CHECKIN_RESPONSE = `\ud83d\udd50 Check-in & Check-out possuem limites de hor\u00e1rio, sobretudo o check-out, pois o time de governan\u00e7a do hotel pede uma hora para limpeza e higieniza\u00e7\u00e3o.\nCheck-in: a partir das 14h\nCheck-out: at\u00e9 12h\nA recep\u00e7\u00e3o funciona 24h com equipe de seguran\u00e7a para te receber em qualquer hor\u00e1rio. \ud83c\udf34`;
+
+// Resposta pra pergunta "Ele/ela pode fazer o checkin?" \u2014 adicionada 13/05/2026
+// ap\u00f3s caso real Sofia (Airbnb) que perguntou se marido pode fazer pr\u00e9-checkin.
+const PRE_CHECKIN_WHO_CAN_RESPONSE = `\ud83d\udccb *Sim, qualquer titular ou acompanhante da reserva pode fazer o pr\u00e9-check-in online* \u2014 e \u00e9 super r\u00e1pido (3 minutos).\n\n\ud83d\udcf2 Assim que a reserva for confirmada, enviamos o link do pr\u00e9-check-in no e-mail/WhatsApp do titular. \u00c9 s\u00f3 compartilhar com quem for chegar primeiro e ele preenche os dados (documento, foto) por l\u00e1.\n\nQualquer d\u00favida no preenchimento, me chama! \ud83c\udf34`;
 
 // \u2500\u2500 FAQ coverage gaps (06/05/2026) \u2014 10 templates novos \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 // Phase 1 cr\u00edticos: Documents, HotelAccess, Safe, Invoice
@@ -159,7 +163,7 @@ const LOCATION_RESPONSE = `\ud83d\udccd Diferenciais TorresGuest\n\u2022 Flats d
 
 const LONG_STAY_RESPONSE = `\ud83d\udcb0 Estadias longas\nTemos condi\u00e7\u00f5es especiais para per\u00edodos estendidos.\nMe conta quantas noites e datas que converso com a equipe no ${HUMAN_NUMBER_PRIMARY}/${HUMAN_NUMBER_SECONDARY} e j\u00e1 retorno com a proposta. \ud83c\udf34`;
 
-const CLEANING_RESPONSE = `\ud83e\uddf9 Limpeza / Governan\u00e7a\nA limpeza \u00e9 realizada pela equipe do hotel.\nAvise com 24h de anteced\u00eancia o melhor hor\u00e1rio e eu agendo pra voc\u00ea. \ud83c\udf34`;
+const CLEANING_RESPONSE = `\ud83e\uddf9 Limpeza / Governan\u00e7a\nA limpeza \u00e9 realizada pela equipe do hotel, geralmente entre 10:00 e 15:00.\nSe precisar de um hor\u00e1rio espec\u00edfico ou prefere n\u00e3o ser inc\u00f3modado nesse intervalo, me avise com 24h de anteced\u00eancia que eu agendo pra voc\u00ea. \ud83c\udf34`;
 
 const INTERNET_RESPONSE = `\ud83d\udce1 Internet\nO Wi-Fi do hotel \u00e9 fibra, ideal para trabalho remoto e streaming.\nSe notar qualquer instabilidade, me chama que aciono o time t\u00e9cnico na hora. \ud83c\udf34`;
 
@@ -274,6 +278,7 @@ module.exports = {
   getFoodOrderResponse,
   HOSTING_COURSE_RESPONSE,
   CHECKIN_RESPONSE,
+  PRE_CHECKIN_WHO_CAN_RESPONSE,
   // FAQ coverage 06/05/2026
   DOCUMENTS_RESPONSE,
   HOTEL_ACCESS_RESPONSE,

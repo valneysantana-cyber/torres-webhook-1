@@ -218,6 +218,122 @@ function scheduleCampaigns() {
 }
 
 // ---------------------------------------------------------------------------
+// INVENTÁRIO DE QUARTOS — Enxoval + Frigobar
+// Doc 1 por (tenantId, room). Inicializa sob demanda.
+// ---------------------------------------------------------------------------
+const INVENTORY_DEFAULTS = {
+  enxoval: [
+    { key: 'travesseiro',   label: 'Travesseiros',         qty: 4 },
+    { key: 'lencol',        label: 'Lençóis',              qty: 8 },
+    { key: 'fronha',        label: 'Fronhas',              qty: 8 },
+    { key: 'cobertor',      label: 'Cobertores',           qty: 2 },
+    { key: 'toalha_banho',  label: 'Toalhas de banho',     qty: 8 },
+    { key: 'toalha_rosto',  label: 'Toalhas de rosto',     qty: 8 },
+    { key: 'toalha_piso',   label: 'Toalhas de piso',      qty: 4 },
+    { key: 'capa_colchao',  label: 'Capas de colchão',     qty: 2 },
+  ],
+  frigobar: [
+    { key: 'cafe',           label: 'Café',                       qty: 0, price: 8.00 },
+    { key: 'refri_350',      label: 'Refrigerante 350ml',         qty: 0, price: 8.90 },
+    { key: 'refri_200',      label: 'Refrigerante 200/220ml',     qty: 0, price: 5.50 },
+    { key: 'agua',           label: 'Água',                       qty: 0, price: 7.50 },
+    { key: 'cerveja_269',    label: 'Cerveja 269ml',              qty: 0, price: 12.90 },
+    { key: 'cerveja_350',    label: 'Cerveja 350ml',              qty: 0, price: 18.90 },
+    { key: 'energetico',     label: 'Energético',                 qty: 0, price: 18.90 },
+    { key: 'salgadinho',     label: 'Salgadinhos',                qty: 0, price: 4.90 },
+    { key: 'drops',          label: 'Drops/Balas',                qty: 0, price: 4.50 },
+    { key: 'chicletes',      label: 'Chicletes',                  qty: 0, price: 4.90 },
+    { key: 'chocolate',      label: 'Chocolates',                 qty: 0, price: 8.90 },
+    { key: 'amendoim',       label: 'Amendoim',                   qty: 0, price: 9.90 },
+    { key: 'barra_cereal',   label: 'Barras de Cereais',          qty: 0, price: 9.90 },
+    { key: 'suco',           label: 'Sucos',                      qty: 0, price: 8.90 },
+  ],
+};
+const DEFAULT_ROOMS = ['Quarto 1','Quarto 2','Quarto 3','Quarto 4','Quarto 5','Quarto 6','Quarto 7','Quarto 8'];
+
+function buildDefaultRoom(tenantId, room){
+  const enxoval = {};
+  for(const it of INVENTORY_DEFAULTS.enxoval) enxoval[it.key] = it.qty;
+  const frigobar = {};
+  for(const it of INVENTORY_DEFAULTS.frigobar) frigobar[it.key] = it.qty;
+  return { tenantId, room, enxoval, frigobar, createdAt: new Date(), updatedAt: new Date() };
+}
+
+// GET /inventory?tenantId=torres → catálogo + estado atual de todos os quartos
+app.get('/inventory', async (req, res) => {
+  try{
+    const tenantId = req.query.tenantId || 'torres';
+    const col = db.collection('inventory');
+    const docs = await col.find({ tenantId }, { projection: { _id: 0 } }).toArray();
+    // Se não existe, materializa defaults
+    if(!docs.length){
+      const inserts = DEFAULT_ROOMS.map(r => buildDefaultRoom(tenantId, r));
+      await col.insertMany(inserts.map(d => ({ ...d })));
+      return res.json({
+        tenantId,
+        catalog: INVENTORY_DEFAULTS,
+        rooms: inserts.map(d => ({ room: d.room, enxoval: d.enxoval, frigobar: d.frigobar, updatedAt: d.updatedAt })),
+      });
+    }
+    res.json({
+      tenantId,
+      catalog: INVENTORY_DEFAULTS,
+      rooms: docs.map(d => ({ room: d.room, enxoval: d.enxoval || {}, frigobar: d.frigobar || {}, updatedAt: d.updatedAt })),
+    });
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
+// PUT /inventory/:room — body: { category: 'enxoval'|'frigobar', item: 'cafe', qty: 5 }
+app.put('/inventory/:room', async (req, res) => {
+  try{
+    const room = decodeURIComponent(req.params.room);
+    const tenantId = req.body.tenantId || req.query.tenantId || 'torres';
+    const { category, item } = req.body;
+    const qty = Math.max(0, Math.min(9999, parseInt(req.body.qty, 10)));
+    if(!['enxoval','frigobar'].includes(category)) return res.status(400).json({ error: 'category inválido' });
+    if(!item || isNaN(qty)) return res.status(400).json({ error: 'item/qty inválido' });
+    const updatedBy = req.headers['x-remote-user'] || 'admin';
+    const update = { $set: { [`${category}.${item}`]: qty, updatedAt: new Date(), updatedBy } };
+    await db.collection('inventory').updateOne(
+      { tenantId, room },
+      { ...update, $setOnInsert: { tenantId, room, createdAt: new Date() } },
+      { upsert: true }
+    );
+    // log histórico
+    await db.collection('inventory_log').insertOne({ tenantId, room, category, item, qty, ts: new Date(), updatedBy });
+    res.json({ ok: true, room, category, item, qty });
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
+// POST /inventory/reset → re-cria todos os quartos com defaults (admin-only)
+app.post('/inventory/reset', async (req, res) => {
+  try{
+    const tenantId = req.body.tenantId || 'torres';
+    const col = db.collection('inventory');
+    await col.deleteMany({ tenantId });
+    const inserts = DEFAULT_ROOMS.map(r => buildDefaultRoom(tenantId, r));
+    await col.insertMany(inserts);
+    res.json({ ok: true, rooms: DEFAULT_ROOMS.length });
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
+// GET /inventory/log?room=X&limit=50 → histórico de mudanças
+app.get('/inventory/log', async (req, res) => {
+  try{
+    const tenantId = req.query.tenantId || 'torres';
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 500);
+    const q = { tenantId };
+    if(req.query.room) q.room = req.query.room;
+    const log = await db.collection('inventory_log')
+      .find(q, { projection: { _id: 0 } })
+      .sort({ ts: -1 })
+      .limit(limit)
+      .toArray();
+    res.json(log);
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
+// ---------------------------------------------------------------------------
 // GET /campaigns?type=TYPE&days=90 — lista hóspedes por campanha + quem respondeu
 // ---------------------------------------------------------------------------
 app.get('/campaigns', async (req, res) => {

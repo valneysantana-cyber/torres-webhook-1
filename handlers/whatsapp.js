@@ -633,16 +633,24 @@ async function handleIncoming(payload) {
         // sem bloquear a resposta ao hóspede (fire-and-forget via .catch).
         if (language === 'pt') {
           // Multi-intent / multi-question detection — roteia pra AI fallback
-          // quando há sinais de pergunta complexa pra resposta holística:
-          //  (a) 2+ matchers do PT_DISPATCH disparam (vários tópicos)
-          //  (b) 2+ pontos de interrogação no body original (várias perguntas)
-          //  (c) 3+ frases (ponto, exclamação, ?)
+          // quando há sinais de pergunta complexa pra resposta holística.
           //
-          // Sem esses sinais, mantém comportamento single-matcher original
-          // (rápido). PT_DISPATCH responde se 1 matcher pegar; se 0, cai em AI.
+          // FIX 11/05/2026: heurística antiga usava `qCount >= 2 || sentenceCount >= 3`
+          // sozinhos, mas saudações brasileiras ("Olá! Bom dia. Tudo bem?")
+          // inflam ambos facilmente — bastava o hóspede saudar antes de
+          // perguntar 1 coisa pra cair no AI fallback genérico, ignorando o
+          // matcher operacional. Caso real Wandress 11/05: "Olá! Bom dia.
+          // Tudo bem? Nós chegamos agora em SP. Podemos deixar a mala aí?"
+          // → shouldSendLuggage matchava sozinho, MAS qCount=2 + sentence=5
+          // bumpava pra AI, perdendo a resposta correta sobre Sr. Alberto.
           //
-          // Bug histórico: heurística anterior usava só conjunção 'e'/'ou' no
-          // texto normalizado (que stripa pontuação) — perdia "Tem X? Tem Y?".
+          // Nova regra:
+          //  (a) 2+ matchers do PT_DISPATCH → multi-intent operacional real → AI
+          //  (b) 0 matchers + 2+ "?" → várias perguntas sem categoria → AI
+          //  (c) queryCount >= 3 → frase complexa multi-pergunta → AI
+          // qCount/sentenceCount NÃO mais bumpam single-matcher pra AI: se
+          // hóspede saudou e fez 1 pergunta de categoria conhecida, responde a
+          // categoria diretamente (resposta correta + rápida).
           const matches = PT_DISPATCH.filter(({ check }) => check(normalized));
           const qCount = (body.match(/\?/g) || []).length;
           const sentenceCount = (body.match(/[.!?]+/g) || []).length;
@@ -651,7 +659,14 @@ async function handleIncoming(payload) {
           // se tem X e se podemos Y e se tem Z... qual W?" — 5 indicators, mas 0 ?.
           const queryWordRegex = /\b(tem|se|qual|quais|podemos|posso|consigo|gostaria|como|onde|quanto|quantos|preciso|gostaríamos)\b/gi;
           const queryCount = (body.match(queryWordRegex) || []).length;
-          const isMultiIntent = matches.length >= 2 || qCount >= 2 || sentenceCount >= 3 || queryCount >= 3;
+          const isMultiIntent =
+            matches.length >= 2 ||
+            (matches.length === 0 && qCount >= 2) ||
+            queryCount >= 3;
+          // Sinaliza pra log quando saudação salva da heurística antiga
+          if (matches.length === 1 && (qCount >= 2 || sentenceCount >= 3)) {
+            console.log(`[dispatch] single-matcher (${matches[0].check.name || 'anon'}) com ${qCount}q/${sentenceCount}s — resposta direta (saudacao+pergunta, antes caia em AI)`);
+          }
 
           if (matches.length > 0 && !isMultiIntent) {
             // Single-intent: comportamento original

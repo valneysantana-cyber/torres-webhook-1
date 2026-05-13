@@ -158,6 +158,55 @@ app.post('/internal/send-campaign', async (req, res) => {
   }
 });
 
+// ---- SMM classifier (Central de Mensagens Stays) --------------------------
+// Recebe texto + canal + contexto, retorna {reply, source}.
+// Usado pelo cron /root/smm_sync.js no VPS pra responder Booking/Airbnb/Expedia
+// reaproveitando os MESMOS matchers + AI fallback do bot WhatsApp.
+// Adicionado 13/05/2026.
+app.post('/internal/smm-classify', async (req, res) => {
+  if (!checkSecret(req, res)) return;
+  try {
+    const { classifyAndRespond } = require('./services/smmClassifier');
+    const { text, channel, guestName, tenant, history, lang, allowAi } = req.body || {};
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({ error: 'text obrigatorio' });
+    }
+    const result = await classifyAndRespond({
+      text,
+      channel: channel || 'unknown',
+      guestName: guestName || '',
+      tenant: tenant || null,
+      history: Array.isArray(history) ? history : [],
+      lang: lang || 'pt',
+      allowAi: allowAi === true || allowAi === 'true',
+    });
+
+    // Se classifier marcou pra dispatch — manda alerta WhatsApp pra Sofia
+    // (caso de pedido de contato externo no Airbnb, etc).
+    if (result.dispatchAlert && result.dispatchBody) {
+      try {
+        const { sendWhatsAppText } = require('./services/whatsapp');
+        const { DISPATCH_NUMBER } = require('./config');
+        const numbers = (DISPATCH_NUMBER || '').split(',').map(n => n.trim()).filter(Boolean);
+        for (const num of numbers) {
+          await sendWhatsAppText(num, result.dispatchBody);
+        }
+        console.log('[smm-classify] dispatch alert enviado pra ' + numbers.length + ' número(s)');
+      } catch (e) {
+        console.error('[smm-classify] dispatch alert failed:', e.message);
+      }
+    }
+
+    // Não vazar internals do dispatch pro caller
+    delete result.dispatchAlert;
+    delete result.dispatchBody;
+    res.json(result);
+  } catch (err) {
+    console.error('[smm-classify]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---- manual social media post trigger (Instagram + Facebook) --------------
 app.post('/internal/social-post', async (req, res) => {
   if (!checkSecret(req, res)) return;

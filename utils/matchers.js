@@ -28,7 +28,11 @@ function shouldSendWifi(text) {
 }
 
 function shouldSendBreakfast(text) {
-  return isNumericSelection(text, '2') || /(cafe da manha|breakfast|desjejum)/.test(text);
+  if (isNumericSelection(text, '2')) return true;
+  // Variações: "cafe da manha", "cafe manha" (sem da), "cafeda manha" (typo Ricardo
+  // Airbnb 12/05/2026 "caféda manhã" grudado), "café-da-manhã" (com hífen),
+  // "breakfast", "desjejum"
+  return /(cafe?\s*(da|de)?\s*manh[aã]|breakfast|desjejum)/.test(text);
 }
 
 function shouldSendPool(text) {
@@ -48,7 +52,16 @@ function shouldSendTowels(text) {
 }
 
 function shouldSendRestaurant(text) {
-  return isNumericSelection(text, '7') || /(restaurante do hotel|restaurante no hotel|almoco|jantar|refeicao|refeicoes)/.test(text);
+  if (isNumericSelection(text, '7')) return true;
+  // 1) Match explícito de "restaurante do hotel/no hotel/no predio"
+  if (/(restaurante do hotel|restaurante no hotel|restaurante do predio|restaurante no predio)/.test(text)) return true;
+  // 2) Refeições / horários — termo "restaurante" + qualquer cue
+  // Bug 12/05/2026 (Dio Cavalcanti): "O Restaurante fica aberto até que horas?"
+  // não matchava → caía no AI fallback que devolveu "Agora são 21:50".
+  if (/\brestaurante\b/.test(text) && /\b(aberto|abre|fechad|horario|hora|hrs|hr|que horas|ate que|funciona|funcionamento|servico|cardapio|menu|reserv)\b/.test(text)) return true;
+  // 3) Refeições standalone (substantivo OU verbo: almoco/almocar, janta/jantar)
+  if (/(almoc[oa]r?|jant(a|ar)|refeic\w+|cafe da manha|brunch)\b/.test(text)) return true;
+  return false;
 }
 
 // Pedido/delivery — encaminha pra landing do Don Maitre (parceiro) com cupom.
@@ -97,8 +110,23 @@ function shouldSendRestaurantMenuI18n(text) {
 function shouldSendCheckin(text) {
   return (
     isNumericSelection(text, '8') ||
-    /(checkin|check-in|checkout|check-out|horario de checkin|horario de checkout|entrada|saida|sa\u00edda)/.test(text)
+    // Inclui "check in" / "check out" com espa\u00e7o (ap\u00f3s normalizeText h\u00edfen vira espa\u00e7o \u2014 bug fix 13/05/2026).
+    /(check\s*-?\s*in|check\s*-?\s*out|checkin|checkout|horario de check\s*-?\s*in|horario de check\s*-?\s*out|entrada|saida|sa\u00edda)/.test(text)
   );
+}
+
+// Pergunta sobre QUEM pode fazer o pr\u00e9-checkin (titular vs outro adulto).
+// Caso real 13/05/2026: Sofia (Airbnb) perguntou "Ele pode realizar o checkin?"
+// referindo-se ao marido fazer pr\u00e9-checkin antes \u2014 bot respondeu sobre HOR\u00c1RIO
+// em vez de explicar quem pode fazer + processo online.
+function shouldSendPreCheckinWhoCan(text) {
+  // "Quem pode/quem realiza" \u2014 standalone (n\u00e3o precisa subject expl\u00edcito)
+  if (/\bquem\s+(pode\s+)?(fazer|realizar|efetuar|providenciar|preencher|faz|realiza|efetua|preenche)\s+(o\s+)?(pre[\s-]?check|check)/.test(text)) return true;
+  // Caso geral: subject + action (Ele/ela pode realizar checkin?)
+  const subject = /\b(ele|ela|meu\s+marido|minha\s+esposa|companheir|namorad|outra\s+pessoa|acompanhante|familiar|amigo|hospede|h[o\u00f3]spede|conjuge|c[o\u00f4]njuge|filho|filha)\b/.test(text);
+  const action = /\b(pode|posso|podemos|consegue|conseguimos|pode-se)\s+(fazer|realizar|efetuar|providenciar|preencher)\s+(o\s+)?(pre[\s-]?check|pre[\s-]?checkin|check\s*-?\s*in|cadastro|formul[a\u00e1]rio)/.test(text) ||
+                 /\b(outra\s+pessoa\s+pode|pode\s+(ser\s+)?outra)/.test(text);
+  return subject && action;
 }
 
 /**
@@ -415,6 +443,7 @@ module.exports = {
   shouldSendFoodOrder,
   shouldSendRestaurantMenuI18n,
   shouldSendCheckin,
+  shouldSendPreCheckinWhoCan,
   shouldSendHostingCourse,
   shouldSendDocuments,
   shouldSendHotelAccess,
