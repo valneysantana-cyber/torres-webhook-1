@@ -167,7 +167,7 @@ app.post('/internal/smm-classify', async (req, res) => {
   if (!checkSecret(req, res)) return;
   try {
     const { classifyAndRespond } = require('./services/smmClassifier');
-    const { text, channel, guestName, tenant, history, lang, allowAi } = req.body || {};
+    const { text, channel, guestName, tenant, history, lang, allowAi, bookingConfirmed } = req.body || {};
     if (!text || typeof text !== 'string') {
       return res.status(400).json({ error: 'text obrigatorio' });
     }
@@ -179,6 +179,10 @@ app.post('/internal/smm-classify', async (req, res) => {
       history: Array.isArray(history) ? history : [],
       lang: lang || 'pt',
       allowAi: allowAi === true || allowAi === 'true',
+      // Airbnb anti-side-channel: pré-confirmação bloqueia PIX/CNPJ/contatos.
+      // Default false (strict) — smm_sync.js passa true quando a reserva
+      // estiver confirmada na thread (reservation.status === 'confirmed' etc).
+      bookingConfirmed: bookingConfirmed === true || bookingConfirmed === 'true',
     });
 
     // Se classifier marcou pra dispatch — manda alerta WhatsApp pra Sofia

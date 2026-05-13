@@ -156,9 +156,13 @@ function getDispatchTable() {
 }
 
 // ── Sanitização channel-aware ──
-// Airbnb anti-side-channel: bloqueia URLs, telefones BR, palavra "WhatsApp".
-// Booking/Expedia/Direct: aceitam.
-function sanitizeForChannel(text, channel) {
+// Airbnb anti-side-channel: bloqueia URLs, telefones BR, palavra "WhatsApp", CNPJ.
+// Regra do Airbnb: PRÉ-confirmação NENHUM dado de contato externo (telefone, PIX,
+// CNPJ, site, contatos externos). PÓS-confirmação a plataforma libera. Como o
+// classifier não tem visibilidade confiável do status (smm_sync ainda não passa
+// bookingConfirmed), defaultamos para o modo strict (pré-confirmação).
+// Booking/Expedia/Direct: aceitam sempre.
+function sanitizeForChannel(text, channel, bookingConfirmed = false) {
   if (!text) return text;
   if (channel !== 'airbnb') return text;
   // 1) Remove URLs (https/http e wa.me/...)
@@ -167,7 +171,18 @@ function sanitizeForChannel(text, channel) {
   out = out.replace(/\+?\d{0,3}\s*\(?\d{2}\)?\s*\d{4,5}[-\s]?\d{4}/g, '');
   // 3) Remove menção a "WhatsApp" / "Whats App" / "WA"
   out = out.replace(/\b(whats\s*app|whatsapp|wa\b)/gi, 'atendimento');
-  // 4) Limpa quebras / pontuação solta deixada
+  // 4) Strip CNPJ patterns (XX.XXX.XXX/XXXX-XX) — Airbnb bloqueia pré e pós.
+  //    Adicionado 13/05/2026 (regra reportada pelo Valney).
+  out = out.replace(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g, '[dados após confirmação]');
+  // 5) Em pré-confirmação: também strip CPF (XXX.XXX.XXX-XX) e "chave PIX" literal.
+  if (!bookingConfirmed) {
+    out = out.replace(/\d{3}\.\d{3}\.\d{3}-\d{2}/g, '[dados após confirmação]');
+    // Linha que começa com "💳" ou contém "PIX" como meio de pagamento → suprime
+    // (preserva linhas que apenas mencionam preços sem dados bancários)
+    // Heurística conservadora: remove apenas se a linha tiver CNPJ/CPF ou chave PIX
+    out = out.replace(/^.*\b(chave\s+pix|pix\s*:)\b.*$/gim, '');
+  }
+  // 6) Limpa quebras / pontuação solta deixada
   out = out.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').replace(/[:\s\-]+$/gm, '').trim();
   return out;
 }
@@ -182,6 +197,10 @@ function sanitizeForChannel(text, channel) {
  * @param {Array}  [args.history]     — histórico anterior da thread {role, content}
  * @param {string} [args.lang]        — idioma detectado ('pt'|'en'|'es'|'fr')
  * @param {boolean} [args.allowAi]    — se true, AI fallback quando nada match (default false)
+ * @param {boolean} [args.bookingConfirmed] — se true (apenas Airbnb), libera envio
+ *                                            de PIX/CNPJ/contatos. Default false (strict,
+ *                                            assume pré-confirmação — Airbnb bloqueia
+ *                                            envio de dados externos pré-booking).
  * @returns {Promise<{reply: string|null, source: string, channel: string}>}
  */
 // Detecta pedido de contato externo no Airbnb. Airbnb bloqueia URLs/telefones/
@@ -194,11 +213,33 @@ function isAirbnbContactRequest(text) {
 }
 
 async function classifyAndRespond(args) {
-  const { text, channel = 'unknown', guestName = '', tenant = null, history = [], lang = 'pt', allowAi = false } = args || {};
+  const {
+    text, channel = 'unknown', guestName = '', tenant = null,
+    history = [], lang = 'pt', allowAi = false,
+    bookingConfirmed = false, // padrão strict: assume pré-confirmação
+  } = args || {};
   if (!text || !String(text).trim()) {
     return { reply: null, source: 'noop:empty', channel };
   }
   const normalized = normalizeText(text);
+  const isAirbnbPrebooking = channel === 'airbnb' && !bookingConfirmed;
+
+  // (0.4) AIRBNB pré-confirmação: PIX/pagamento/CNPJ é HARD-BLOCK pela plataforma.
+  // Airbnb não libera dados de contato externo (PIX, CNPJ, site, telefone)
+  // até a reserva ser confirmada. Mesmo que o bot envie, a plataforma bloqueia
+  // ou filtra a mensagem.
+  // Estratégia: responde neutra ao hóspede + dispatch pra Sofia tratar manualmente
+  // depois que a reserva confirmar.
+  // Adicionado 13/05/2026 após feedback Valney.
+  if (isAirbnbPrebooking && shouldSendFrigobarPix(normalized)) {
+    return {
+      reply: '🍽️ O cardápio do frigobar + dados de pagamento (PIX) ficam disponíveis assim que sua reserva for confirmada por aqui. Qualquer dúvida sobre o flat, comodidades ou check-in posso responder agora! 🌴',
+      source: 'dispatch:airbnb_payment_prebooking',
+      channel,
+      dispatchAlert: true,
+      dispatchBody: '💳 *Airbnb — pedido de PIX/cardápio antes de confirmação*\n👤 ' + (guestName || 'sem nome') + '\n💬 "' + String(text).slice(0, 200) + '"\n\nAirbnb bloqueia dados externos (CNPJ, PIX) pré-booking. Responder via SMM apenas após confirmação:\nhttps://conciergecloud.com.br/admin/mensagens.html',
+    };
+  }
 
   // (0.5) Airbnb-only: pedido de contato externo → dispatch + reply neutra.
   // Adicionado 13/05/2026 após observação real: hóspedes Sofia, Jade etc.
@@ -291,7 +332,7 @@ async function classifyAndRespond(args) {
     const escalation = classifyMessage(text);
     if (escalation && escalation.guestReply) {
       return {
-        reply: sanitizeForChannel(escalation.guestReply, channel),
+        reply: sanitizeForChannel(escalation.guestReply, channel, bookingConfirmed),
         source: 'classifier:' + escalation.name,
         channel,
       };
@@ -302,13 +343,13 @@ async function classifyAndRespond(args) {
   const words = normalized.trim().split(/\s+/);
   if (shouldSendGreeting(normalized) && !text.includes('?') && words.length <= 5) {
     const greet = typeof GREETING_RESPONSE === 'function' ? GREETING_RESPONSE(guestName) : GREETING_RESPONSE;
-    return { reply: sanitizeForChannel(greet, channel), source: 'greeting', channel };
+    return { reply: sanitizeForChannel(greet, channel, bookingConfirmed), source: 'greeting', channel };
   }
   if (shouldSendThanks(normalized)) {
-    return { reply: sanitizeForChannel(THANKS_RESPONSE, channel), source: 'thanks', channel };
+    return { reply: sanitizeForChannel(THANKS_RESPONSE, channel, bookingConfirmed), source: 'thanks', channel };
   }
   if (shouldSendMenu(normalized)) {
-    return { reply: sanitizeForChannel(MENU_RESPONSE, channel), source: 'menu', channel };
+    return { reply: sanitizeForChannel(MENU_RESPONSE, channel, bookingConfirmed), source: 'menu', channel };
   }
 
   // (3) PT_DISPATCH table — todos os matchers torres
@@ -320,7 +361,7 @@ async function classifyAndRespond(args) {
     let reply;
     try { reply = entry.reply(lang, tenant); } catch (e) { reply = null; }
     if (reply) {
-      return { reply: sanitizeForChannel(reply, channel), source: 'matcher:' + entry.source, channel };
+      return { reply: sanitizeForChannel(reply, channel, bookingConfirmed), source: 'matcher:' + entry.source, channel };
     }
   }
 
@@ -329,7 +370,7 @@ async function classifyAndRespond(args) {
     try {
       const ai = await getChatGptFallbackReply(text, '', history, null, tenant);
       if (ai) {
-        return { reply: sanitizeForChannel(ai, channel), source: 'ai', channel };
+        return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai', channel };
       }
     } catch (e) {
       console.error('[smmClassifier] AI fallback err:', e.message);
