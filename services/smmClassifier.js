@@ -49,6 +49,7 @@ const {
   shouldSendCurrentDate,
   shouldSendCurrentTime,
   shouldSendHuman,
+  shouldSendFrigobarPix,
 } = require('../utils/matchers');
 
 const {
@@ -80,6 +81,7 @@ const {
   GREETING_RESPONSE,
   THANKS_RESPONSE,
   MENU_RESPONSE,
+  FRIGOBAR_PIX_RESPONSE,
   getLocationResponse,
 } = require('../responses/strings');
 
@@ -126,6 +128,10 @@ function getDispatchTable() {
     { check: shouldSendPool,        reply: () => POOL_RESPONSE, source: 'pool' },
     { check: shouldSendParking,     reply: (_l, t) => buildParkingResponse ? buildParkingResponse(t) : 'Estacionamento valet incluso — ao chegar, informe "Flat condomínio".', source: 'parking' },
     { check: shouldSendSnacks,      reply: () => SNACKS_RESPONSE, source: 'snacks' },
+    // Frigobar PIX / pagamento — ANTES de towels/bedding/cleaning pra capturar
+    // "Qual o pix para pagamento da água?" sem cair em reposição/Limpeza.
+    // Adicionado 13/05/2026.
+    { check: shouldSendFrigobarPix, reply: () => FRIGOBAR_PIX_RESPONSE, source: 'frigobar_pix' },
     { check: shouldSendTowels,      reply: () => TOWELS_RESPONSE, source: 'towels' },
     { check: shouldSendFoodOrder,   reply: () => FOOD_ORDER_RESPONSE, source: 'food_order' },
     { check: shouldSendRestaurant,  reply: () => RESTAURANT_RESPONSE, source: 'restaurant' },
@@ -230,7 +236,12 @@ async function classifyAndRespond(args) {
       toalha: /\btoalha(s)?\b/,
       lencol: /\blenco(l|is)\b/,
       fronha: /\bfronha(s)?\b/,
+      // Bedding items adicionados 13/05/2026: antes caíam em Limpeza category
+      // (genérica) — agora geram dispatch específico pra Sofia/governança.
+      travesseiro: /\btravesseiro(s)?\b/,
       cobertor: /\bcobertor(es)?\b/,
+      edredom: /\bedrede?om\b|\bedredon(s)?\b/,
+      colcha: /\bcolcha(s)?\b/,
       chinelo: /\bchinelo(s)?\b/,
       escova_dente: /\bescova(\s+de\s+dente)?\b|\bcreme\s+dental\b|\bpasta\s+dente\b/,
       amenidades: /\bamenidades?\b|\bamenities\b/,
@@ -244,22 +255,33 @@ async function classifyAndRespond(args) {
     // Exclusões: perguntas geográficas que mencionam "agua" mas não são pedido
     // (água termal, parque aquático, fonte de água, etc).
     const isLocationLike = /\b(termal|aquatic|aquatico|parque|fonte|cachoeira|lago|rio|praia|piscina|onde\s+fica|onde\s+tem|mais\s+proxima)\b/.test(tn);
+    // Fix 13/05/2026 (caso Sofia "Qual o pix para pagamento da água?"):
+    // perguntas de PAGAMENTO/PIX/cardápio/valor NÃO são pedido de reposição —
+    // são pergunta de consumo (frigobar). Pular bloco amenity_refill e deixar
+    // PT_DISPATCH table tratar via shouldSendFrigobarPix → FRIGOBAR_PIX_RESPONSE
+    // (que tem CNPJ PIX + cardápio completo).
+    const isPaymentIntent = /\b(pix|pagar|pagamento|pagaria|consumo|cardapio|cardápio|quanto\s+(custa|vale|e)|qual\s+(o\s+)?(valor|preco|preço)|valor\s+(da|do)|preco\s+(da|do)|preço\s+(da|do))\b/.test(tn);
     // Pra item match + intent OU pergunta direta com "?" no item ("Tem shampoo?")
     const isQuestion = text.includes('?');
-    if (matchedItem && !isLocationLike && (intent.test(tn) || isQuestion)) {
+    if (matchedItem && !isLocationLike && !isPaymentIntent && (intent.test(tn) || isQuestion)) {
       const labels = {
         agua: 'água', shampoo: 'shampoo', sabonete: 'sabonete', condicionador: 'condicionador',
         papel_higienico: 'papel higiênico', toalha: 'toalha', lencol: 'lençol', fronha: 'fronha',
-        cobertor: 'cobertor', chinelo: 'chinelo', escova_dente: 'escova/creme dental', amenidades: 'amenidades',
+        travesseiro: 'travesseiro', cobertor: 'cobertor', edredom: 'edredom', colcha: 'colcha',
+        chinelo: 'chinelo', escova_dente: 'escova/creme dental', amenidades: 'amenidades',
       };
       const label = labels[matchedItem] || matchedItem;
-      const icon = matchedItem === 'agua' ? '💧' : '🧴';
+      // Ícone temático por categoria
+      const beddingItems = ['travesseiro', 'cobertor', 'edredom', 'colcha', 'lencol', 'fronha'];
+      const icon = matchedItem === 'agua' ? '💧'
+        : beddingItems.includes(matchedItem) ? '🛏️'
+        : '🧴';
       return {
         reply: `${icon} Anotei! Já estou solicitando à governança a reposição de ${label} no seu apartamento. Em breve alguém passa por aí. 🌴`,
         source: 'dispatch:amenity_refill:' + matchedItem,
         channel,
         dispatchAlert: true,
-        dispatchBody: `🧴 *Reposição de ${label} — pedido do hóspede*\n👤 ${guestName || 'sem nome'} (${channel})\n💬 "${String(text).slice(0, 200)}"\n\nProvidenciar ${label} no quarto. Thread no dashboard:\nhttps://conciergecloud.com.br/admin/mensagens.html`,
+        dispatchBody: `${icon} *Reposição de ${label} — pedido do hóspede*\n👤 ${guestName || 'sem nome'} (${channel})\n💬 "${String(text).slice(0, 200)}"\n\nProvidenciar ${label} no quarto. Thread no dashboard:\nhttps://conciergecloud.com.br/admin/mensagens.html`,
       };
     }
   }
