@@ -217,8 +217,22 @@ async function refreshToken() {
  * High-level: publica um post da fila (single, carrossel, reel, story).
  * Não chamar publish() se IG_CC_AUTO_PUBLISH=false.
  */
+/**
+ * Monta caption final concatenando hashtags do doc.
+ * IG limita 2200 chars / 30 hashtags. Damos margem (não validamos hard).
+ * Hashtags vão em bloco separado por linha em branco — prática comum.
+ */
+function buildFinalCaption(caption, hashtags) {
+  const baseCaption = String(caption || '').trim();
+  const tags = Array.isArray(hashtags) ? hashtags.filter(Boolean) : [];
+  if (!tags.length) return baseCaption;
+  const tagsLine = tags.map(t => (String(t).startsWith('#') ? t : `#${t}`)).join(' ');
+  return baseCaption ? `${baseCaption}\n\n${tagsLine}` : tagsLine;
+}
+
 async function publishFromQueueDoc(doc) {
-  const { format, caption, rendered } = doc;
+  const { format, rendered } = doc;
+  const caption = buildFinalCaption(doc.caption, doc.hashtags);
   if (!rendered || (!rendered.images?.length && !rendered.video_url)) {
     throw new Error(`Doc ${doc._id} não tem rendered.images nem rendered.video_url`);
   }
@@ -263,6 +277,7 @@ async function publishFromQueueDoc(doc) {
 }
 
 module.exports = {
+  buildFinalCaption,
   createSingleContainer,
   createCarouselChild,
   createCarouselContainer,
