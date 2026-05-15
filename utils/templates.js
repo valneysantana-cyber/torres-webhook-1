@@ -36,12 +36,17 @@ function sanitizeMetaVar(s) {
  * @param {number}   maxChars  Limite seguro (default 900).
  * @returns {string}
  */
-function joinLinesWithBudget(lines, maxChars = 600) {
+function joinLinesWithBudget(lines, maxChars = 350, maxItems = 8) {
+  // FIX 15/05: limit DUPLO — chars E item count.
+  // Meta #132005 (Translated text too long) dispara mesmo com 600 chars
+  // porque a auto-tradução pra outros locales expande. Limitamos a 8 itens
+  // E 350 chars (o que vier primeiro). Dashboard tem a lista completa.
   if (!Array.isArray(lines) || lines.length === 0) return ' (nenhum)';
   const sep = ' · ';
   let out = '';
   let kept = 0;
   for (const line of lines) {
+    if (kept >= maxItems) break;
     const candidate = (out ? out + sep : '') + line;
     if (candidate.length > maxChars) break;
     out = candidate;
@@ -49,7 +54,7 @@ function joinLinesWithBudget(lines, maxChars = 600) {
   }
   if (kept < lines.length) {
     const more = lines.length - kept;
-    out += `${sep}…e mais ${more} hóspede${more > 1 ? 's' : ''}`;
+    out += `${sep}…e mais ${more} (veja completo no painel)`;
   }
   return sanitizeMetaVar(out);
 }
