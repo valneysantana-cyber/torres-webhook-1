@@ -37,6 +37,7 @@ const {
   LUGGAGE_RESPONSE,
   GREETING_RESPONSE,
   THANKS_RESPONSE,
+  getI18nResponse,
   buildGratitudeFarewellResponse,
   RESERVATION_NOT_FOUND,
   getReservationResponse,
@@ -204,65 +205,65 @@ async function maybeDeliverDelayedWelcomeKit(from) {
 // dinâmicas (BREAKFAST, PARKING, etc) pra ler tenant.settings. Static responses
 // ignoram os args.
 const PT_DISPATCH = [
-  { check: shouldSendWifi,        reply: () => WIFI_RESPONSE },
+  { check: shouldSendWifi,        reply: (lang) => getI18nResponse('WIFI', lang) },
   { check: shouldSendBreakfast,   reply: (lang, tenant) => buildBreakfastResponse(tenant, lang) },
-  { check: shouldSendPool,        reply: () => POOL_RESPONSE },
+  { check: shouldSendPool,        reply: (lang) => getI18nResponse('POOL', lang) },
   { check: shouldSendParking,     reply: (lang, tenant) => buildParkingResponse(tenant, lang) },
   {
     check: shouldSendSnacks,
-    reply: () => SNACKS_RESPONSE,
+    reply: (lang) => getI18nResponse('SNACKS', lang),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Snacks / Conveniência'),
   },
   {
     check: shouldSendTowels,
-    reply: () => TOWELS_RESPONSE,
+    reply: (lang) => getI18nResponse('TOWELS', lang),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Toalhas'),
   },
   { check: shouldSendFoodOrder,   reply: () => FOOD_ORDER_RESPONSE },
-  { check: shouldSendRestaurant,  reply: () => RESTAURANT_RESPONSE },
+  { check: shouldSendRestaurant,  reply: (lang) => getI18nResponse('RESTAURANT', lang) },
   // FAQ coverage (06/05/2026) — críticos avaliados ANTES de shouldSendCheckin
   // pra evitar colisão (ex: "documentos para checkin" cair em Checkin genérico).
-  { check: shouldSendDocuments,    reply: () => DOCUMENTS_RESPONSE },
-  { check: shouldSendHotelAccess,  reply: () => HOTEL_ACCESS_RESPONSE },
-  { check: shouldSendSafe,         reply: () => SAFE_RESPONSE },
+  { check: shouldSendDocuments,    reply: (lang) => getI18nResponse('DOCUMENTS', lang) },
+  { check: shouldSendHotelAccess,  reply: (lang) => getI18nResponse('HOTEL_ACCESS', lang) },
+  { check: shouldSendSafe,         reply: (lang) => getI18nResponse('SAFE', lang) },
   {
     check: shouldSendInvoice,
-    reply: () => INVOICE_RESPONSE,
+    reply: (lang) => getI18nResponse('INVOICE', lang),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Solicitação de Nota Fiscal'),
   },
-  { check: shouldSendParkingEarly, reply: () => PARKING_EARLY_RESPONSE },
-  { check: shouldSendCheckin,      reply: () => CHECKIN_RESPONSE },
+  { check: shouldSendParkingEarly, reply: (lang) => getI18nResponse('PARKING_EARLY', lang) },
+  { check: shouldSendCheckin,      reply: (lang) => getI18nResponse('CHECKIN', lang) },
   // Hosting course (Hotmart "Desvendando o Airbnb") — prospects que querem ser anfitriões.
   // Avaliado APÓS shouldSendCheckin pra evitar matchar hóspede atual perguntando sobre check-in.
-  { check: shouldSendHostingCourse, reply: () => HOSTING_COURSE_RESPONSE },
+  { check: shouldSendHostingCourse, reply: (lang) => getI18nResponse('HOSTING_COURSE', lang) },
   // Médios
-  { check: shouldSendBreakfastCompanion, reply: () => BREAKFAST_COMPANION_RESPONSE },
-  { check: shouldSendCommonAreas,        reply: () => COMMON_AREAS_RESPONSE },
+  { check: shouldSendBreakfastCompanion, reply: (lang) => getI18nResponse('BREAKFAST_COMPANION', lang) },
+  { check: shouldSendCommonAreas,        reply: (lang) => getI18nResponse('COMMON_AREAS', lang) },
   {
     check: shouldSendBedding,
-    reply: () => BEDDING_RESPONSE,
+    reply: (lang) => getI18nResponse('BEDDING', lang),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Roupa de cama / enxoval extra'),
   },
-  { check: shouldHandleDateChange,     reply: () => DATE_CHANGE_RESPONSE },
-  { check: shouldSendHotelMaintenance, reply: () => HOTEL_MAINTENANCE_RESPONSE },
-  { check: shouldSendSecurity,    reply: () => SECURITY_RESPONSE },
+  { check: shouldHandleDateChange,     reply: (lang) => getI18nResponse('DATE_CHANGE', lang) },
+  { check: shouldSendHotelMaintenance, reply: (lang) => getI18nResponse('HOTEL_MAINTENANCE', lang) },
+  { check: shouldSendSecurity,    reply: (lang) => getI18nResponse('SECURITY', lang) },
   {
     check: shouldSendTransfer,
     reply: (lang) => getTransferResponse(lang),
     notify: (from, body) => sendTransferAlert(from, body),
   },
   { check: shouldSendLocation,    reply: (lang) => getLocationResponse(lang) },
-  { check: shouldSendLongStay,    reply: () => LONG_STAY_RESPONSE },
+  { check: shouldSendLongStay,    reply: (lang) => getI18nResponse('LONG_STAY', lang) },
   {
     check: shouldSendCleaning,
-    reply: () => CLEANING_RESPONSE,
+    reply: (lang) => getI18nResponse('CLEANING', lang),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Limpeza / Governança'),
   },
-  { check: shouldSendInternet,    reply: () => INTERNET_RESPONSE },
-  { check: shouldSendLuggage,     reply: () => LUGGAGE_RESPONSE },
+  { check: shouldSendInternet,    reply: (lang) => getI18nResponse('INTERNET', lang) },
+  { check: shouldSendLuggage,     reply: (lang) => getI18nResponse('LUGGAGE', lang) },
   { check: shouldSendCurrentDate, reply: () => `Hoje e ${getCurrentDateBRT()}.` },
   { check: shouldSendCurrentTime, reply: () => `Agora sao ${getCurrentTimeBRT()}, horario de Brasilia.` },
-  { check: shouldSendHuman,       reply: () => HUMAN_ESCALATION_RESPONSE },
+  { check: shouldSendHuman,       reply: (lang) => getI18nResponse('HUMAN_ESCALATION', lang) },
 ];
 
 // ───────────────────────────────────────────────────────────────────────────────
