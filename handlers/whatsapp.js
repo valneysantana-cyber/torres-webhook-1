@@ -37,6 +37,7 @@ const {
   LUGGAGE_RESPONSE,
   GREETING_RESPONSE,
   THANKS_RESPONSE,
+  buildGratitudeFarewellResponse,
   RESERVATION_NOT_FOUND,
   getReservationResponse,
   FRIGOBAR_PIX_RESPONSE,
@@ -85,6 +86,8 @@ const {
   shouldSendLuggage,
   shouldSendGreeting,
   shouldSendThanks,
+  shouldSendGratitudeFarewell,
+  detectGratitudeFarewell,
   shouldSendCurrentDate,
   shouldSendCurrentTime,
   shouldHandleReservationConfirmation,
@@ -526,7 +529,15 @@ async function handleIncoming(payload) {
           continue;
         }
 
-        // ---- thanks -----------------------------------------------------
+        // ---- gratitude+farewell (warm reciprocal) -----------------------
+        const gfSig = detectGratitudeFarewell(body, contactName);
+        if (gfSig) {
+          const warmReply = buildGratitudeFarewellResponse(gfSig);
+          await replyAndSave(from, warmReply, { alsoSendAudio: camFromAudio });
+          continue;
+        }
+
+        // ---- thanks (pure short) ----------------------------------------
         if (shouldSendThanks(normalized)) {
           await replyAndSave(from, THANKS_RESPONSE, { alsoSendAudio: camFromAudio });
           continue;
