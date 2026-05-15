@@ -14,10 +14,37 @@ const CONFIRMATION_PROMPT = `Claro! Me envia o c\u00f3digo da sua reserva com 5 
 const WIFI_RESPONSE = `O Acesso ao Wi-Fi \u00e9 atrav\u00e9s da rede do hotel. Ao abrir o portal Captiva, basta informar o Nome + CPF (os mesmos do check-in).\nSe tiver qualquer dificuldade, me chama aqui que eu ajudo. \ud83c\udf34`;
 
 const BREAKFAST_RESPONSE = `\u2615 O Caf\u00e9 da Manh\u00e3 est\u00e1 incluso na sua reserva, servido no restaurante do lobby (em frente \u00e0 recep\u00e7\u00e3o).\n\ud83d\udd52 Todos os dias, das 06h30 \u00e0s 10h00.\nAproveite para come\u00e7ar o dia muito bem! \ud83c\udf34`;
+const BREAKFAST_RESPONSE_EN = `☕ Breakfast is included in your stay!
+🍞 Served from 6:30 AM to 10:00 AM at the hotel restaurant (lobby).
+Just mention your room when you arrive.
+Any questions, let me know! 🌴`;
+
+const BREAKFAST_RESPONSE_ES = `☕ ¡El desayuno está incluido en tu estadía!
+🍞 Servido de 6:30 a 10:00 en el restaurante del hotel (lobby).
+Solo menciona tu habitación al llegar.
+¡Cualquier duda, avísame! 🌴`;
+
+const BREAKFAST_RESPONSE_FR = `☕ Le petit-déjeuner est inclus dans votre séjour !
+🍞 Servi de 6h30 à 10h00 au restaurant de l'hôtel (lobby).
+Mentionnez simplement votre chambre à votre arrivée.
+Toute question, faites-moi savoir ! 🌴`;
+
 
 const POOL_RESPONSE = `\ud83c\udfca\u200d\u2640\ufe0f Piscina & Academia est\u00e3o dispon\u00edveis dentro da infraestrutura do hotel acess\u00edvel todos os dias, das 08h00 \u00e0s 21h00.\nAproveite a piscina para relaxar e a academia para manter a rotina! \ud83c\udf34`;
 
 const PARKING_RESPONSE = `\ud83d\ude97 O estacionamento incluso em sua reserva \u00e9 dentro do pr\u00e9dio, com manobrista.\nBasta informar que est\u00e1 hospedado em flat do condom\u00ednio.\n\u2714\ufe0f Sem custo adicional para h\u00f3spedes. Qualquer d\u00favida, me avisa! \ud83c\udf34`;
+const PARKING_RESPONSE_EN = `🚗 The parking included with your reservation is inside the building, with valet service.
+Just mention you're staying at a flat in the condominium.
+✔️ No additional cost for guests. Let me know if you need anything! 🌴`;
+
+const PARKING_RESPONSE_ES = `🚗 El estacionamiento incluido en tu reserva está dentro del edificio, con valet.
+Solo menciona que te hospedas en un flat del condominio.
+✔️ Sin costo adicional para huéspedes. ¡Cualquier duda, avísame! 🌴`;
+
+const PARKING_RESPONSE_FR = `🚗 Le parking inclus dans votre réservation est à l'intérieur du bâtiment, avec voiturier.
+Mentionnez simplement que vous êtes logé dans un flat de la copropriété.
+✔️ Sans coût supplémentaire pour les invités. Toute question, faites-moi savoir ! 🌴`;
+
 
 const SNACKS_RESPONSE = `\ud83c\udf6b Os Snacks e Conveni\u00eancia\nDeixamos no apartamento para sua comodidade.\n\ud83d\udcb3 Pagamento via PIX 62.169.624/0001-94.\n\ud83d\udccb A tabela est\u00e1 na bancada; se preferir, te envio aqui.\nCurta com vontade! \ud83c\udf34`;
 
@@ -99,9 +126,14 @@ const PARKING_EARLY_RESPONSE = `\ud83d\ude97 A possibilidade de deixar o carro a
 // din\u00e2mica baseada nas configs do anfitri\u00e3o. Caso contr\u00e1rio fallback pra
 // resposta hardcoded da TorresGuest (compat).
 
-function buildBreakfastResponse(tenant) {
+function buildBreakfastResponse(tenant, lang) {
   const isTorres = !tenant || tenant.tenantId === 'torres' || !tenant.settings || !tenant.settings.breakfast;
-  if (isTorres) return BREAKFAST_RESPONSE;
+  if (isTorres) {
+    if (lang === 'en') return BREAKFAST_RESPONSE_EN;
+    if (lang === 'es') return BREAKFAST_RESPONSE_ES;
+    if (lang === 'fr') return BREAKFAST_RESPONSE_FR;
+    return BREAKFAST_RESPONSE;
+  }
   const b = tenant.settings.breakfast;
   if (b.enabled === false || b.type === 'none') {
     return `\u2615 A propriedade *n\u00e3o oferece caf\u00e9 da manh\u00e3*. Posso te indicar op\u00e7\u00f5es pr\u00f3ximas se quiser. \ud83c\udf34`;
@@ -117,9 +149,14 @@ function buildBreakfastResponse(tenant) {
   return `\u2615 Caf\u00e9 da manh\u00e3 dispon\u00edvel${location}.\n\ud83d\udd52 ${hours}.${b.note ? '\n' + b.note : ''} \ud83c\udf34`;
 }
 
-function buildParkingResponse(tenant) {
+function buildParkingResponse(tenant, lang) {
   const isTorres = !tenant || tenant.tenantId === 'torres' || !tenant.settings || !tenant.settings.parking;
-  if (isTorres) return PARKING_RESPONSE;
+  if (isTorres) {
+    if (lang === 'en') return PARKING_RESPONSE_EN;
+    if (lang === 'es') return PARKING_RESPONSE_ES;
+    if (lang === 'fr') return PARKING_RESPONSE_FR;
+    return PARKING_RESPONSE;
+  }
   const p = tenant.settings.parking;
   if (p.type === 'none') {
     return `\ud83d\ude97 A propriedade *n\u00e3o oferece estacionamento*. Posso te indicar op\u00e7\u00f5es pr\u00f3ximas se precisar. \ud83c\udf34`;
