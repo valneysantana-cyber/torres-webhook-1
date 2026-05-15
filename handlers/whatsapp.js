@@ -205,9 +205,9 @@ async function maybeDeliverDelayedWelcomeKit(from) {
 // ignoram os args.
 const PT_DISPATCH = [
   { check: shouldSendWifi,        reply: () => WIFI_RESPONSE },
-  { check: shouldSendBreakfast,   reply: (_lang, tenant) => buildBreakfastResponse(tenant) },
+  { check: shouldSendBreakfast,   reply: (lang, tenant) => buildBreakfastResponse(tenant, lang) },
   { check: shouldSendPool,        reply: () => POOL_RESPONSE },
-  { check: shouldSendParking,     reply: (_lang, tenant) => buildParkingResponse(tenant) },
+  { check: shouldSendParking,     reply: (lang, tenant) => buildParkingResponse(tenant, lang) },
   {
     check: shouldSendSnacks,
     reply: () => SNACKS_RESPONSE,
