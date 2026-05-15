@@ -36,7 +36,7 @@ function sanitizeMetaVar(s) {
  * @param {number}   maxChars  Limite seguro (default 900).
  * @returns {string}
  */
-function joinLinesWithBudget(lines, maxChars = 900) {
+function joinLinesWithBudget(lines, maxChars = 600) {
   if (!Array.isArray(lines) || lines.length === 0) return ' (nenhum)';
   const sep = ' · ';
   let out = '';
