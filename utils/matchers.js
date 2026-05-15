@@ -417,15 +417,41 @@ function shouldHandleReservationConfirmation(text) {
 }
 
 function detectLanguage(text) {
-  if (!text) return 'pt';
-  const t = text.toLowerCase();
-  if (/(hello|hi|hey|good morning|good afternoon|good evening|thanks|thank you|price|book|booking|reservation|where|address|location|located|hotel|check in|check-in|check out|checkout|wifi|pool|gym|breakfast|parking)/.test(t)) {
-    return 'en';
+  // v2 (15/05/2026) — scoring-based para 4 idiomas (PT/EN/ES/FR).
+  // v1 ignorava FR (caía pra PT) e tinha falsos positivos com palavras
+  // anglicismos comuns ao PT (check-in, wifi, hotel). v2 usa palavras
+  // estruturais (verbos, artigos, pronomes) que são EXCLUSIVAS de cada
+  // idioma + diacríticos como tiebreaker.
+  if (!text || String(text).trim().length < 2) return 'pt';
+  const t = String(text).toLowerCase();
+  const scores = { pt: 0, en: 0, es: 0, fr: 0 };
+
+  // ── PT (verbos/artigos/saudações exclusivos) ──
+  if (/\b(é|está|tem|vou|preciso|quero|posso|tenho|sou|qual|como|onde|por favor|obrigad[oa]|olá|bom dia|boa tarde|boa noite|você|aqui|aí|também|não|sim|muito|pra|pro)\b/.test(t)) scores.pt += 3;
+  if (/[ãõçáéíóúâêô]/.test(t)) scores.pt += 1;
+  if (/(ção|ções|nh[aoeiu])/.test(t)) scores.pt += 1;
+
+  // ── EN (function words exclusivas) ──
+  if (/\b(the|is|are|have|has|do|does|did|can|could|would|should|will|want|need|please|thank you|thanks|hello|hi|hey|where|when|how|what|which|i'm|i am|i need|i want|can you|could you|how much|excuse me|sorry|good morning|good afternoon|good evening|good night|yes|no)\b/.test(t)) scores.en += 3;
+  if (/'[a-z]/i.test(t) && !/[àáâãéêíóôõúç]/.test(t)) scores.en += 1; // contractions sem accents
+
+  // ── ES (function words exclusivas) ──
+  if (/\b(es|está|son|hay|necesito|quiero|puedo|tengo|qué|cómo|dónde|cuál|cuánto|por favor|gracias|hola|buenos días|buenas tardes|buenas noches|disculpe|perdón|sí|también)\b/.test(t)) scores.es += 3;
+  if (/[¿¡ñ]/.test(t)) scores.es += 3;
+  if (/\b(usted|tú|señor|señora)\b/.test(t)) scores.es += 2;
+
+  // ── FR (function words exclusivas) ──
+  if (/\b(est|sont|ai|veux|besoin|peux|où|comment|combien|quel|quelle|s'il vous plaît|merci|bonjour|bonsoir|bonne|salut|oui|aussi|maintenant|aujourd'hui|demain)\b/.test(t)) scores.fr += 3;
+  if (/[œçâêîôûëïü]/.test(t) && !/[ãõ]/.test(t)) scores.fr += 2;
+  if (/(qu'|c'|n'|l'|j'|s'|d')/.test(t)) scores.fr += 2; // elisions
+  if (/\b(le|la|les|un|une|des|du|de la)\b/.test(t)) scores.fr += 1;
+
+  // Encontrar score max; se 0, default PT
+  let best = 'pt', bestScore = 0;
+  for (const [lang, sc] of Object.entries(scores)) {
+    if (sc > bestScore) { best = lang; bestScore = sc; }
   }
-  if (/(hola|buenos dias|buenas tardes|buenas noches|gracias|precio|direccion|direcci\u00f3n|ubicacion|ubicaci\u00f3n|donde|hotel|check in|check-in|check out|checkout|wifi|piscina|gimnasio|desayuno|estacionamiento)/.test(t)) {
-    return 'es';
-  }
-  return 'pt';
+  return bestScore > 0 ? best : 'pt';
 }
 
 function extractReservationCode(rawText) {

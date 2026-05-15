@@ -354,7 +354,171 @@ Anotado! Estou avisando a equipe de governança agora para repor os itens.
 
 Em breve estaremos aí para abastecer. Qualquer outra coisa, é só chamar! 🌴`;
 
+
+// ════════════════════════════════════════════════════════════════════════════
+// I18N CENTRAL (15/05/2026) — 4 idiomas (PT/EN/ES/FR) para TODAS as
+// respostas operacionais. Cobertura 100% pro produto multilíngue.
+// Default (PT) mantém o texto original. Novas keys EN/ES/FR retornam
+// equivalente. Helpers no fim do bloco.
+// ════════════════════════════════════════════════════════════════════════════
+
+const I18N_RESPONSES = {
+  WIFI: {
+    pt: WIFI_RESPONSE,
+    en: `📶 Wi-Fi access is through the hotel network. When the Captive Portal opens, just enter your Name + ID (same as check-in).\nAny difficulty, ping me here that I'll help out! 🌴`,
+    es: `📶 El acceso al Wi-Fi es a través de la red del hotel. Al abrir el Portal Cautivo, solo informa Nombre + Documento (los mismos del check-in).\n¡Cualquier dificultad, avísame que te ayudo! 🌴`,
+    fr: `📶 L'accès Wi-Fi se fait via le réseau de l'hôtel. Lors de l'ouverture du Portail Captif, indiquez votre Nom + Pièce d'identité (les mêmes qu'au check-in).\nUne difficulté, faites-moi savoir et je vous aide ! 🌴`,
+  },
+  POOL: {
+    pt: POOL_RESPONSE,
+    en: `🏊‍♀️ Pool & Gym are available inside the hotel facilities, open every day from 8:00 AM to 9:00 PM.\nEnjoy the pool to relax and the gym to keep your routine! 🌴`,
+    es: `🏊‍♀️ La Piscina y el Gimnasio están disponibles en la infraestructura del hotel, accesibles todos los días de 8:00 a 21:00.\n¡Aprovecha la piscina para relajarte y el gimnasio para mantener la rutina! 🌴`,
+    fr: `🏊‍♀️ La Piscine et la Salle de sport sont disponibles dans l'hôtel, accessibles tous les jours de 8h00 à 21h00.\nProfitez de la piscine pour vous détendre et de la salle de sport pour garder votre routine ! 🌴`,
+  },
+  SNACKS: {
+    pt: SNACKS_RESPONSE,
+    en: `🍫 Snacks & Convenience\nWe leave them in the apartment for your comfort.\n💳 Payment via PIX 62.169.624/0001-94.\n📋 The price list is on the counter; if you prefer, I'll send it here.\nEnjoy without worries! 🌴`,
+    es: `🍫 Snacks y Conveniencia\nLos dejamos en el apartamento para tu comodidad.\n💳 Pago via PIX 62.169.624/0001-94.\n📋 La tabla está en la encimera; si prefieres, te la envío aquí.\n¡Disfruta sin preocupaciones! 🌴`,
+    fr: `🍫 Snacks et Articles de commodité\nNous les laissons dans l'appartement pour votre confort.\n💳 Paiement via PIX 62.169.624/0001-94.\n📋 Le tableau est sur le comptoir ; si vous préférez, je vous l'envoie ici.\nProfitez sans souci ! 🌴`,
+  },
+  TOWELS: {
+    pt: TOWELS_RESPONSE,
+    en: `🧺 Towel change for stays longer than 2 days happens every 48h.\nIf you need it sooner, just let me know and I'll arrange it with housekeeping. 🌴`,
+    es: `🧺 El cambio de toallas para estadías superiores a dos días se realiza cada 48h.\nSi lo necesitas antes, solo avísame que lo coordino con limpieza. 🌴`,
+    fr: `🧺 Le changement de serviettes pour les séjours de plus de deux jours se fait toutes les 48h.\nSi besoin avant, prévenez-moi et j'organise avec le service de ménage. 🌴`,
+  },
+  RESTAURANT: {
+    pt: RESTAURANT_RESPONSE,
+    en: `🍽️ *Don Maitre Restaurant* (in the building itself, access via lobby)\n\nItalian à la carte cuisine — lunch, dinner and room service.\n\n📝 Full menu + photos: https://conciergecloud.com.br/restaurante.html\n☎️ Orders: call (11) 3801-3750 → ask for *Extension 2013* (Don Maitre)\n🎟️ Coupon *CONCIERGECLOUD10* — 10% off your order\n\nValid for dine-in, room service and take-away. Any questions, let me know! 🌴`,
+    es: `🍽️ *Restaurante Don Maitre* (en el propio edificio, acceso por el lobby)\n\nCocina italiana à la carte — almuerzo, cena y room service.\n\n📝 Menú completo + fotos: https://conciergecloud.com.br/restaurante.html\n☎️ Pedidos: llama (11) 3801-3750 → pide *Extensión 2013* (Don Maitre)\n🎟️ Cupón *CONCIERGECLOUD10* — 10% off en tu pedido\n\nVálido para salón, room service y take-away. ¡Cualquier duda, avísame! 🌴`,
+    fr: `🍽️ *Restaurant Don Maitre* (dans le bâtiment même, accès par le lobby)\n\nCuisine italienne à la carte — déjeuner, dîner et room service.\n\n📝 Menu complet + photos: https://conciergecloud.com.br/restaurante.html\n☎️ Commandes: appelez (11) 3801-3750 → demandez *Extension 2013* (Don Maitre)\n🎟️ Coupon *CONCIERGECLOUD10* — 10% de réduction sur votre commande\n\nValable pour salle, room service et take-away. Toute question, dites-moi ! 🌴`,
+  },
+  CHECKIN: {
+    pt: CHECKIN_RESPONSE,
+    en: `🕐 Check-in & Check-out have time limits, especially check-out, since the hotel housekeeping team needs one hour for cleaning.\nCheck-in: from 2:00 PM\nCheck-out: until 12:00 PM\nThe reception runs 24h with security team to welcome you any time. 🌴`,
+    es: `🕐 Check-in y Check-out tienen límites de horario, sobre todo el check-out, ya que el equipo de limpieza necesita una hora.\nCheck-in: a partir de las 14h\nCheck-out: hasta las 12h\nLa recepción funciona 24h con equipo de seguridad para recibirte a cualquier hora. 🌴`,
+    fr: `🕐 Check-in et Check-out ont des limites d'horaires, surtout le check-out, car l'équipe de ménage de l'hôtel a besoin d'une heure.\nCheck-in: à partir de 14h\nCheck-out: jusqu'à 12h\nLa réception fonctionne 24h avec équipe de sécurité pour vous accueillir à tout moment. 🌴`,
+  },
+  DOCUMENTS: {
+    pt: DOCUMENTS_RESPONSE,
+    en: `📄 For check-in, all guests must present an *official photo ID* (national ID, driver's license or passport) at the reception.\nForeign guests: passport is mandatory for everyone in the room.\nIf any guest is a minor, they must be accompanied by a legal guardian. 🌴`,
+    es: `📄 Para el check-in, todos los huéspedes deben presentar *documento oficial con foto* (DNI, licencia o pasaporte) en la recepción.\nHuéspedes extranjeros: pasaporte es obligatorio para todos.\nSi algún huésped es menor, debe estar acompañado por un tutor legal. 🌴`,
+    fr: `📄 Pour le check-in, tous les invités doivent présenter une *pièce d'identité officielle avec photo* (carte d'identité, permis ou passeport) à la réception.\nInvités étrangers: passeport obligatoire pour tous.\nSi un invité est mineur, il doit être accompagné par un tuteur légal. 🌴`,
+  },
+  HOTEL_ACCESS: {
+    pt: HOTEL_ACCESS_RESPONSE,
+    en: `🏨 Your stay is in a *private flat managed by TorresGuest*, within the hotel structure.\nYou have full access to common areas (pool, gym, restaurant, 24h reception).\nAny question about the hotel facilities, ping me here. 🌴`,
+    es: `🏨 Tu hospedaje es en un *flat privativo administrado por TorresGuest*, dentro de la estructura del hotel.\nTienes acceso completo a las áreas comunes (piscina, gimnasio, restaurante, recepción 24h).\nCualquier duda sobre las instalaciones del hotel, avísame aquí. 🌴`,
+    fr: `🏨 Votre séjour est dans un *appartement privé géré par TorresGuest*, dans la structure de l'hôtel.\nVous avez plein accès aux espaces communs (piscine, salle de sport, restaurant, réception 24h).\nToute question sur les installations de l'hôtel, dites-moi ici. 🌴`,
+  },
+  SAFE: {
+    pt: SAFE_RESPONSE,
+    en: `🔐 The room has a safe available for use. If you have any doubt about operation or if it gets locked, tell me your room number and I'll guide you or call reception to help with the security procedure. 🌴`,
+    es: `🔐 La habitación cuenta con caja fuerte disponible. Si tienes duda sobre el uso o si se bloquea, avísame el número de habitación que te oriento o llamo a recepción para ayudar con el procedimiento. 🌴`,
+    fr: `🔐 La chambre dispose d'un coffre-fort disponible. En cas de doute sur l'utilisation ou s'il se bloque, dites-moi le numéro de chambre et je vous guide ou j'appelle la réception pour aider avec la procédure. 🌴`,
+  },
+  INVOICE: {
+    pt: INVOICE_RESPONSE,
+    en: `🧾 For *invoice or receipt* issuance, I'll connect you with *Sofia* (our admin team) who handles it:\n\n📞 ${HUMAN_NUMBER_SECONDARY}\n\nShe's been notified and will reach out shortly. 🌴`,
+    es: `🧾 Para la emisión de *factura o recibo*, te conecto con *Sofia* (nuestro equipo administrativo) que se encarga:\n\n📞 ${HUMAN_NUMBER_SECONDARY}\n\nYa fue avisada y te contactará pronto. 🌴`,
+    fr: `🧾 Pour l'émission de *facture ou reçu*, je vous mets en contact avec *Sofia* (notre équipe administrative):\n\n📞 ${HUMAN_NUMBER_SECONDARY}\n\nElle a été prévenue et vous contactera bientôt. 🌴`,
+  },
+  PARKING_EARLY: {
+    pt: PARKING_EARLY_RESPONSE,
+    en: `🚗 The possibility of leaving your car before check-in time depends on availability and authorization from the hotel reception at the moment of arrival. We recommend confirming directly at reception upon arrival. 🌴`,
+    es: `🚗 La posibilidad de dejar el coche antes del horario de check-in depende de la disponibilidad y autorización de la recepción del hotel al momento de llegar. Recomendamos confirmar directamente en la recepción al llegar. 🌴`,
+    fr: `🚗 La possibilité de laisser votre voiture avant l'heure de check-in dépend de la disponibilité et autorisation de la réception de l'hôtel à votre arrivée. Nous recommandons de confirmer directement à la réception en arrivant. 🌴`,
+  },
+  HOSTING_COURSE: {
+    pt: HOSTING_COURSE_RESPONSE,
+    en: `🏠 Interested in becoming an Airbnb host? We recommend the *Decoding Airbnb* course — by someone who operates multiple units in Brazil:\n\n🔗 ${typeof affLinks !== 'undefined' && affLinks.hostingCourse ? affLinks.hostingCourse('hosting_course') : 'https://hotmart.com'}\n\nLet me know if you have any questions about the path. 🌴`,
+    es: `🏠 ¿Interesado en ser anfitrión de Airbnb? Recomendamos el curso *Decodificando Airbnb* — hecho por quien opera múltiples unidades en Brasil:\n\n🔗 ${typeof affLinks !== 'undefined' && affLinks.hostingCourse ? affLinks.hostingCourse('hosting_course') : 'https://hotmart.com'}\n\nAvísame si tienes dudas sobre el camino. 🌴`,
+    fr: `🏠 Intéressé à devenir hôte Airbnb ? Nous recommandons le cours *Décoder Airbnb* — fait par quelqu'un qui opère plusieurs unités au Brésil:\n\n🔗 ${typeof affLinks !== 'undefined' && affLinks.hostingCourse ? affLinks.hostingCourse('hosting_course') : 'https://hotmart.com'}\n\nDites-moi si vous avez des questions sur le parcours. 🌴`,
+  },
+  BREAKFAST_COMPANION: {
+    pt: BREAKFAST_COMPANION_RESPONSE,
+    en: `☕ To add a companion or extra breakfast, we recommend consulting directly with the *hotel reception* — they confirm availability and updated prices on the spot. If you prefer, send me the room number and I'll check with the team. 🌴`,
+    es: `☕ Para incluir acompañante o desayuno extra, recomendamos consultar directamente con la *recepción del hotel* — ellos confirman disponibilidad y valores actualizados al momento. Si prefieres, avísame el número de habitación que verifico con el equipo. 🌴`,
+    fr: `☕ Pour inclure un accompagnant ou un petit-déjeuner supplémentaire, nous recommandons de consulter directement la *réception de l'hôtel* — ils confirment disponibilité et tarifs à jour sur place. Si vous préférez, dites-moi le numéro de chambre et je vérifie avec l'équipe. 🌴`,
+  },
+  COMMON_AREAS: {
+    pt: COMMON_AREAS_RESPONSE,
+    en: `🏊 As a TorresGuest guest, you have access to the hotel common areas: *pool, gym, restaurant, 24h reception and business center*, following internal rules and operating hours. Any specific question, ping me. 🌴`,
+    es: `🏊 Como huésped TorresGuest, tienes acceso a las áreas comunes del hotel: *piscina, gimnasio, restaurante, recepción 24h y business center*, según reglas internas y horarios de funcionamiento. Cualquier duda específica, avísame. 🌴`,
+    fr: `🏊 En tant qu'invité TorresGuest, vous avez accès aux espaces communs de l'hôtel: *piscine, salle de sport, restaurant, réception 24h et business center*, selon règles internes et horaires de fonctionnement. Toute question spécifique, dites-moi. 🌴`,
+  },
+  BEDDING: {
+    pt: BEDDING_RESPONSE,
+    en: `🛏️ I can check availability of extra bedding items (pillow, blanket, sheet, pillowcase). Send me your room number and the item you need, and I'll request from housekeeping. 🌴`,
+    es: `🛏️ Puedo verificar disponibilidad de artículos extra de cama (almohada, manta, sábana, funda). Envíame el número de habitación y el artículo que necesitas, que coordino con limpieza. 🌴`,
+    fr: `🛏️ Je peux vérifier la disponibilité d'articles de literie supplémentaires (oreiller, couverture, drap, taie). Envoyez-moi votre numéro de chambre et l'article dont vous avez besoin, et je sollicite le ménage. 🌴`,
+  },
+  DATE_CHANGE: {
+    pt: DATE_CHANGE_RESPONSE,
+    en: `📅 About date changes: the possibility depends on the reservation policy, availability and the channel where it was made.\n• If you booked directly with us, send me the new dates that I check with the team.\n• If you booked via Airbnb/Booking, the change must be requested in the original channel.\n\nNeed help with the request? Ping me. 🌴`,
+    es: `📅 Sobre el cambio de fechas: la posibilidad depende de la política de la reserva, disponibilidad y el canal donde fue hecha.\n• Si reservaste directo con nosotros, envíame las nuevas fechas que verifico con el equipo.\n• Si reservaste vía Airbnb/Booking, el cambio debe solicitarse en el canal original.\n\n¿Necesitas ayuda con el pedido? Avísame. 🌴`,
+    fr: `📅 À propos du changement de dates: la possibilité dépend de la politique de réservation, disponibilité et du canal où elle a été faite.\n• Si vous avez réservé directement avec nous, envoyez-moi les nouvelles dates et je vérifie avec l'équipe.\n• Si vous avez réservé via Airbnb/Booking, le changement doit être demandé sur le canal original.\n\nBesoin d'aide pour la demande ? Dites-moi. 🌴`,
+  },
+  HOTEL_MAINTENANCE: {
+    pt: HOTEL_MAINTENANCE_RESPONSE,
+    en: `🔧 The hotel may undergo occasional improvements and maintenance, usually during business hours. If any construction or noise impacts your stay, let me know immediately and I'll follow up with the hotel team. 🌴`,
+    es: `🔧 El hotel puede pasar por mejoras y mantenimientos puntuales, generalmente en horario comercial. Si cualquier obra o ruido impacta tu estadía, avísame inmediatamente que acompaño con el equipo del hotel. 🌴`,
+    fr: `🔧 L'hôtel peut faire l'objet d'améliorations et de maintenances ponctuelles, généralement aux heures de bureau. Si des travaux ou du bruit impactent votre séjour, prévenez-moi immédiatement et je suis avec l'équipe de l'hôtel. 🌴`,
+  },
+  SECURITY: {
+    pt: SECURITY_RESPONSE,
+    en: `🔐 We have Security & Reception 24h, access control and on-site team at all times.\nYou can arrive worry-free, we're always nearby. 🌴`,
+    es: `🔐 Contamos con Seguridad y Recepción 24h, control de acceso y equipo en el lugar todo el tiempo.\nPuedes llegar tranquilo(a), siempre estamos cerca. 🌴`,
+    fr: `🔐 Nous avons Sécurité et Réception 24h, contrôle d'accès et équipe sur place en permanence.\nVous pouvez arriver l'esprit tranquille, nous sommes toujours à proximité. 🌴`,
+  },
+  LONG_STAY: {
+    pt: LONG_STAY_RESPONSE,
+    en: `💰 Long stays\nWe have special rates for extended periods.\nTell me how many nights and dates, and I'll check with the team at ${HUMAN_NUMBER_PRIMARY}/${HUMAN_NUMBER_SECONDARY} and come back with a proposal. 🌴`,
+    es: `💰 Estadías largas\nTenemos condiciones especiales para períodos extendidos.\nDime cuántas noches y fechas que consulto con el equipo en ${HUMAN_NUMBER_PRIMARY}/${HUMAN_NUMBER_SECONDARY} y vuelvo con la propuesta. 🌴`,
+    fr: `💰 Séjours longs\nNous avons des conditions spéciales pour les périodes prolongées.\nDites-moi combien de nuits et les dates et je consulte l'équipe au ${HUMAN_NUMBER_PRIMARY}/${HUMAN_NUMBER_SECONDARY} et reviens avec la proposition. 🌴`,
+  },
+  CLEANING: {
+    pt: CLEANING_RESPONSE,
+    en: `🧹 Cleaning / Housekeeping\nCleaning is done by the hotel team, usually between 10:00 and 15:00.\nIf you need a specific time or prefer not to be disturbed in this interval, let me know 24h in advance and I'll schedule it for you. 🌴`,
+    es: `🧹 Limpieza / Housekeeping\nLa limpieza la realiza el equipo del hotel, generalmente entre 10:00 y 15:00.\nSi necesitas un horario específico o prefieres no ser molestado en ese intervalo, avísame con 24h de anticipación que lo agendo. 🌴`,
+    fr: `🧹 Ménage / Housekeeping\nLe ménage est effectué par l'équipe de l'hôtel, généralement entre 10h00 et 15h00.\nSi vous avez besoin d'un horaire spécifique ou préférez ne pas être dérangé dans cet intervalle, prévenez-moi 24h à l'avance et je planifie. 🌴`,
+  },
+  INTERNET: {
+    pt: INTERNET_RESPONSE,
+    en: `📡 Internet\nThe hotel Wi-Fi is fiber, ideal for remote work and streaming.\nIf you notice any instability, ping me and I'll trigger the technical team right away. 🌴`,
+    es: `📡 Internet\nEl Wi-Fi del hotel es fibra, ideal para trabajo remoto y streaming.\nSi notas alguna inestabilidad, avísame que llamo al equipo técnico al momento. 🌴`,
+    fr: `📡 Internet\nLe Wi-Fi de l'hôtel est en fibre, idéal pour le télétravail et le streaming.\nSi vous remarquez une instabilité, prévenez-moi et j'active l'équipe technique immédiatement. 🌴`,
+  },
+  LUGGAGE: {
+    pt: LUGGAGE_RESPONSE,
+    en: `🧳 Luggage storage\nNeed to leave luggage before check-in or after check-out?\nWe have an agreement with Mr. Alberto (restaurant manager) to store our guests' luggage subject to availability.\nLet me know the times and I'll align with him. 🌴`,
+    es: `🧳 Guarda de equipaje\n¿Necesitas dejar equipaje antes del check-in o después del check-out?\nTenemos acuerdo con el Sr. Alberto (jefe del restaurante) para guardar el equipaje de nuestros huéspedes según disponibilidad.\nAvísame horarios que ya alineo con él. 🌴`,
+    fr: `🧳 Garde de bagages\nBesoin de laisser des bagages avant le check-in ou après le check-out?\nNous avons un accord avec M. Alberto (chef du restaurant) pour garder les bagages de nos invités selon disponibilité.\nDites-moi les horaires et j'aligne avec lui. 🌴`,
+  },
+  HUMAN_ESCALATION: {
+    pt: HUMAN_ESCALATION_RESPONSE,
+    en: `In this case please contact Sofia who answers on WhatsApp ${HUMAN_NUMBER_SECONDARY}. We'll take care to answer your questions better. 😊`,
+    es: `En este caso favor contactar a Sofia que atiende en WhatsApp ${HUMAN_NUMBER_SECONDARY}. Cuidaremos de responder mejor tus dudas. 😊`,
+    fr: `Dans ce cas veuillez contacter Sofia qui répond sur WhatsApp ${HUMAN_NUMBER_SECONDARY}. Nous prendrons soin de mieux répondre à vos questions. 😊`,
+  },
+};
+
+/**
+ * Helper para obter resposta no idioma do hóspede.
+ * Fallback: PT se lang inválido ou tradução ausente.
+ * @param {string} key  Nome do response (WIFI, POOL, etc)
+ * @param {string} lang 'pt'|'en'|'es'|'fr'
+ */
+function getI18nResponse(key, lang) {
+  const r = I18N_RESPONSES[key];
+  if (!r) return null;
+  return r[lang] || r.pt;
+}
+
+
 module.exports = {
+  I18N_RESPONSES,
+  getI18nResponse,
   MENU_RESPONSE,
   HUMAN_ESCALATION_RESPONSE,
   CONFIRMATION_PROMPT,
