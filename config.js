@@ -23,6 +23,7 @@ module.exports = {
   CONFIRMATION_TTL_MS: 10 * 60 * 1000,
 
   DISPATCH_NUMBER: process.env.DISPATCH_NUMBER || '5511999073135',
+  DAILY_REPORT_EMAILS: process.env.DAILY_REPORT_EMAILS || 'valney@conciergecloud.com.br',
 
   DISPATCH_SECRET: process.env.DISPATCH_SECRET || null,
 
