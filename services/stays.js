@@ -35,10 +35,28 @@ async function staysFetch(path) {
 }
 
 async function fetchReservations({ from, to, dateType = 'arrival' } = {}) {
-  const data = await staysFetch(`/booking/reservations?from=${from}&to=${to}&dateType=${dateType}`);
-  if (!Array.isArray(data)) return [];
-  console.log(`[stays] ${dateType} ${from}→${to}: ${data.length} records`);
-  return data;
+  // STAYS_PAGINATION_FIX_V1 (15/05/2026)
+  // Stays API default limit = 20. Sem paginação, perdíamos reservas em janelas
+  // com >20 records (ex: hóspede de estadia longa caía do midStay no relatório).
+  // Agora pagina com limit=100 (max API) até esgotar resultados.
+  const PAGE_SIZE = 100;
+  const all = [];
+  let skip = 0;
+  while (true) {
+    const page = await staysFetch(
+      `/booking/reservations?from=${from}&to=${to}&dateType=${dateType}&limit=${PAGE_SIZE}&skip=${skip}`
+    );
+    if (!Array.isArray(page) || page.length === 0) break;
+    all.push(...page);
+    if (page.length < PAGE_SIZE) break;
+    skip += PAGE_SIZE;
+    if (skip >= 2000) {
+      console.warn(`[stays] fetchReservations safety cap @ skip=${skip} for ${from}→${to}`);
+      break;
+    }
+  }
+  console.log(`[stays] ${dateType} ${from}→${to}: ${all.length} records (paginated)`);
+  return all;
 }
 
 /**
