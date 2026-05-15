@@ -11,7 +11,8 @@
  * Trigger via cron — NOT on server boot.
  */
 
-const { DISPATCH_NUMBER } = require('../config')
+const { DISPATCH_NUMBER, DAILY_REPORT_EMAILS } = require('../config')
+const { sendDailyReportEmail } = require('./dailyReportEmail')
 const { getCurrentDateBRT, resolveGuestName } = require('../utils/formatters');
 const { fetchTodayAllActiveGuests } = require('./stays');
 const { sendWhatsAppText, sendDailyReportTemplate } = require('./whatsapp');
@@ -87,6 +88,17 @@ async function dailyCheckinDispatch() {
       `📊 *Total de hóspedes ativos hoje: ${totalAtivos}*`,
       `✅ Relatório gerado automaticamente.`,
     ].join('\n');
+
+    // EMAIL BACKUP — disparado em paralelo (não bloqueia WhatsApp).
+    // Cobre o gap da janela 24h Meta: anfitrião sem janela aberta no WhatsApp
+    // ainda recebe o relatório completo no email.
+    const emailRecipients = (DAILY_REPORT_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+    if (emailRecipients.length > 0) {
+      const emailSubject = `🏨 TorresGuest — Relatório Diário ${today}`;
+      sendDailyReportEmail(emailRecipients, emailSubject, freeTextMessage)
+        .then(r => console.log('[dispatch] Email backup →', r.ok ? `✓ ${emailRecipients.length} recipients` : `✗ ${r.error}`))
+        .catch(err => console.error('[dispatch] Email backup error:', err.message));
+    }
 
     if (USE_TEMPLATE) {
       // Path HÍBRIDO — template Meta `daily_report_v1` (cobertura universal, funciona fora janela 24h)
