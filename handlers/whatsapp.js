@@ -38,6 +38,7 @@ const {
   GREETING_RESPONSE,
   THANKS_RESPONSE,
   getI18nResponse,
+  getResponseForTenant,
   buildGratitudeFarewellResponse,
   RESERVATION_NOT_FOUND,
   getReservationResponse,
@@ -205,65 +206,65 @@ async function maybeDeliverDelayedWelcomeKit(from) {
 // dinâmicas (BREAKFAST, PARKING, etc) pra ler tenant.settings. Static responses
 // ignoram os args.
 const PT_DISPATCH = [
-  { check: shouldSendWifi,        reply: (lang) => getI18nResponse('WIFI', lang) },
+  { check: shouldSendWifi,        reply: (lang, tenant) => getResponseForTenant('WIFI', lang, tenant) },
   { check: shouldSendBreakfast,   reply: (lang, tenant) => buildBreakfastResponse(tenant, lang) },
-  { check: shouldSendPool,        reply: (lang) => getI18nResponse('POOL', lang) },
+  { check: shouldSendPool,        reply: (lang, tenant) => getResponseForTenant('POOL', lang, tenant) },
   { check: shouldSendParking,     reply: (lang, tenant) => buildParkingResponse(tenant, lang) },
   {
     check: shouldSendSnacks,
-    reply: (lang) => getI18nResponse('SNACKS', lang),
+    reply: (lang, tenant) => getResponseForTenant('SNACKS', lang, tenant),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Snacks / Conveniência'),
   },
   {
     check: shouldSendTowels,
-    reply: (lang) => getI18nResponse('TOWELS', lang),
+    reply: (lang, tenant) => getResponseForTenant('TOWELS', lang, tenant),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Toalhas'),
   },
   { check: shouldSendFoodOrder,   reply: () => FOOD_ORDER_RESPONSE },
-  { check: shouldSendRestaurant,  reply: (lang) => getI18nResponse('RESTAURANT', lang) },
+  { check: shouldSendRestaurant,  reply: (lang, tenant) => getResponseForTenant('RESTAURANT', lang, tenant) },
   // FAQ coverage (06/05/2026) — críticos avaliados ANTES de shouldSendCheckin
   // pra evitar colisão (ex: "documentos para checkin" cair em Checkin genérico).
-  { check: shouldSendDocuments,    reply: (lang) => getI18nResponse('DOCUMENTS', lang) },
-  { check: shouldSendHotelAccess,  reply: (lang) => getI18nResponse('HOTEL_ACCESS', lang) },
-  { check: shouldSendSafe,         reply: (lang) => getI18nResponse('SAFE', lang) },
+  { check: shouldSendDocuments,    reply: (lang, tenant) => getResponseForTenant('DOCUMENTS', lang, tenant) },
+  { check: shouldSendHotelAccess,  reply: (lang, tenant) => getResponseForTenant('HOTEL_ACCESS', lang, tenant) },
+  { check: shouldSendSafe,         reply: (lang, tenant) => getResponseForTenant('SAFE', lang, tenant) },
   {
     check: shouldSendInvoice,
-    reply: (lang) => getI18nResponse('INVOICE', lang),
+    reply: (lang, tenant) => getResponseForTenant('INVOICE', lang, tenant),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Solicitação de Nota Fiscal'),
   },
-  { check: shouldSendParkingEarly, reply: (lang) => getI18nResponse('PARKING_EARLY', lang) },
-  { check: shouldSendCheckin,      reply: (lang) => getI18nResponse('CHECKIN', lang) },
+  { check: shouldSendParkingEarly, reply: (lang, tenant) => getResponseForTenant('PARKING_EARLY', lang, tenant) },
+  { check: shouldSendCheckin,      reply: (lang, tenant) => getResponseForTenant('CHECKIN', lang, tenant) },
   // Hosting course (Hotmart "Desvendando o Airbnb") — prospects que querem ser anfitriões.
   // Avaliado APÓS shouldSendCheckin pra evitar matchar hóspede atual perguntando sobre check-in.
-  { check: shouldSendHostingCourse, reply: (lang) => getI18nResponse('HOSTING_COURSE', lang) },
+  { check: shouldSendHostingCourse, reply: (lang, tenant) => getResponseForTenant('HOSTING_COURSE', lang, tenant) },
   // Médios
-  { check: shouldSendBreakfastCompanion, reply: (lang) => getI18nResponse('BREAKFAST_COMPANION', lang) },
-  { check: shouldSendCommonAreas,        reply: (lang) => getI18nResponse('COMMON_AREAS', lang) },
+  { check: shouldSendBreakfastCompanion, reply: (lang, tenant) => getResponseForTenant('BREAKFAST_COMPANION', lang, tenant) },
+  { check: shouldSendCommonAreas,        reply: (lang, tenant) => getResponseForTenant('COMMON_AREAS', lang, tenant) },
   {
     check: shouldSendBedding,
-    reply: (lang) => getI18nResponse('BEDDING', lang),
+    reply: (lang, tenant) => getResponseForTenant('BEDDING', lang, tenant),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Roupa de cama / enxoval extra'),
   },
-  { check: shouldHandleDateChange,     reply: (lang) => getI18nResponse('DATE_CHANGE', lang) },
-  { check: shouldSendHotelMaintenance, reply: (lang) => getI18nResponse('HOTEL_MAINTENANCE', lang) },
-  { check: shouldSendSecurity,    reply: (lang) => getI18nResponse('SECURITY', lang) },
+  { check: shouldHandleDateChange,     reply: (lang, tenant) => getResponseForTenant('DATE_CHANGE', lang, tenant) },
+  { check: shouldSendHotelMaintenance, reply: (lang, tenant) => getResponseForTenant('HOTEL_MAINTENANCE', lang, tenant) },
+  { check: shouldSendSecurity,    reply: (lang, tenant) => getResponseForTenant('SECURITY', lang, tenant) },
   {
     check: shouldSendTransfer,
     reply: (lang) => getTransferResponse(lang),
     notify: (from, body) => sendTransferAlert(from, body),
   },
   { check: shouldSendLocation,    reply: (lang) => getLocationResponse(lang) },
-  { check: shouldSendLongStay,    reply: (lang) => getI18nResponse('LONG_STAY', lang) },
+  { check: shouldSendLongStay,    reply: (lang, tenant) => getResponseForTenant('LONG_STAY', lang, tenant) },
   {
     check: shouldSendCleaning,
-    reply: (lang) => getI18nResponse('CLEANING', lang),
+    reply: (lang, tenant) => getResponseForTenant('CLEANING', lang, tenant),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Limpeza / Governança'),
   },
-  { check: shouldSendInternet,    reply: (lang) => getI18nResponse('INTERNET', lang) },
-  { check: shouldSendLuggage,     reply: (lang) => getI18nResponse('LUGGAGE', lang) },
+  { check: shouldSendInternet,    reply: (lang, tenant) => getResponseForTenant('INTERNET', lang, tenant) },
+  { check: shouldSendLuggage,     reply: (lang, tenant) => getResponseForTenant('LUGGAGE', lang, tenant) },
   { check: shouldSendCurrentDate, reply: () => `Hoje e ${getCurrentDateBRT()}.` },
   { check: shouldSendCurrentTime, reply: () => `Agora sao ${getCurrentTimeBRT()}, horario de Brasilia.` },
-  { check: shouldSendHuman,       reply: (lang) => getI18nResponse('HUMAN_ESCALATION', lang) },
+  { check: shouldSendHuman,       reply: (lang, tenant) => getResponseForTenant('HUMAN_ESCALATION', lang, tenant) },
 ];
 
 // ───────────────────────────────────────────────────────────────────────────────

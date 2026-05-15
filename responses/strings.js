@@ -504,21 +504,45 @@ const I18N_RESPONSES = {
 };
 
 /**
- * Helper para obter resposta no idioma do hóspede.
- * Fallback: PT se lang inválido ou tradução ausente.
- * @param {string} key  Nome do response (WIFI, POOL, etc)
- * @param {string} lang 'pt'|'en'|'es'|'fr'
+ * Helper multi-tenant para obter resposta no idioma do hóspede com fallback
+ * hierárquico. Ordem (do mais específico ao mais genérico):
+ *   1. tenant.settings.responses[KEY][lang]    custom completo do anfitrião
+ *   2. tenant.settings.responses[KEY].pt       custom em PT (mesmo se lang!=pt)
+ *   3. I18N_RESPONSES[KEY][lang]               default ConciergeCloud no idioma
+ *   4. I18N_RESPONSES[KEY].pt                  default PT (último recurso)
+ *
+ * @param {string} key     Nome do response (WIFI, POOL, etc)
+ * @param {string} lang    'pt'|'en'|'es'|'fr'
+ * @param {object} tenant  doc Mongo do tenant (opcional)
+ * @returns {string|null}
+ */
+function getResponseForTenant(key, lang, tenant) {
+  const custom = tenant && tenant.settings && tenant.settings.responses && tenant.settings.responses[key];
+  const def = I18N_RESPONSES[key];
+  if (custom) {
+    if (custom[lang]) return custom[lang];
+    if (custom.pt) return custom.pt;
+  }
+  if (def) {
+    if (def[lang]) return def[lang];
+    if (def.pt) return def.pt;
+  }
+  return null;
+}
+
+/**
+ * Backward-compat helper sem tenant (chama getResponseForTenant com tenant=null).
+ * Mantido para callers antigos que ainda não passam tenant.
  */
 function getI18nResponse(key, lang) {
-  const r = I18N_RESPONSES[key];
-  if (!r) return null;
-  return r[lang] || r.pt;
+  return getResponseForTenant(key, lang, null);
 }
 
 
 module.exports = {
   I18N_RESPONSES,
   getI18nResponse,
+  getResponseForTenant,
   MENU_RESPONSE,
   HUMAN_ESCALATION_RESPONSE,
   CONFIRMATION_PROMPT,
