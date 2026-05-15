@@ -36,7 +36,7 @@ function sanitizeMetaVar(s) {
  * @param {number}   maxChars  Limite seguro (default 900).
  * @returns {string}
  */
-function joinLinesWithBudget(lines, maxChars = 350, maxItems = 8) {
+function joinLinesWithBudget(lines, maxChars = 150, maxItems = 3) {
   // FIX 15/05: limit DUPLO — chars E item count.
   // Meta #132005 (Translated text too long) dispara mesmo com 600 chars
   // porque a auto-tradução pra outros locales expande. Limitamos a 8 itens
