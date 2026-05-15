@@ -269,6 +269,61 @@ function shouldSendGreeting(text) {
   return /\b(oi|ola|ol\u00e1|bom dia|boa tarde|boa noite|e ai|eai|hey|hello|hi|como vai|tudo bem)\b/.test(text);
 }
 
+/**
+ * shouldSendGratitudeFarewell — detecta agradecimentos calorosos que misturam
+ * gratidão + bênção + despedida temporal. Exemplo:
+ *   "Muito obrigada Valney! Deus te abençoe, um bom final de semana!! 😊"
+ *
+ * O shouldSendThanks original só captura agradecimentos PUROS curtos (≤40 chars
+ * stripped, regex restrito). Mensagens emocionais maiores caíam no fallback
+ * AI que respondia "Posso te ajudar com tudo..." — robotizado.
+ *
+ * Returns metadata pra construir resposta espelhada:
+ *   { hasThanks, hasBlessing, hasFarewellTime, timePeriod, hasEmoji, name }
+ */
+function detectGratitudeFarewell(text, contactName) {
+  if (!text) return null;
+  const t = String(text).toLowerCase();
+
+  const hasThanks = /\b(obrigad[oa]|brigad[oa]|agrade[çc]o|valeu|grat[oa]|thanks|tks|vlw)\b/.test(t);
+  const hasBlessing = /\b(deus\s+(te|lhe|vos|os|as|a)?\s*(aben[çc]oe|aben[çc]ar|ben[çc]a)|que\s+deus|fica\s+com\s+deus|nas\s+m[ãa]os\s+de\s+deus)\b/.test(t);
+
+  let timePeriod = null;
+  if (/\b(bom\s+(final\s+de\s+semana|fim\s+de\s+semana|fds))\b/.test(t)) timePeriod = 'final de semana';
+  else if (/\b(bom\s+feriad[oa])\b/.test(t)) timePeriod = 'feriado';
+  else if (/\b(boa\s+viagem)\b/.test(t)) timePeriod = 'viagem';
+  else if (/\b(bom\s+dia)\b/.test(t)) timePeriod = 'dia';
+  else if (/\b(boa\s+tarde)\b/.test(t)) timePeriod = 'tarde';
+  else if (/\b(boa\s+noite)\b/.test(t)) timePeriod = 'noite';
+  else if (/\b(tenha\s+uma\s+(boa|ótima|excelente)\s+(semana|estadia|hospedagem))\b/.test(t)) timePeriod = 'semana';
+
+  const hasFarewell = /\b(tchau|at[ée]\s+(logo|mais|breve)|abra[çc]o|beijos?|fico\s+por\s+aqui)\b/.test(t);
+  const hasEmoji = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F600}-\u{1F64F}]/u.test(text);
+
+  // Precisa ter PELO MENOS 1 desses sinais emocionais.
+  if (!hasThanks && !hasBlessing && !timePeriod && !hasFarewell) return null;
+
+  // GUARD: se a mensagem tem pergunta (?), provavelmente tem duvida principal
+  // junto com agradecimento ("checkout 14h? obrigada"). NAO matchamos.
+  if (/\?/.test(text)) return null;
+
+  // GUARD: tamanho minimo — palavras isoladas tipo "ok" nao matcham.
+  if (text.trim().length < 5) return null;
+
+  return {
+    hasThanks,
+    hasBlessing,
+    timePeriod,
+    hasFarewell,
+    hasEmoji,
+    name: contactName || null,
+  };
+}
+
+function shouldSendGratitudeFarewell(text, contactName) {
+  return detectGratitudeFarewell(text, contactName) !== null;
+}
+
 function shouldSendThanks(text) {
   // S\u00f3 dispara quando a mensagem \u00e9 PURAMENTE agradecimento curto.
   // Antes (regex bruta) capturava "...por volta das 14h? obrigada!" e ignorava
@@ -467,6 +522,8 @@ module.exports = {
   shouldSendLuggage,
   shouldSendGreeting,
   shouldSendThanks,
+  shouldSendGratitudeFarewell,
+  detectGratitudeFarewell,
   shouldSendCurrentDate,
   shouldSendCurrentTime,
   shouldHandleReservationConfirmation,

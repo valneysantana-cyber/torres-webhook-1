@@ -172,6 +172,61 @@ const LUGGAGE_RESPONSE = `\ud83e\uddf3 Guarda de malas\nPrecisando deixar bagage
 const GREETING_RESPONSE = (name) =>
   `Ol\u00e1${name ? ', ' + name : ''}! \ud83d\ude0a Sou o concierge digital da TorresGuest e vou te ajudar por aqui.\n\nMe diga o que voc\u00ea precisa, ou digite *menu* para ver as op\u00e7\u00f5es. \ud83c\udf34`;
 
+/**
+ * buildGratitudeFarewellResponse — constrói resposta calorosa ESPELHADA
+ * baseada nos sinais detectados pelo detectGratitudeFarewell.
+ *
+ * Princípios:
+ *   - Reciprocidade autêntica (eco do que o hóspede disse)
+ *   - Curta, sem CTA agressivo de "me diga o que precisa"
+ *   - Variação: 4 templates pra evitar repetição
+ *   - Emoji compatível com o que o hóspede usou
+ *
+ * @param {object} sig  Resultado de detectGratitudeFarewell
+ * @returns {string}
+ */
+function buildGratitudeFarewellResponse(sig) {
+  if (!sig) return null;
+  const name = sig.name ? sig.name.split(' ')[0] : '';
+  const greetName = name ? `, ${name}` : '';
+
+  // 4 templates rotativos baseados nos sinais
+  const parts = [];
+
+  // Abertura calorosa
+  const openers = [
+    `Imagina${greetName}! 🤗`,
+    `Que carinho${greetName}! 💛`,
+    `Ahh, obrigada você${greetName}! 😊`,
+    `Tudo de bom pra você${greetName}! ✨`,
+  ];
+  // Escolhe um opener baseado em hash simples (timestamp do minuto)
+  const idx = Math.floor(Date.now() / 60000) % openers.length;
+  parts.push(openers[idx]);
+
+  // Eco da bênção, se houver
+  if (sig.hasBlessing) {
+    parts.push(`Que Deus abençoe vocês também 🙏`);
+  }
+
+  // Eco do desejo temporal, se houver
+  if (sig.timePeriod) {
+    const tp = sig.timePeriod;
+    if (tp === 'final de semana') parts.push(`Ótimo final de semana pra vocês também!`);
+    else if (tp === 'feriado') parts.push(`Ótimo feriado pra vocês também!`);
+    else if (tp === 'viagem') parts.push(`Boa viagem e curtam muito!`);
+    else if (tp === 'dia') parts.push(`Bom dia pra vocês também!`);
+    else if (tp === 'tarde') parts.push(`Boa tarde pra vocês!`);
+    else if (tp === 'noite') parts.push(`Boa noite, descansem bem!`);
+    else if (tp === 'semana') parts.push(`Ótima semana pra vocês!`);
+  }
+
+  // Fechamento sem ser invasivo
+  parts.push(`Fico por aqui se precisarem de qualquer coisinha 🌴`);
+
+  return parts.join(' ');
+}
+
 const THANKS_RESPONSE = `Imagina! \ud83d\ude0a\n\nQualquer coisa que precisar, estou por aqui para te ajudar. \ud83c\udf34`;
 
 const RESERVATION_SITE_RESPONSE = `As reservas s\u00e3o feitas exclusivamente pelo nosso site oficial:\n\n\ud83c\udf10 www.torresguest.com.br\n\nPor aqui no WhatsApp eu n\u00e3o realizo reservas nem consulto disponibilidade para novas hospedagens.`;
@@ -303,6 +358,7 @@ module.exports = {
   LUGGAGE_RESPONSE,
   GREETING_RESPONSE,
   THANKS_RESPONSE,
+  buildGratitudeFarewellResponse,
   RESERVATION_SITE_RESPONSE,
   RESERVATION_NOT_FOUND,
   getReservationResponse,
