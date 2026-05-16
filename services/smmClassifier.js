@@ -328,14 +328,38 @@ async function classifyAndRespond(args) {
   }
 
   // (1) Escalation classifier (Urgência/Praga/Manutenção/Limpeza/etc) — tem Sofia line nativo
+  // Bug 15/05/2026 (caso Mayra/Airbnb KF04J "lâmpada não acende"): hóspede recebia
+  // reply mas Sofia NÃO recebia o dispatch WhatsApp — o canal SMM nunca setou
+  // dispatchAlert/dispatchBody nesse branch. No canal WhatsApp o sendEscalationAlert
+  // é chamado direto em handlers/whatsapp.js:502. Aqui replicamos o mesmo formato,
+  // pulando categorias com noAlert: true (Contato Recepção / Reserva = só INFO).
   try {
     const escalation = classifyMessage(text);
     if (escalation && escalation.guestReply) {
-      return {
+      const ret = {
         reply: sanitizeForChannel(escalation.guestReply, channel, bookingConfirmed),
         source: 'classifier:' + escalation.name,
         channel,
       };
+      if (!escalation.noAlert) {
+        const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        ret.dispatchAlert = true;
+        ret.dispatchBody = [
+          `${escalation.emoji} *TorresGuest — ALERTA ${escalation.level}*`,
+          ``,
+          `📡 *Canal:* ${channel}`,
+          `👤 *Hóspede:* ${guestName || 'sem nome'}`,
+          `📋 *Categoria:* ${escalation.name}`,
+          `⏰ *Horário (BRT):* ${now}`,
+          ``,
+          `💬 *Mensagem do hóspede:*`,
+          `"${String(text).slice(0, 400)}"`,
+          ``,
+          `👉 Responder via Stays SMM (Airbnb/Booking bloqueiam contato externo):`,
+          `https://conciergecloud.com.br/admin/mensagens.html`,
+        ].join('\n');
+      }
+      return ret;
     }
   } catch (e) { /* falha silencioso, segue pra matchers */ }
 
