@@ -79,6 +79,20 @@ function buildSystemPromptFromSettings(tenant) {
   if (s.reservationContact || s.reservationWebsite) {
     lines.push(`- Reservas e informações: ${s.reservationContact ? 'WhatsApp ' + s.reservationContact : ''}${s.reservationContact && s.reservationWebsite ? ' ou ' : ''}${s.reservationWebsite ? 'site ' + s.reservationWebsite : ''}.`);
   }
+  if (s.landmarks && typeof s.landmarks === "object" && Object.keys(s.landmarks).length) {
+    lines.push("");
+    lines.push("Pontos de referencia REAIS proximos com distancias precisas (use SEMPRE estes valores, NUNCA invente):");
+    for (const [slug, l] of Object.entries(s.landmarks)) {
+      if (!l || typeof l !== "object") continue;
+      const dist = l.distance_m ? l.distance_m + "m" : l.distance_km ? l.distance_km + "km" : "?";
+      const time = l.walk_min ? `, ${l.walk_min}min a pe` : "";
+      const uber = l.uber_brl ? `, Uber R$${l.uber_brl}` : "";
+      const metro = l.metro ? `, metro: ${l.metro}` : "";
+      const note = l.note ? ` ${l.note}` : "";
+      lines.push(`- ${l.name || slug}: ${dist}${time}${uber}${metro}.${note}`);
+    }
+    lines.push("- REGRA: se o hospede perguntar distancia/tempo/Uber para um destes pontos, use EXATAMENTE estes valores acima. Nao chute.");
+  }
   if (Array.isArray(s.customFaqs) && s.customFaqs.length) {
     lines.push('');
     lines.push('Perguntas e respostas específicas desta propriedade:');
