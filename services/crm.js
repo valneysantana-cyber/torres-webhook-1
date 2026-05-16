@@ -38,7 +38,7 @@ async function saveMessage(phone, role, content) {
  * @param {number} [limit=10]
  * @returns {Promise<Array<{phone,role,content,ts}>>}
  */
-async function getContext(phone, limit = 10) {
+async function getContext(phone, limit = 15) {
   if (!CRM_API_URL) return [];
   try {
     const res = await fetch(`${CRM_API_URL}/guest/${phone}/context?limit=${limit}`, {
