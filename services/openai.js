@@ -244,6 +244,34 @@ async function getChatGptFallbackReply(userMessage, phone, context = [], profile
   } else {
     basePrompt = SYSTEM_PROMPT;
   }
+  // Append landmarks REAIS do tenant.settings (vale para QUALQUER tenant incluindo torres
+  // hardcoded). Sem isso, LLM hallucina distancias quando hospede pergunta.
+  if (tenant && tenant.settings && tenant.settings.landmarks && typeof tenant.settings.landmarks === 'object') {
+    const ldkeys = Object.keys(tenant.settings.landmarks);
+    if (ldkeys.length) {
+      const lmLines = [];
+      lmLines.push('');
+      lmLines.push('Pontos de referencia REAIS proximos com distancias precisas — USE EXATAMENTE estes valores, NUNCA invente:');
+      for (const [slug, l] of Object.entries(tenant.settings.landmarks)) {
+        if (!l || typeof l !== 'object') continue;
+        const dist = l.distance_m ? l.distance_m + 'm' : l.distance_km ? l.distance_km + 'km' : '?';
+        const time = l.walk_min ? ', ' + l.walk_min + 'min a pe' : '';
+        const uber = l.uber_brl ? ', Uber R$' + l.uber_brl : '';
+        const metro = l.metro ? ', metro: ' + l.metro : '';
+        const note = l.note ? ' ' + l.note : '';
+        lmLines.push('- ' + (l.name || slug) + ': ' + dist + time + uber + metro + '.' + note);
+      }
+      lmLines.push('- REGRA: Se hospede perguntar distancia/tempo/Uber para um destes pontos, use exatamente os valores acima. Nao chute, nao arredonde.');
+      basePrompt = basePrompt + '\n' + lmLines.join('\n');
+    }
+  }
+  // Tambem garante endereco real se nao estiver ja embutido no prompt
+  if (tenant && tenant.settings && (tenant.settings.address_full || tenant.settings.address)) {
+    const addr = tenant.settings.address_full || tenant.settings.address;
+    if (!basePrompt.includes(addr)) {
+      basePrompt = basePrompt + '\n\nEndereco oficial do hotel: ' + addr + '. (Use este endereco quando hospede pedir endereco/localizacao/onde fica.)';
+    }
+  }
   const systemContent = profileBlock ? `${basePrompt}${profileBlock}` : basePrompt;
   // ⚠️ NÃO incluir o phone do remetente no userInput — AI alucina usando-o como
   // contato humano quando user pede "fala com o Valney/Sofia/atendente". Bug
