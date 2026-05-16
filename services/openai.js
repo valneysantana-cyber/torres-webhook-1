@@ -10,6 +10,25 @@ const {
   HUMAN_NUMBER_SECONDARY,
 } = require('../config');
 
+// LLM Provider config (PR #109 hotfix: declarations estavam faltando)
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || null;
+const LLM_PROVIDER = (process.env.LLM_PROVIDER || 'openai').toLowerCase();
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5';
+let _anthropicClient = null;
+function getAnthropicClient() {
+  if (_anthropicClient) return _anthropicClient;
+  if (!ANTHROPIC_API_KEY) return null;
+  try {
+    const { Anthropic } = require('@anthropic-ai/sdk');
+    _anthropicClient = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+    console.log('[anthropic] client initialized');
+    return _anthropicClient;
+  } catch (err) {
+    console.error('[anthropic] init failed:', err.message);
+    return null;
+  }
+}
+
 /**
  * Compõe o system prompt a partir de tenant.settings estruturados.
  * Usado quando o tenant NÃO é torres (que mantém SYSTEM_PROMPT hardcoded)
