@@ -56,3 +56,32 @@ module.exports = {
   // Setar OTA_GUEST_MESSAGE_DISABLED=false pra reativar o caminho legacy.
   OTA_GUEST_MESSAGE_DISABLED: process.env.OTA_GUEST_MESSAGE_DISABLED || 'true',
 };
+
+// ─── S8 fix 16/05/2026 — boot-time assertion crítico ───
+// Sem CRM_API_URL/CRM_API_KEY o bot não resolve tenant via fetchTenantById
+// (services/tenant.js:34, :208 fazem early-return null silencioso).
+// Sintoma observado em prod: hóspedes legítimos caíam em cc_sales (tenant
+// prospect) e o bot virava "vendedor B2B" no meio do atendimento.
+// Documentado em `feedback_crm_api_url_required.md`. Agora fail-fast no boot
+// em ambientes não-locais.
+(function assertCriticalEnv() {
+  const missing = [];
+  if (!process.env.CRM_API_URL) missing.push('CRM_API_URL');
+  if (!process.env.CRM_API_KEY) missing.push('CRM_API_KEY');
+  if (missing.length === 0) {
+    console.log('[boot] ✅ CRM_API_URL/CRM_API_KEY configurados');
+    return;
+  }
+  const isProd = process.env.NODE_ENV === 'production'
+              || !!process.env.RENDER
+              || !!process.env.RENDER_SERVICE_ID;
+  const msg = '[boot] ⚠️  ENV CRÍTICAS AUSENTES: ' + missing.join(', ')
+            + ' — tenant resolution vai falhar silenciosamente → hóspedes caem em cc_sales.';
+  if (isProd) {
+    console.error(msg);
+    console.error('[boot] FATAL em produção. Setando essas envs no Render é mandatório. Exiting.');
+    process.exit(1);
+  } else {
+    console.warn(msg + ' (dev/local — não abortando)');
+  }
+})();
