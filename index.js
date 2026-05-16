@@ -18,8 +18,11 @@
 
 const express    = require('express');
 const bodyParser = require('body-parser');
+const crypto     = require('crypto');
 
 const { PORT, VERIFY_TOKEN, DISPATCH_SECRET } = require('./config');
+const META_APP_SECRET = process.env.META_APP_SECRET || process.env.FB_APP_SECRET || '';
+const META_HMAC_ENFORCE = String(process.env.META_HMAC_ENFORCE || 'auto').toLowerCase();
 const { handleIncoming }       = require('./handlers/whatsapp');
 const { dailyCheckinDispatch } = require('./services/dispatch');
 const { dailyCheckoutSync }    = require('./services/checkout');
@@ -31,7 +34,40 @@ const { startEmailMonitor } = require('./services/emailMonitor');
 const { connectDB } = require('./services/db');
 
 const app = express();
-app.use(bodyParser.json());
+// A8 fix audit 16/05/2026 — captura raw body pra validar X-Hub-Signature-256.
+// Meta assina os bytes EXATOS recebidos; json.stringify(req.body) não bate.
+app.use(bodyParser.json({
+  verify: (req, _res, buf) => { req.rawBody = buf; },
+}));
+
+// A8 fix audit 16/05/2026 — Meta webhook signature validation (HMAC-SHA256).
+// Modo de operação:
+//   META_HMAC_ENFORCE=auto (default): valida se METHOD_APP_SECRET setado,
+//                                     ignora se não setado (backward-compat).
+//   META_HMAC_ENFORCE=strict: exige assinatura válida sempre (recomendado prod).
+//   META_HMAC_ENFORCE=off: pula validação (apenas DEV — não usar).
+function verifyMetaSignature(req) {
+  if (META_HMAC_ENFORCE === 'off') return { ok: true, reason: 'enforce-off' };
+  if (!META_APP_SECRET) {
+    if (META_HMAC_ENFORCE === 'strict') return { ok: false, reason: 'no-secret-strict' };
+    return { ok: true, reason: 'no-secret-auto' }; // backward-compat
+  }
+  const sig = req.headers['x-hub-signature-256'] || '';
+  if (!sig.startsWith('sha256=')) return { ok: false, reason: 'no-signature' };
+  const received = sig.slice(7);
+  const raw = req.rawBody || Buffer.from(JSON.stringify(req.body || {}), 'utf8');
+  const expected = crypto.createHmac('sha256', META_APP_SECRET).update(raw).digest('hex');
+  const a = Buffer.from(received, 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+  if (a.length !== b.length) return { ok: false, reason: 'length-mismatch' };
+  try {
+    return crypto.timingSafeEqual(a, b) ? { ok: true, reason: 'valid' } : { ok: false, reason: 'mismatch' };
+  } catch (e) {
+    return { ok: false, reason: 'compare-error' };
+  }
+}
+
+console.log('[boot] Meta HMAC mode:', META_HMAC_ENFORCE, '· APP_SECRET:', META_APP_SECRET ? 'set' : 'MISSING');
 
 // ---- health check ---------------------------------------------------------
 app.get('/', (_req, res) => {
@@ -57,6 +93,11 @@ app.get('/whatsapp-webhook', (req, res) => {
 });
 
 app.post('/whatsapp-webhook', async (req, res) => {
+  const sig = verifyMetaSignature(req);
+  if (!sig.ok) {
+    console.warn('[whatsapp-webhook] HMAC fail:', sig.reason);
+    return res.status(401).send({ status: 'invalid-signature', reason: sig.reason });
+  }
   res.status(200).send({ status: 'received' });
   try {
     await handleIncoming(req.body);
@@ -84,6 +125,11 @@ app.get('/instagram-webhook', (req, res) => {
 });
 
 app.post('/instagram-webhook', async (req, res) => {
+  const sig = verifyMetaSignature(req);
+  if (!sig.ok) {
+    console.warn('[instagram-webhook] HMAC fail:', sig.reason);
+    return res.status(401).send({ status: 'invalid-signature', reason: sig.reason });
+  }
   res.status(200).send({ status: 'received' });
   try {
     await handleInstagramWebhook(req.body);
@@ -111,6 +157,11 @@ app.get('/messenger-webhook', (req, res) => {
 });
 
 app.post('/messenger-webhook', async (req, res) => {
+  const sig = verifyMetaSignature(req);
+  if (!sig.ok) {
+    console.warn('[messenger-webhook] HMAC fail:', sig.reason);
+    return res.status(401).send({ status: 'invalid-signature', reason: sig.reason });
+  }
   res.status(200).send({ status: 'received' });
   try {
     await handleMessengerWebhook(req.body);
