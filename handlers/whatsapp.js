@@ -31,6 +31,7 @@ const {
   SECURITY_RESPONSE,
   TRANSFER_RESPONSE,
   getTransferResponse,
+  getLocationResponse,
   LONG_STAY_RESPONSE,
   CLEANING_RESPONSE,
   INTERNET_RESPONSE,
