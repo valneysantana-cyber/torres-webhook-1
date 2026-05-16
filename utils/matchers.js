@@ -251,7 +251,7 @@ function shouldHandleCancellationRequest(text) {
 }
 
 function shouldRedirectToReservationSite(text) {
-  return /\b(reservar|nova reserva|fazer reserva|quero reservar|quero fazer uma reserva|como faco minha reserva|consigo reservar|posso reservar|fechar reserva|fechar hospedagem|disponibilidade|tem disponibilidade|tem vaga.{0,12}(quarto|hospedagem|noite|disponivel)|ha vaga.{0,12}(quarto|hospedagem|noite|disponivel)|valor da diaria|preco|diaria|quarto disponivel|acomodacao|hospedagem|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)\b/.test(text);
+  return /\b(reservar|nova reserva|fazer reserva|quero reservar|quero fazer uma reserva|como faco minha reserva|consigo reservar|posso reservar|fechar reserva|fechar hospedagem|disponibilidade|tem disponibilidade|tem vaga.{0,12}(quarto|hospedagem|noite|disponivel)|ha vaga.{0,12}(quarto|hospedagem|noite|disponivel)|valor da diaria|quarto disponivel|acomodacao|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)\b/.test(text);
 }
 
 function shouldSendSecurity(text) {
@@ -511,7 +511,11 @@ function shouldSendFrigobarPix(text) {
   // matcher correto (shouldSendFoodOrder → FOOD_ORDER_RESPONSE Don Maitre).
   // Caso reportado: hospede pergunta "cardapio do restaurante" → recebia frigobar.
   const isRestaurantContext = /(restaurante|delivery|ifood|i food|comida|refeicao|refeicoes|jantar|almoco|menu)/.test(t);
-  return (isFrigobarMention || isPaymentOrMenu)
+  // FIX (Valney 16/05 PM): exige mention explicito de frigobar/minibar.
+  // Antes: "quanto custa?" sozinho disparava cardapio frigobar — confundia
+  // hospede perguntando sobre diaria. Agora isPaymentOrMenu so vale como
+  // BOOST se ja ha mention de frigobar, nao como gatilho isolado.
+  return isFrigobarMention
     && !isReservationContext
     && !isRestockIntent
     && !isRestaurantContext;
