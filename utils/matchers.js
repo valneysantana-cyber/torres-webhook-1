@@ -259,7 +259,15 @@ function shouldSendSecurity(text) {
 }
 
 function shouldSendLocation(text) {
-  return /(localizacao|endereco|onde fica|diferencial|estrutura)/.test(text);
+  // Matcher SO dispara quando pergunta e sobre o hotel/torresguest, NAO sobre
+  // outro lugar (Allianz, MASP, restaurante, PUC, etc).
+  // Fix Valney 16/05 17:22: "endereco do allianz?" disparava LOCATION_RESPONSE
+  // do hotel — confundia totalmente o hospede.
+  if (!/(localizacao|endereco|onde fica|diferencial|estrutura)/.test(text)) return false;
+  // Se pergunta menciona um lugar DIFERENTE do hotel, NAO dispara — deixa LLM responder
+  const otherPlace = /\b(allianz|palmeiras|morumbi|paulista|ibirapuera|pacaembu|corinthians|neo.?quimica|itaquera|puc|bourbon|masp|theatro|pinacoteca|aeroporto|congonhas|guarulhos|cumbica|restaurante|maitre)\b/.test(text);
+  if (otherPlace) return false;
+  return true;
 }
 
 function shouldSendLongStay(text) {
