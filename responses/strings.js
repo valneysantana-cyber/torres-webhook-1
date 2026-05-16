@@ -281,11 +281,14 @@ function getReservationResponse(lang) {
   return `As reservas s\u00e3o feitas exclusivamente pelo nosso site oficial:\n\n\ud83c\udf10 www.torresguest.com.br\n\nPor aqui no WhatsApp n\u00e3o realizo reservas nem consulto disponibilidade.`;
 }
 
-function getLocationResponse(lang) {
-  if (lang === 'en') {
-    return `\ud83d\udccd TorresGuest Highlights\n\u2022 Private flats inside a full-service hotel (pool, gym, restaurant)\n\u2022 Excellent location in Perdizes, S\u00e3o Paulo/SP\n\u2022 Close to Allianz Parque, PUC-SP and Shopping Bourbon\n\u2022 Personal and humanized service, concierge style\n\nPerfect for leisure or business. Need anything specific? Just ask! \ud83c\udf34`;
+function getLocationResponse(lang, tenant) {
+  // Endereço REAL do tenant (se disponível) — vem PRIMEIRO pra resposta direta
+  const addr = tenant && tenant.settings && (tenant.settings.address_full || tenant.settings.address);
+  const addrLine = addr ? (lang === "en" ? `\ud83d\udccd *Address:* ${addr}\n\n` : `\ud83d\udccd *Endere\u00e7o:* ${addr}\n\n`) : "";
+  if (lang === "en") {
+    return `${addrLine}\ud83c\udfe8 TorresGuest Highlights\n\u2022 Private flats inside a full-service hotel (pool, gym, restaurant)\n\u2022 Excellent location in Perdizes, S\u00e3o Paulo/SP\n\u2022 Close to Allianz Parque (7km), PUC-SP (150m walk!) and Shopping Bourbon (700m)\n\u2022 Personal and humanized service, concierge style\n\nPerfect for leisure or business. Need anything specific? Just ask! \ud83c\udf34`;
   }
-  return LOCATION_RESPONSE;
+  return `${addrLine}\ud83c\udfe8 Diferenciais TorresGuest\n\u2022 Flats dentro de um hotel completo (piscina, academia, restaurante)\n\u2022 Localiza\u00e7\u00e3o excelente em Perdizes, S\u00e3o Paulo/SP\n\u2022 Pr\u00f3ximo ao Allianz Parque (7km), PUC-SP (150m a p\u00e9!) e Shopping Bourbon (700m, 9min)\n\u2022 Atendimento pr\u00f3ximo e humanizado, estilo concierge\n\nIdeal para lazer ou trabalho. Precisa de algo espec\u00edfico? S\u00f3 chamar! \ud83c\udf34`;
 }
 
 
