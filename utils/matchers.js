@@ -265,7 +265,7 @@ function shouldSendLocation(text) {
   // do hotel — confundia totalmente o hospede.
   if (!/(localizacao|endereco|onde fica|diferencial|estrutura)/.test(text)) return false;
   // Se pergunta menciona um lugar DIFERENTE do hotel, NAO dispara — deixa LLM responder
-  const otherPlace = /\b(allianz|palmeiras|morumbi|paulista|ibirapuera|pacaembu|corinthians|neo.?quimica|itaquera|puc|bourbon|masp|theatro|pinacoteca|aeroporto|congonhas|guarulhos|cumbica|restaurante|maitre)\b/.test(text);
+  const otherPlace = /\b(allianz|palmeiras|morumbi|paulista|ibirapuera|pacaembu|corinthians|neo.?quimica|itaquera|puc|bourbon|masp|theatro|pinacoteca|aeroporto|congonhas|guarulhos|cumbica|restaurante|maitre|concierge|conciergecloud|cc.?cloud|empresa|software)\b/.test(text);
   if (otherPlace) return false;
   return true;
 }
