@@ -279,6 +279,27 @@ async function getChatGptFallbackReply(userMessage, phone, context = [], profile
   // pra prospect cc_sales que perguntou contato. Phone é metadata, não conteúdo.
   const userInput = `${historyBlock}Mensagem: ${userMessage}`;
 
+  // ── PROVIDER SWITCH: anthropic | openai ──
+  if (LLM_PROVIDER === 'anthropic' && ANTHROPIC_API_KEY) {
+    try {
+      const client = getAnthropicClient();
+      if (!client) throw new Error('Anthropic client not initialized');
+      const userText = (typeof userInput === 'string') ? userInput : (Array.isArray(userInput) ? userInput.map(p=>p.text||'').join('\n') : String(userInput));
+      const msg = await client.messages.create({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 600,
+        system: systemContent,
+        messages: [{ role: 'user', content: userText }],
+      });
+      const text = (msg.content && msg.content[0] && msg.content[0].text) || '';
+      console.log('[anthropic reply]', text.slice(0, 200));
+      return text.trim() || null;
+    } catch (err) {
+      console.error('[anthropic] erro, fallback pra openai:', err.message);
+      // continua pro OpenAI abaixo
+    }
+  }
+
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
