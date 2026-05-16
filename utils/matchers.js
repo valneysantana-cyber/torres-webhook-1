@@ -20,7 +20,20 @@ function isNumericSelection(text, ...options) {
 }
 
 function shouldSendMenu(text) {
-  return isNumericSelection(text, '0') || /\b(menu|opcao|opcoes|ajuda|inicio|start|comecar)\b/.test(text);
+  // FIX 16/05: removidos 'inicio' e 'comecar' da regex — eram muito ambiguos.
+  // Caso Silvana JZ04J: "no inicio da noite" disparava menu indevidamente
+  // (em vez de luggage, que era o pedido real).
+  // Mantemos apenas palavras EXPLICITAS de pedido de menu/ajuda.
+  if (isNumericSelection(text, '0')) return true;
+  if (!/\b(menu|opcao|opcoes|ajuda|start|help)\b/.test(text)) return false;
+  // Anti-false-positive: mensagem longa com "ajuda" no meio nao deve matchar menu.
+  // Menu so faz sentido em mensagens isoladas/curtas.
+  const words = String(text).trim().split(/\s+/).filter(Boolean);
+  if (words.length > 10) {
+    // Em mensagem longa, so matcha se palavra-chave for forte
+    return /\b(menu|opcoes?)\b/.test(text);
+  }
+  return true;
 }
 
 function shouldSendWifi(text) {
