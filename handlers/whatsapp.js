@@ -254,7 +254,7 @@ const PT_DISPATCH = [
     reply: (lang) => getTransferResponse(lang),
     notify: (from, body) => sendTransferAlert(from, body),
   },
-  { check: shouldSendLocation,    reply: (lang) => getLocationResponse(lang) },
+  { check: shouldSendLocation,    reply: (lang, tenant) => getLocationResponse(lang, tenant) },
   { check: shouldSendLongStay,    reply: (lang, tenant) => getResponseForTenant('LONG_STAY', lang, tenant) },
   {
     check: shouldSendCleaning,
