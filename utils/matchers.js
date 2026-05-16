@@ -251,7 +251,7 @@ function shouldHandleCancellationRequest(text) {
 }
 
 function shouldRedirectToReservationSite(text) {
-  return /\b(reservar|nova reserva|fazer reserva|quero reservar|quero fazer uma reserva|como faco minha reserva|consigo reservar|posso reservar|fechar reserva|fechar hospedagem|disponibilidade|tem vaga|tem disponibilidade|ha vaga|valor da diaria|preco|diaria|quarto disponivel|acomodacao|hospedagem|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)\b/.test(text);
+  return /\b(reservar|nova reserva|fazer reserva|quero reservar|quero fazer uma reserva|como faco minha reserva|consigo reservar|posso reservar|fechar reserva|fechar hospedagem|disponibilidade|tem disponibilidade|tem vaga.{0,12}(quarto|hospedagem|noite|disponivel)|ha vaga.{0,12}(quarto|hospedagem|noite|disponivel)|valor da diaria|preco|diaria|quarto disponivel|acomodacao|hospedagem|ficar do dia|entrada dia|saida dia|checkin dia|checkout dia)\b/.test(text);
 }
 
 function shouldSendSecurity(text) {
