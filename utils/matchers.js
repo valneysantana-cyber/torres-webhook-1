@@ -287,6 +287,17 @@ function shouldSendLuggage(text) {
 }
 
 function shouldSendGreeting(text) {
+  if (!text) return false;
+  // FIX (Valney 17/05): exige que mensagem SEJA saudacao curta, sem perguntas
+  // misturadas. Antes: oi, boa noite, quero saber X, Y, Z disparava greeting
+  // e descartava as perguntas — bot respondia so com saudacao.
+  // GUARD 1: se tem pergunta (?), nao e saudacao pura — passa pro LLM
+  if (/\?/.test(text)) return false;
+  // GUARD 2: mensagem longa (>40 chars apos strip) provavelmente tem conteudo
+  const stripped = String(text).replace(/[\s.!?,;:\-]+/g, '');
+  if (stripped.length > 40) return false;
+  // GUARD 3: presenca de palavras-chave operacionais bloqueia greeting
+  if (/\b(quero|preciso|gostaria|tem|qual|como|onde|quando|posso|consigo|fazer|reservar|cancelar)\b/.test(text)) return false;
   return /\b(oi|ola|ol\u00e1|bom dia|boa tarde|boa noite|e ai|eai|hey|hello|hi|como vai|tudo bem)\b/.test(text);
 }
 
