@@ -525,8 +525,25 @@ async function handleIncoming(payload) {
         if (isTorresContext) {
         // ---- greeting ---------------------------------------------------
         // Pure greeting only (no '?'). Greeting+question falls through to the AI.
+        // FIX (Valney 17/05): cooldown 30min. Se bot ja respondeu recente,
+        // nao redispara greeting (vai pro LLM que mantem fluidez).
         const words = normalized.trim().split(/\s+/);
-        const isJustGreeting = shouldSendGreeting(normalized) && !body.includes('?') && words.length <= 5;
+        let isJustGreeting = shouldSendGreeting(normalized) && !body.includes('?') && words.length <= 5;
+        if (isJustGreeting) {
+          try {
+            const earlyCtx = await getContext(from, 5);
+            if (Array.isArray(earlyCtx) && earlyCtx.length) {
+              const lastBotMsg = earlyCtx.filter(m => m.role === 'assistant').slice(-1)[0];
+              if (lastBotMsg && lastBotMsg.ts) {
+                const ageMin = (Date.now() - new Date(lastBotMsg.ts).getTime()) / 60000;
+                if (ageMin < 30) {
+                  console.log('[greeting] cooldown active — last bot reply ' + Math.round(ageMin) + 'min ago — skipping greeting');
+                  isJustGreeting = false;
+                }
+              }
+            }
+          } catch (e) { console.warn('[greeting cooldown] err:', e.message); }
+        }
         if (isJustGreeting) {
           await replyAndSave(from, GREETING_RESPONSE(contactName), { alsoSendAudio: camFromAudio });
           continue;
