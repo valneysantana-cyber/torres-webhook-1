@@ -12,6 +12,8 @@
 const { normalizeText } = require('../utils/formatters');
 const { classifyMessage } = require('./classifier');
 const { getChatGptFallbackReply } = require('./openai');
+const { detectLanguage } = require('../utils/matchers');
+const { getResponseForTenant } = require('../responses/strings');
 
 // Todos os matchers torres-flavored (mesmos usados no PT_DISPATCH do WA).
 const {
@@ -103,55 +105,64 @@ function getDispatchTable() {
   // Ordem otimizada pra SMM: matchers ESPECÍFICOS antes dos GENÉRICOS.
   // Difere do PT_DISPATCH WhatsApp em alguns pontos (luggage antes de security,
   // checkin antes de current_time) pra evitar falsos positivos vistos no canal.
+  // Bug fix 18/05/2026 — caso LV01J (Booking):
+  // Todas as replies agora passam (lang, tenant) e usam getResponseForTenant
+  // pra retornar a resposta no idioma certo. Antes ignoravam o lang e
+  // respondiam sempre em PT, mesmo com hóspede escrevendo em EN/ES/FR.
+  const i18n = (key, fallback) => (lang, tenant) => {
+    const r = getResponseForTenant(key, lang || 'pt', tenant);
+    return r || fallback;
+  };
+
   return [
     // ── Documentos / Acesso ── ESPECÍFICOS primeiro
-    { check: shouldSendDocuments,   reply: () => DOCUMENTS_RESPONSE, source: 'documents' },
-    { check: shouldSendHotelAccess, reply: () => HOTEL_ACCESS_RESPONSE, source: 'hotel_access' },
-    { check: shouldSendSafe,        reply: () => SAFE_RESPONSE, source: 'safe' },
-    { check: shouldSendInvoice,     reply: () => INVOICE_RESPONSE, source: 'invoice' },
+    { check: shouldSendDocuments,   reply: i18n('DOCUMENTS',     DOCUMENTS_RESPONSE),     source: 'documents' },
+    { check: shouldSendHotelAccess, reply: i18n('HOTEL_ACCESS',  HOTEL_ACCESS_RESPONSE),  source: 'hotel_access' },
+    { check: shouldSendSafe,        reply: i18n('SAFE',          SAFE_RESPONSE),          source: 'safe' },
+    { check: shouldSendInvoice,     reply: i18n('INVOICE',       INVOICE_RESPONSE),       source: 'invoice' },
 
     // ── Check-in/out timing (ANTES de current_time pra "que horas check-in") ──
     // Pré-checkin "quem pode fazer" ANTES de shouldSendCheckin (pra não cair em
     // resposta genérica sobre horário). Caso Sofia 13/05/2026.
     { check: shouldSendPreCheckinWhoCan, reply: () => PRE_CHECKIN_WHO_CAN_RESPONSE, source: 'pre_checkin_who_can' },
-    { check: shouldSendCheckin,     reply: () => CHECKIN_RESPONSE, source: 'checkin' },
-    { check: shouldSendParkingEarly, reply: () => PARKING_EARLY_RESPONSE, source: 'parking_early' },
+    { check: shouldSendCheckin,     reply: i18n('CHECKIN',       CHECKIN_RESPONSE),       source: 'checkin' },
+    { check: shouldSendParkingEarly, reply: i18n('PARKING_EARLY', PARKING_EARLY_RESPONSE), source: 'parking_early' },
 
     // ── Pertences / bagagem (ANTES de security pra "deixar malas na recepção") ──
-    { check: shouldSendLuggage,     reply: () => LUGGAGE_RESPONSE, source: 'luggage' },
+    { check: shouldSendLuggage,     reply: i18n('LUGGAGE',       LUGGAGE_RESPONSE),       source: 'luggage' },
 
     // ── Serviços do flat ──
-    { check: shouldSendWifi,        reply: () => WIFI_RESPONSE, source: 'wifi' },
-    { check: shouldSendInternet,    reply: () => INTERNET_RESPONSE, source: 'internet' },
+    { check: shouldSendWifi,        reply: i18n('WIFI',          WIFI_RESPONSE),          source: 'wifi' },
+    { check: shouldSendInternet,    reply: i18n('INTERNET',      INTERNET_RESPONSE),      source: 'internet' },
     { check: shouldSendBreakfast,   reply: (_l, t) => buildBreakfastResponse ? buildBreakfastResponse(t) : 'Café da manhã incluso, servido das 06:30 às 10:00 no restaurante do hotel.', source: 'breakfast' },
-    { check: shouldSendBreakfastCompanion, reply: () => BREAKFAST_COMPANION_RESPONSE, source: 'breakfast_companion' },
-    { check: shouldSendPool,        reply: () => POOL_RESPONSE, source: 'pool' },
+    { check: shouldSendBreakfastCompanion, reply: i18n('BREAKFAST_COMPANION', BREAKFAST_COMPANION_RESPONSE), source: 'breakfast_companion' },
+    { check: shouldSendPool,        reply: i18n('POOL',          POOL_RESPONSE),          source: 'pool' },
     { check: shouldSendParking,     reply: (_l, t) => buildParkingResponse ? buildParkingResponse(t) : 'Estacionamento valet incluso — ao chegar, informe "Flat condomínio".', source: 'parking' },
-    { check: shouldSendSnacks,      reply: () => SNACKS_RESPONSE, source: 'snacks' },
+    { check: shouldSendSnacks,      reply: i18n('SNACKS',        SNACKS_RESPONSE),        source: 'snacks' },
     // Frigobar PIX / pagamento — ANTES de towels/bedding/cleaning pra capturar
     // "Qual o pix para pagamento da água?" sem cair em reposição/Limpeza.
     // Adicionado 13/05/2026.
     { check: shouldSendFrigobarPix, reply: () => FRIGOBAR_PIX_RESPONSE, source: 'frigobar_pix' },
-    { check: shouldSendTowels,      reply: () => TOWELS_RESPONSE, source: 'towels' },
+    { check: shouldSendTowels,      reply: i18n('TOWELS',        TOWELS_RESPONSE),        source: 'towels' },
     { check: shouldSendFoodOrder,   reply: () => FOOD_ORDER_RESPONSE, source: 'food_order' },
-    { check: shouldSendRestaurant,  reply: () => RESTAURANT_RESPONSE, source: 'restaurant' },
-    { check: shouldSendCommonAreas, reply: () => COMMON_AREAS_RESPONSE, source: 'common_areas' },
-    { check: shouldSendBedding,     reply: () => BEDDING_RESPONSE, source: 'bedding' },
-    { check: shouldSendCleaning,    reply: () => CLEANING_RESPONSE, source: 'cleaning' },
+    { check: shouldSendRestaurant,  reply: i18n('RESTAURANT',    RESTAURANT_RESPONSE),    source: 'restaurant' },
+    { check: shouldSendCommonAreas, reply: i18n('COMMON_AREAS',  COMMON_AREAS_RESPONSE),  source: 'common_areas' },
+    { check: shouldSendBedding,     reply: i18n('BEDDING',       BEDDING_RESPONSE),       source: 'bedding' },
+    { check: shouldSendCleaning,    reply: i18n('CLEANING',      CLEANING_RESPONSE),      source: 'cleaning' },
 
     // ── Mudança / atendimento ──
-    { check: shouldHandleDateChange, reply: () => DATE_CHANGE_RESPONSE, source: 'date_change' },
-    { check: shouldSendHotelMaintenance, reply: () => HOTEL_MAINTENANCE_RESPONSE, source: 'hotel_maintenance' },
+    { check: shouldHandleDateChange, reply: i18n('DATE_CHANGE',  DATE_CHANGE_RESPONSE),   source: 'date_change' },
+    { check: shouldSendHotelMaintenance, reply: i18n('HOTEL_MAINTENANCE', HOTEL_MAINTENANCE_RESPONSE), source: 'hotel_maintenance' },
     { check: shouldSendTransfer,    reply: (lang) => getTransferResponse ? getTransferResponse(lang) : 'Recepção do hotel arruma táxi/Uber. Disque *9 do telefone do quarto.', source: 'transfer' },
     { check: shouldSendLocation,    reply: (lang) => getLocationResponse(lang || 'pt'), source: 'location' },
-    { check: shouldSendLongStay,    reply: () => LONG_STAY_RESPONSE, source: 'long_stay' },
-    { check: shouldSendSecurity,    reply: () => SECURITY_RESPONSE, source: 'security' },
-    { check: shouldSendHostingCourse, reply: () => HOSTING_COURSE_RESPONSE, source: 'hosting_course' },
+    { check: shouldSendLongStay,    reply: i18n('LONG_STAY',     LONG_STAY_RESPONSE),     source: 'long_stay' },
+    { check: shouldSendSecurity,    reply: i18n('SECURITY',      SECURITY_RESPONSE),      source: 'security' },
+    { check: shouldSendHostingCourse, reply: i18n('HOSTING_COURSE', HOSTING_COURSE_RESPONSE), source: 'hosting_course' },
 
     // ── Genéricos por último ──
     { check: shouldSendCurrentDate, reply: () => getCurrentDateBRT ? `Hoje é ${getCurrentDateBRT()}.` : `Hoje é ${new Date().toLocaleDateString('pt-BR')}.`, source: 'current_date' },
     { check: shouldSendCurrentTime, reply: () => getCurrentTimeBRT ? `Agora são ${getCurrentTimeBRT()}, horário de Brasília.` : `Agora é ${new Date().toLocaleTimeString('pt-BR')}.`, source: 'current_time' },
-    { check: shouldSendHuman,       reply: () => HUMAN_ESCALATION_RESPONSE, source: 'human' },
+    { check: shouldSendHuman,       reply: i18n('HUMAN_ESCALATION', HUMAN_ESCALATION_RESPONSE), source: 'human' },
   ];
 }
 
@@ -215,12 +226,28 @@ function isAirbnbContactRequest(text) {
 async function classifyAndRespond(args) {
   const {
     text, channel = 'unknown', guestName = '', tenant = null,
-    history = [], lang = 'pt', allowAi = false,
+    history = [], lang: callerLang, allowAi = false,
     bookingConfirmed = false, // padrão strict: assume pré-confirmação
   } = args || {};
   if (!text || !String(text).trim()) {
     return { reply: null, source: 'noop:empty', channel };
   }
+
+  // Bug fix 18/05/2026 — caso LV01J (Booking):
+  // Auto-detecta idioma da mensagem atual. Antes default 'pt' silencioso fazia
+  // bot responder em PT pra hóspede que escrevia em EN/ES/FR.
+  // Política conservadora: se caller passou lang explícito não-default ('en'/
+  // 'es'/'fr'), respeita. Caso contrário detecta. Se detector retorna 'pt'
+  // (default conservador), mantém o caller (ou 'pt').
+  let lang = callerLang || 'pt';
+  try {
+    const auto = detectLanguage(text);
+    if (auto && auto !== 'pt') {
+      // Auto-detect só sobrescreve se for não-PT (PT é o default conservador).
+      lang = auto;
+    }
+  } catch (_) { /* manter callerLang/pt */ }
+
   const normalized = normalizeText(text);
   const isAirbnbPrebooking = channel === 'airbnb' && !bookingConfirmed;
 

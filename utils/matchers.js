@@ -121,11 +121,30 @@ function shouldSendRestaurantMenuI18n(text) {
 }
 
 function shouldSendCheckin(text) {
-  return (
-    isNumericSelection(text, '8') ||
-    // Inclui "check in" / "check out" com espa\u00e7o (ap\u00f3s normalizeText h\u00edfen vira espa\u00e7o \u2014 bug fix 13/05/2026).
-    /(check\s*-?\s*in|check\s*-?\s*out|checkin|checkout|horario de check\s*-?\s*in|horario de check\s*-?\s*out|entrada|saida|sa\u00edda)/.test(text)
-  );
+  if (isNumericSelection(text, '8')) return true;
+
+  // Bug fix 18/05/2026 \u2014 caso LV01J (Booking):
+  // H\u00f3spede em EN pediu "invoice... when I check out" e o matcher capturava
+  // "check out" isolado, roubando a intent do shouldSendInvoice \u2192 respondia
+  // hor\u00e1rio em PT em vez de escalar pra Sofia. Agora exigimos contexto claro
+  // (hor\u00e1rio/tempo, ou frase curta de pergunta).
+
+  // 1) Frase exata "horario de check-in/out" (com ou sem acento) sempre dispara
+  if (/(horario de check\s*-?\s*in|horario de check\s*-?\s*out|hor\u00e1rio de check\s*-?\s*in|hor\u00e1rio de check\s*-?\s*out)/i.test(text)) return true;
+
+  // 2) Detecta men\u00e7\u00e3o a check-in/check-out (EN/PT) ou termos PT
+  const hasCheckTerm = /(check\s*-?\s*in|check\s*-?\s*out|checkin|checkout)/i.test(text);
+  const hasPtEntryTerm = /\b(entrada|saida|sa\u00edda)\b/i.test(text);
+  if (!hasCheckTerm && !hasPtEntryTerm) return false;
+
+  // 3) Contexto de tempo (PT/EN/ES/FR) \u2014 confirma que \u00e9 pergunta sobre hor\u00e1rio
+  const hasTimeContext = /(horario|hor\u00e1rio|hora|horas|que horas|a partir|at[e\u00e9]|posso|pode|cedo|tarde|antecipad|atrasad|early|late|earlier|later|what time|when (can|do|is|should|will)|until|from|\u00e0 partir|quelle heure|jusqu|temprano|antes|despu[e\u00e9]s|cuando|quando)/i.test(text);
+
+  // 4) Mensagem curta (\u2264 6 palavras) com termo de check \u2192 prov\u00e1vel pergunta direta
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+  const isShortQuery = words.length > 0 && words.length <= 6;
+
+  return hasTimeContext || isShortQuery;
 }
 
 // Pergunta sobre QUEM pode fazer o pr\u00e9-checkin (titular vs outro adulto).
@@ -185,8 +204,11 @@ function shouldSendSafe(text) {
 }
 
 function shouldSendInvoice(text) {
-  // "Nota fiscal", "NF", "recibo", "comprovante"
-  return /\b(nota fiscal|nf|nfe|nfse|recibo|comprovante.{0,10}(pagamento|hospedagem)|emitir nota|emitem nota|preciso (de )?nota|preciso (de )?recibo)\b/.test(text);
+  // PT: "Nota fiscal", "NF", "recibo", "comprovante"
+  // EN: "invoice", "receipt", "tax invoice", "billing statement"  (added 18/05/2026 — caso LV01J Booking)
+  // ES: "factura", "recibo" (já cobre PT), "facturación"
+  // FR: "facture", "reçu", "facturation"
+  return /\b(nota fiscal|nf|nfe|nfse|recibo|comprovante.{0,10}(pagamento|hospedagem)|emitir nota|emitem nota|preciso (de )?nota|preciso (de )?recibo|invoice|tax invoice|billing statement|need (a |an )?receipt|need (a |an )?invoice|request (a |an )?invoice|request (a |an )?receipt|send (me )?(a |an |the )?(invoice|receipt)|factura|facturaci[oó]n|facture|fa[çc]ure|re[çc]u(s)?|facturation)\b/i.test(text);
 }
 
 function shouldSendCommonAreas(text) {
