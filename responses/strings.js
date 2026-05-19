@@ -504,7 +504,84 @@ const I18N_RESPONSES = {
     es: `En este caso favor contactar a Sofia que atiende en WhatsApp ${HUMAN_NUMBER_SECONDARY}. Cuidaremos de responder mejor tus dudas. 😊`,
     fr: `Dans ce cas veuillez contacter Sofia qui répond sur WhatsApp ${HUMAN_NUMBER_SECONDARY}. Nous prendrons soin de mieux répondre à vos questions. 😊`,
   },
+  // ── Adicionados 19/05/2026 — completam i18n SMM (pendência do PR #112) ──
+  PRE_CHECKIN_WHO_CAN: {
+    pt: PRE_CHECKIN_WHO_CAN_RESPONSE,
+    en: `📋 *Yes, any holder or companion on the reservation can do the online pre-check-in* — and it's super quick (3 minutes).\n\n📲 As soon as the reservation is confirmed, we send the pre-check-in link to the holder's email/WhatsApp. Just share it with whoever arrives first and they fill in the details (ID, photo) over there.\n\nAny question about filling in, ping me! 🌴`,
+    es: `📋 *Sí, cualquier titular o acompañante de la reserva puede hacer el pre-check-in online* — y es súper rápido (3 minutos).\n\n📲 En cuanto se confirme la reserva, enviamos el enlace del pre-check-in al email/WhatsApp del titular. Solo compártelo con quien llegue primero y rellena los datos (documento, foto) por allí.\n\n¡Cualquier duda al rellenar, avísame! 🌴`,
+    fr: `📋 *Oui, tout titulaire ou accompagnant de la réservation peut faire le pré-check-in en ligne* — et c'est super rapide (3 minutes).\n\n📲 Dès que la réservation est confirmée, nous envoyons le lien du pré-check-in à l'email/WhatsApp du titulaire. Partagez-le simplement avec celui qui arrive en premier et il remplit les données (pièce d'identité, photo) sur place.\n\nToute question lors du remplissage, dites-moi ! 🌴`,
+  },
+  PARKING: {
+    pt: PARKING_RESPONSE,
+    en: PARKING_RESPONSE_EN,
+    es: PARKING_RESPONSE_ES,
+    fr: PARKING_RESPONSE_FR,
+  },
+  FRIGOBAR_PIX: {
+    pt: FRIGOBAR_PIX_RESPONSE,
+    en: `🍽️ *Menu — Minibar & Snacks*\n\n☕ Coffee – R$ 8.00\n🥤 Soda 350ml – R$ 8.90\n🥤 Soda 200/220ml – R$ 5.50\n💧 Water – R$ 7.50\n🍺 Beer 269ml – R$ 12.90\n🍺 Beer 350ml – R$ 18.90\n⚡ Energy drink – R$ 18.90\n🧂 Snacks – R$ 4.90\n🍬 Drops/Candy – R$ 4.50\n🍬 Gum – R$ 4.90\n🍫 Chocolates – R$ 8.90\n🥜 Peanuts – R$ 9.90\n🌾 Cereal bars – R$ 9.90\n🍹 Juices – R$ 8.90\n\n💳 *Payment via PIX:*\n🏦 CNPJ: *62.169.624/0001-94*\n\nLet me know when the payment is done! 🌴`,
+    es: `🍽️ *Menú — Frigobar & Snacks*\n\n☕ Café – R$ 8,00\n🥤 Refresco 350ml – R$ 8,90\n🥤 Refresco 200/220ml – R$ 5,50\n💧 Agua – R$ 7,50\n🍺 Cerveza 269ml – R$ 12,90\n🍺 Cerveza 350ml – R$ 18,90\n⚡ Energética – R$ 18,90\n🧂 Snacks salados – R$ 4,90\n🍬 Caramelos – R$ 4,50\n🍬 Chicles – R$ 4,90\n🍫 Chocolates – R$ 8,90\n🥜 Cacahuates – R$ 9,90\n🌾 Barras de cereal – R$ 9,90\n🍹 Jugos – R$ 8,90\n\n💳 *Pago vía PIX:*\n🏦 CNPJ: *62.169.624/0001-94*\n\n¡Confírmame cuando se haga el pago! 🌴`,
+    fr: `🍽️ *Menu — Minibar & Snacks*\n\n☕ Café – R$ 8,00\n🥤 Soda 350ml – R$ 8,90\n🥤 Soda 200/220ml – R$ 5,50\n💧 Eau – R$ 7,50\n🍺 Bière 269ml – R$ 12,90\n🍺 Bière 350ml – R$ 18,90\n⚡ Boisson énergétique – R$ 18,90\n🧂 Snacks salés – R$ 4,90\n🍬 Bonbons – R$ 4,50\n🍬 Chewing-gums – R$ 4,90\n🍫 Chocolats – R$ 8,90\n🥜 Cacahuètes – R$ 9,90\n🌾 Barres de céréales – R$ 9,90\n🍹 Jus – R$ 8,90\n\n💳 *Paiement par PIX:*\n🏦 CNPJ: *62.169.624/0001-94*\n\nConfirmez-moi quand le paiement est fait ! 🌴`,
+  },
+  FOOD_ORDER: {
+    pt: FOOD_ORDER_RESPONSE,
+    en: FOOD_ORDER_RESPONSE_I18N.en,
+    es: FOOD_ORDER_RESPONSE_I18N.es,
+    fr: FOOD_ORDER_RESPONSE_I18N.fr,
+  },
+  THANKS: {
+    pt: THANKS_RESPONSE,
+    en: `You're welcome! 😊\n\nAnything you need, I'm right here to help. 🌴`,
+    es: `¡De nada! 😊\n\nCualquier cosa que necesites, estoy por aquí para ayudarte. 🌴`,
+    fr: `Je vous en prie ! 😊\n\nPour tout ce dont vous avez besoin, je suis ici pour aider. 🌴`,
+  },
+  MENU: {
+    pt: MENU_RESPONSE,
+    en: `Hello! Welcome to TorresGuest 😊\n\nI'm here to help with everything about your stay. Pick an option or just type the topic:\n\n1️⃣ Wi-Fi\n2️⃣ Breakfast\n3️⃣ Pool & gym\n4️⃣ Parking\n5️⃣ Apartment snacks\n6️⃣ Towel change\n7️⃣ Restaurant\n8️⃣ Check-in / Check-out\n9️⃣ Airport transfer\n🔟 Talk to a human\n1️⃣1️⃣ Confirm my reservation\n\nJust reply with the number or type the subject. Anytime, I'm here! 🌴`,
+    es: `¡Hola! Bienvenido(a) a TorresGuest 😊\n\nEstoy aquí para ayudarte con todo lo de tu hospedaje. Elige una opción o escribe el tema directo:\n\n1️⃣ Wi-Fi\n2️⃣ Desayuno\n3️⃣ Piscina y gimnasio\n4️⃣ Estacionamiento\n5️⃣ Snacks en el apartamento\n6️⃣ Cambio de toallas\n7️⃣ Restaurante\n8️⃣ Check-in / Check-out\n9️⃣ Traslado al aeropuerto\n🔟 Hablar con atención humana\n1️⃣1️⃣ Confirmar mi reserva\n\nSolo responde con el número o escribe el asunto. ¡Siempre que necesites, estoy por aquí! 🌴`,
+    fr: `Bonjour ! Bienvenue chez TorresGuest 😊\n\nJe suis là pour vous aider avec tout ce qui concerne votre séjour. Choisissez une option ou tapez le sujet directement :\n\n1️⃣ Wi-Fi\n2️⃣ Petit-déjeuner\n3️⃣ Piscine et salle de sport\n4️⃣ Parking\n5️⃣ Snacks dans l'appartement\n6️⃣ Changement de serviettes\n7️⃣ Restaurant\n8️⃣ Check-in / Check-out\n9️⃣ Transfert aéroport\n🔟 Parler à un humain\n1️⃣1️⃣ Confirmer ma réservation\n\nRépondez juste avec le numéro ou écrivez le sujet. Quand vous voulez, je suis là ! 🌴`,
+  },
 };
+
+// ── Helpers dinâmicos i18n (não vão pra I18N_RESPONSES pq têm placeholders) ──
+// Adicionados 19/05/2026 para completar paridade SMM ↔ WhatsApp.
+
+function getGreetingResponse(lang, name) {
+  const safeName = name ? ', ' + name : '';
+  switch (lang) {
+    case 'en':
+      return `Hello${safeName}! 😊 I'm the TorresGuest digital concierge and I'll help you here.\n\nTell me what you need, or type *menu* to see the options. 🌴`;
+    case 'es':
+      return `¡Hola${safeName}! 😊 Soy el concierge digital de TorresGuest y voy a ayudarte por aquí.\n\nDime lo que necesitas, o escribe *menu* para ver las opciones. 🌴`;
+    case 'fr':
+      return `Bonjour${safeName} ! 😊 Je suis le concierge digital de TorresGuest et je vais vous aider ici.\n\nDites-moi ce dont vous avez besoin, ou tapez *menu* pour voir les options. 🌴`;
+    case 'pt':
+    default:
+      return GREETING_RESPONSE(name);
+  }
+}
+
+function getCurrentDateResponse(lang, dateBRT) {
+  const d = dateBRT || new Date().toLocaleDateString('pt-BR');
+  switch (lang) {
+    case 'en': return `Today is ${d}.`;
+    case 'es': return `Hoy es ${d}.`;
+    case 'fr': return `Aujourd'hui c'est ${d}.`;
+    case 'pt':
+    default: return `Hoje é ${d}.`;
+  }
+}
+
+function getCurrentTimeResponse(lang, timeBRT) {
+  const t = timeBRT || new Date().toLocaleTimeString('pt-BR');
+  switch (lang) {
+    case 'en': return `It is now ${t}, Brasília time.`;
+    case 'es': return `Ahora son las ${t}, hora de Brasilia.`;
+    case 'fr': return `Il est maintenant ${t}, heure de Brasília.`;
+    case 'pt':
+    default: return `Agora são ${t}, horário de Brasília.`;
+  }
+}
 
 /**
  * Helper multi-tenant para obter resposta no idioma do hóspede com fallback
@@ -594,4 +671,7 @@ module.exports = {
   FRIGOBAR_PIX_RESPONSE,
   FRIGOBAR_RESTOCK_RESPONSE,
   getEarlyCompanionArrivalResponse,
+  getGreetingResponse,
+  getCurrentDateResponse,
+  getCurrentTimeResponse,
 };

@@ -87,13 +87,18 @@ const {
   getLocationResponse,
 } = require('../responses/strings');
 
-// Helpers dinâmicos (precisam tenant pra montar resposta)
-let buildBreakfastResponse, buildParkingResponse, getTransferResponse, getCurrentDateBRT, getCurrentTimeBRT;
+// Helpers dinâmicos (precisam tenant/lang pra montar resposta)
+let buildBreakfastResponse, buildParkingResponse, getTransferResponse,
+    getGreetingResponse, getCurrentDateResponse, getCurrentTimeResponse,
+    getCurrentDateBRT, getCurrentTimeBRT;
 try {
   ({ buildBreakfastResponse, buildParkingResponse } = require('../responses/strings'));
 } catch (_) { /* opcional */ }
 try {
   ({ getTransferResponse } = require('../responses/strings'));
+} catch (_) { /* opcional */ }
+try {
+  ({ getGreetingResponse, getCurrentDateResponse, getCurrentTimeResponse } = require('../responses/strings'));
 } catch (_) { /* opcional */ }
 try {
   ({ getCurrentDateBRT, getCurrentTimeBRT } = require('../utils/formatters'));
@@ -124,7 +129,7 @@ function getDispatchTable() {
     // ── Check-in/out timing (ANTES de current_time pra "que horas check-in") ──
     // Pré-checkin "quem pode fazer" ANTES de shouldSendCheckin (pra não cair em
     // resposta genérica sobre horário). Caso Sofia 13/05/2026.
-    { check: shouldSendPreCheckinWhoCan, reply: () => PRE_CHECKIN_WHO_CAN_RESPONSE, source: 'pre_checkin_who_can' },
+    { check: shouldSendPreCheckinWhoCan, reply: i18n('PRE_CHECKIN_WHO_CAN', PRE_CHECKIN_WHO_CAN_RESPONSE), source: 'pre_checkin_who_can' },
     { check: shouldSendCheckin,     reply: i18n('CHECKIN',       CHECKIN_RESPONSE),       source: 'checkin' },
     { check: shouldSendParkingEarly, reply: i18n('PARKING_EARLY', PARKING_EARLY_RESPONSE), source: 'parking_early' },
 
@@ -134,17 +139,17 @@ function getDispatchTable() {
     // ── Serviços do flat ──
     { check: shouldSendWifi,        reply: i18n('WIFI',          WIFI_RESPONSE),          source: 'wifi' },
     { check: shouldSendInternet,    reply: i18n('INTERNET',      INTERNET_RESPONSE),      source: 'internet' },
-    { check: shouldSendBreakfast,   reply: (_l, t) => buildBreakfastResponse ? buildBreakfastResponse(t) : 'Café da manhã incluso, servido das 06:30 às 10:00 no restaurante do hotel.', source: 'breakfast' },
+    { check: shouldSendBreakfast,   reply: (lang, t) => buildBreakfastResponse ? buildBreakfastResponse(t, lang) : 'Café da manhã incluso, servido das 06:30 às 10:00 no restaurante do hotel.', source: 'breakfast' },
     { check: shouldSendBreakfastCompanion, reply: i18n('BREAKFAST_COMPANION', BREAKFAST_COMPANION_RESPONSE), source: 'breakfast_companion' },
     { check: shouldSendPool,        reply: i18n('POOL',          POOL_RESPONSE),          source: 'pool' },
-    { check: shouldSendParking,     reply: (_l, t) => buildParkingResponse ? buildParkingResponse(t) : 'Estacionamento valet incluso — ao chegar, informe "Flat condomínio".', source: 'parking' },
+    { check: shouldSendParking,     reply: (lang, t) => buildParkingResponse ? buildParkingResponse(t, lang) : 'Estacionamento valet incluso — ao chegar, informe "Flat condomínio".', source: 'parking' },
     { check: shouldSendSnacks,      reply: i18n('SNACKS',        SNACKS_RESPONSE),        source: 'snacks' },
     // Frigobar PIX / pagamento — ANTES de towels/bedding/cleaning pra capturar
     // "Qual o pix para pagamento da água?" sem cair em reposição/Limpeza.
     // Adicionado 13/05/2026.
-    { check: shouldSendFrigobarPix, reply: () => FRIGOBAR_PIX_RESPONSE, source: 'frigobar_pix' },
+    { check: shouldSendFrigobarPix, reply: i18n('FRIGOBAR_PIX', FRIGOBAR_PIX_RESPONSE), source: 'frigobar_pix' },
     { check: shouldSendTowels,      reply: i18n('TOWELS',        TOWELS_RESPONSE),        source: 'towels' },
-    { check: shouldSendFoodOrder,   reply: () => FOOD_ORDER_RESPONSE, source: 'food_order' },
+    { check: shouldSendFoodOrder,   reply: i18n('FOOD_ORDER', FOOD_ORDER_RESPONSE), source: 'food_order' },
     { check: shouldSendRestaurant,  reply: i18n('RESTAURANT',    RESTAURANT_RESPONSE),    source: 'restaurant' },
     { check: shouldSendCommonAreas, reply: i18n('COMMON_AREAS',  COMMON_AREAS_RESPONSE),  source: 'common_areas' },
     { check: shouldSendBedding,     reply: i18n('BEDDING',       BEDDING_RESPONSE),       source: 'bedding' },
@@ -160,8 +165,8 @@ function getDispatchTable() {
     { check: shouldSendHostingCourse, reply: i18n('HOSTING_COURSE', HOSTING_COURSE_RESPONSE), source: 'hosting_course' },
 
     // ── Genéricos por último ──
-    { check: shouldSendCurrentDate, reply: () => getCurrentDateBRT ? `Hoje é ${getCurrentDateBRT()}.` : `Hoje é ${new Date().toLocaleDateString('pt-BR')}.`, source: 'current_date' },
-    { check: shouldSendCurrentTime, reply: () => getCurrentTimeBRT ? `Agora são ${getCurrentTimeBRT()}, horário de Brasília.` : `Agora é ${new Date().toLocaleTimeString('pt-BR')}.`, source: 'current_time' },
+    { check: shouldSendCurrentDate, reply: (lang) => getCurrentDateResponse ? getCurrentDateResponse(lang, getCurrentDateBRT && getCurrentDateBRT()) : `Hoje é ${new Date().toLocaleDateString('pt-BR')}.`, source: 'current_date' },
+    { check: shouldSendCurrentTime, reply: (lang) => getCurrentTimeResponse ? getCurrentTimeResponse(lang, getCurrentTimeBRT && getCurrentTimeBRT()) : `Agora é ${new Date().toLocaleTimeString('pt-BR')}.`, source: 'current_time' },
     { check: shouldSendHuman,       reply: i18n('HUMAN_ESCALATION', HUMAN_ESCALATION_RESPONSE), source: 'human' },
   ];
 }
@@ -391,16 +396,21 @@ async function classifyAndRespond(args) {
   } catch (e) { /* falha silencioso, segue pra matchers */ }
 
   // (2) Greeting / Thanks / Menu — só se faz sentido (msg curta)
+  // i18n: usa helpers/getResponseForTenant pra responder no idioma do hóspede.
   const words = normalized.trim().split(/\s+/);
   if (shouldSendGreeting(normalized) && !text.includes('?') && words.length <= 5) {
-    const greet = typeof GREETING_RESPONSE === 'function' ? GREETING_RESPONSE(guestName) : GREETING_RESPONSE;
+    const greet = getGreetingResponse
+      ? getGreetingResponse(lang, guestName)
+      : (typeof GREETING_RESPONSE === 'function' ? GREETING_RESPONSE(guestName) : GREETING_RESPONSE);
     return { reply: sanitizeForChannel(greet, channel, bookingConfirmed), source: 'greeting', channel };
   }
   if (shouldSendThanks(normalized)) {
-    return { reply: sanitizeForChannel(THANKS_RESPONSE, channel, bookingConfirmed), source: 'thanks', channel };
+    const thanks = getResponseForTenant('THANKS', lang, tenant) || THANKS_RESPONSE;
+    return { reply: sanitizeForChannel(thanks, channel, bookingConfirmed), source: 'thanks', channel };
   }
   if (shouldSendMenu(normalized)) {
-    return { reply: sanitizeForChannel(MENU_RESPONSE, channel, bookingConfirmed), source: 'menu', channel };
+    const menu = getResponseForTenant('MENU', lang, tenant) || MENU_RESPONSE;
+    return { reply: sanitizeForChannel(menu, channel, bookingConfirmed), source: 'menu', channel };
   }
 
   // (3) PT_DISPATCH table — todos os matchers torres

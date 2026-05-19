@@ -46,6 +46,9 @@ const {
   FRIGOBAR_PIX_RESPONSE,
   FRIGOBAR_RESTOCK_RESPONSE,
   getEarlyCompanionArrivalResponse,
+  getGreetingResponse,
+  getCurrentDateResponse,
+  getCurrentTimeResponse,
 } = require('../responses/strings');
 const { getFaqResponse } = require('../responses/faq');
 const {
@@ -221,7 +224,7 @@ const PT_DISPATCH = [
     reply: (lang, tenant) => getResponseForTenant('TOWELS', lang, tenant),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Toalhas'),
   },
-  { check: shouldSendFoodOrder,   reply: () => FOOD_ORDER_RESPONSE },
+  { check: shouldSendFoodOrder,   reply: (lang, tenant) => getResponseForTenant('FOOD_ORDER', lang, tenant) || FOOD_ORDER_RESPONSE },
   { check: shouldSendRestaurant,  reply: (lang, tenant) => getResponseForTenant('RESTAURANT', lang, tenant) },
   // FAQ coverage (06/05/2026) — críticos avaliados ANTES de shouldSendCheckin
   // pra evitar colisão (ex: "documentos para checkin" cair em Checkin genérico).
@@ -263,8 +266,8 @@ const PT_DISPATCH = [
   },
   { check: shouldSendInternet,    reply: (lang, tenant) => getResponseForTenant('INTERNET', lang, tenant) },
   { check: shouldSendLuggage,     reply: (lang, tenant) => getResponseForTenant('LUGGAGE', lang, tenant) },
-  { check: shouldSendCurrentDate, reply: () => `Hoje e ${getCurrentDateBRT()}.` },
-  { check: shouldSendCurrentTime, reply: () => `Agora sao ${getCurrentTimeBRT()}, horario de Brasilia.` },
+  { check: shouldSendCurrentDate, reply: (lang) => getCurrentDateResponse ? getCurrentDateResponse(lang, getCurrentDateBRT()) : `Hoje e ${getCurrentDateBRT()}.` },
+  { check: shouldSendCurrentTime, reply: (lang) => getCurrentTimeResponse ? getCurrentTimeResponse(lang, getCurrentTimeBRT()) : `Agora sao ${getCurrentTimeBRT()}, horario de Brasilia.` },
   { check: shouldSendHuman,       reply: (lang, tenant) => getResponseForTenant('HUMAN_ESCALATION', lang, tenant) },
 ];
 
@@ -545,7 +548,8 @@ async function handleIncoming(payload) {
           } catch (e) { console.warn('[greeting cooldown] err:', e.message); }
         }
         if (isJustGreeting) {
-          await replyAndSave(from, GREETING_RESPONSE(contactName), { alsoSendAudio: camFromAudio });
+          const greet = getGreetingResponse ? getGreetingResponse(language, contactName) : GREETING_RESPONSE(contactName);
+          await replyAndSave(from, greet, { alsoSendAudio: camFromAudio });
           continue;
         }
 
@@ -559,14 +563,16 @@ async function handleIncoming(payload) {
 
         // ---- thanks (pure short) ----------------------------------------
         if (shouldSendThanks(normalized)) {
-          await replyAndSave(from, THANKS_RESPONSE, { alsoSendAudio: camFromAudio });
+          const thanks = getResponseForTenant('THANKS', language, tenant) || THANKS_RESPONSE;
+          await replyAndSave(from, thanks, { alsoSendAudio: camFromAudio });
           continue;
         }
 
         // ---- menu -------------------------------------------------------
         if (shouldSendMenu(normalized)) {
           console.log('[menu] sending menu response');
-          await replyAndSave(from, MENU_RESPONSE, { alsoSendAudio: camFromAudio });
+          const menu = getResponseForTenant('MENU', language, tenant) || MENU_RESPONSE;
+          await replyAndSave(from, menu, { alsoSendAudio: camFromAudio });
           pendingConfirmations.delete(from);
           continue;
         }
@@ -648,7 +654,8 @@ async function handleIncoming(payload) {
         // O matcher foi expandido (2026-04-09) para capturar perguntas
         // genéricas como "como eu pago" / "preciso saber como pago".
         if (shouldSendFrigobarPix(normalized)) {
-          await replyAndSave(from, FRIGOBAR_PIX_RESPONSE, { alsoSendAudio: camFromAudio });
+          const pix = getResponseForTenant('FRIGOBAR_PIX', language, tenant) || FRIGOBAR_PIX_RESPONSE;
+          await replyAndSave(from, pix, { alsoSendAudio: camFromAudio });
           continue;
         }
 
