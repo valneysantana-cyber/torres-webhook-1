@@ -48,6 +48,8 @@ const {
   shouldSendCleaning,
   shouldSendInternet,
   shouldSendLuggage,
+  shouldEscalateLateCheckout,
+  shouldEscalateLuggageStorage,
   shouldSendCurrentDate,
   shouldSendCurrentTime,
   shouldSendHuman,
@@ -357,6 +359,36 @@ async function classifyAndRespond(args) {
         dispatchBody: `${icon} *Reposição de ${label} — pedido do hóspede*\n👤 ${guestName || 'sem nome'} (${channel})\n💬 "${String(text).slice(0, 200)}"\n\nProvidenciar ${label} no quarto. Thread no dashboard:\nhttps://conciergecloud.com.br/admin/mensagens.html`,
       };
     }
+  }
+
+  // (0.7) Late check-out request — exige decisão humana (Sofia coordena com
+  // governança caso a caso). NUNCA responder FAQ de horário aqui — o hóspede
+  // já sabe os horários padrão; ele está pedindo exceção.
+  // Caso real 21/05/2026: Cícero (Airbnb, defesa tese PUC) pediu late check-out
+  // até 13:30 + onde guardar malas. Bot caiu em shouldSendCheckin (gatilho
+  // "late"+"check-out"+"horas"+"antes") e respondeu horários padrão. Agora
+  // bloqueamos ANTES de shouldSendCheckin e despachamos pra Sofia.
+  if (shouldEscalateLateCheckout(normalized)) {
+    return {
+      reply: 'Combinado! Já estou repassando seu pedido pra Sofia agora — ela responde aqui em instantes confirmando o horário estendido. 🙌',
+      source: 'dispatch:late_checkout_request',
+      channel,
+      dispatchAlert: true,
+      dispatchBody: '🕐 *Late check-out solicitado*\n👤 Hóspede: ' + (guestName || 'sem nome') + ' (' + channel + ')\n💬 "' + String(text).slice(0, 250) + '"\n\nDecidir caso a caso com governança. Responder via SMM:\nhttps://conciergecloud.com.br/admin/mensagens.html',
+    };
+  }
+
+  // (0.8) Pedido específico de guarda-malas durante checkout window — flat não
+  // tem armário próprio do hotel; Sofia avalia (armário do apto, locker, etc).
+  // Diferente de shouldSendLuggage (FAQ sobre franquia/quantidade).
+  if (shouldEscalateLuggageStorage(normalized)) {
+    return {
+      reply: 'Vou conferir agora com a Sofia o melhor jeito de te ajudar com as malas — em instantes respondemos aqui mesmo. 🧳',
+      source: 'dispatch:luggage_storage',
+      channel,
+      dispatchAlert: true,
+      dispatchBody: '🧳 *Pedido de guarda-malas no check-out*\n👤 Hóspede: ' + (guestName || 'sem nome') + ' (' + channel + ')\n💬 "' + String(text).slice(0, 250) + '"\n\nFlat sem armário do hotel — coordenar via SMM:\nhttps://conciergecloud.com.br/admin/mensagens.html',
+    };
   }
 
   // (1) Escalation classifier (Urgência/Praga/Manutenção/Limpeza/etc) — tem Sofia line nativo

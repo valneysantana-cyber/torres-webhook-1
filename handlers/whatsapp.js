@@ -69,6 +69,8 @@ const {
   shouldSendFoodOrder,
   shouldSendRestaurantMenuI18n,
   shouldSendCheckin,
+  shouldEscalateLateCheckout,
+  shouldEscalateLuggageStorage,
   shouldSendHostingCourse,
   shouldSendDocuments,
   shouldSendHotelAccess,
@@ -237,6 +239,20 @@ const PT_DISPATCH = [
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Solicitação de Nota Fiscal'),
   },
   { check: shouldSendParkingEarly, reply: (lang, tenant) => getResponseForTenant('PARKING_EARLY', lang, tenant) },
+  // Late check-out + guarda-malas — exige decisão humana, NUNCA FAQ horário.
+  // Avaliados ANTES de shouldSendCheckin porque o intent "late checkout" tem
+  // gatilhos sobrepostos (check-out + horas + late) que faziam shouldSendCheckin
+  // capturar erroneamente. Caso real 21/05/2026 (Cícero, defesa tese PUC).
+  {
+    check: shouldEscalateLateCheckout,
+    reply: () => 'Combinado! Já estou repassando seu pedido pra Sofia agora — ela responde aqui em instantes confirmando o horário estendido. 🙌',
+    notify: (from, body) => sendRoomRequestNotification(from, body, 'Late check-out solicitado'),
+  },
+  {
+    check: shouldEscalateLuggageStorage,
+    reply: () => 'Vou conferir agora com a Sofia o melhor jeito de te ajudar com as malas — em instantes respondemos aqui mesmo. 🧳',
+    notify: (from, body) => sendRoomRequestNotification(from, body, 'Guarda-malas no check-out'),
+  },
   { check: shouldSendCheckin,      reply: (lang, tenant) => getResponseForTenant('CHECKIN', lang, tenant) },
   // Hosting course (Hotmart "Desvendando o Airbnb") — prospects que querem ser anfitriões.
   // Avaliado APÓS shouldSendCheckin pra evitar matchar hóspede atual perguntando sobre check-in.

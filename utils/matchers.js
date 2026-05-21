@@ -308,6 +308,37 @@ function shouldSendLuggage(text) {
   return /(mala|bagagem|guardar|luggage|depositar)/.test(text);
 }
 
+// Pedido EXPLÍCITO de late check-out — exige aprovação humana (Sofia decide
+// caso a caso conforme governança), nunca FAQ automático.
+// Caso real 21/05/2026 (Cícero, defesa de tese PUC): pediu "late check out"
+// via SMM Airbnb, bot caiu em shouldSendCheckin e mandou horários padrão em
+// vez de escalar. shouldSendCheckin captura "late" + "check-out" + "horas" e
+// roubava o intent.
+function shouldEscalateLateCheckout(text) {
+  if (!text) return false;
+  const t = String(text).toLowerCase();
+  return (
+    /\blate\s*check\s*-?\s*out\b/.test(t) ||
+    /(estender|atras(ar)?|prorrogar|adiar|prolongar).{0,15}check.?out/.test(t) ||
+    /check.?out.{0,20}(mais tarde|atrasad|estendid|prorrog|13|14|15|16)h?\b/.test(t) ||
+    /(posso|pode|d[áa]).{0,20}(ficar|sair).{0,25}(mais tarde|depois das|13|14|15|16)h?\b/.test(t)
+  );
+}
+
+// Pergunta sobre onde DEIXAR/GUARDAR malas durante check-out window — flat sem
+// recepção própria do hotel não tem armário; requer coordenação humana (Sofia
+// avalia opções: armário do flat, locker próximo, partner). Diferente do
+// shouldSendLuggage existente que cobre franquia/quantidade (FAQ).
+function shouldEscalateLuggageStorage(text) {
+  if (!text) return false;
+  const t = String(text).toLowerCase();
+  return (
+    /\b(onde|posso|pode|d[áa]\s+pra).{0,15}(deixar|guardar|depositar|estocar).{0,15}(mala|bagagem|pertence)/.test(t) ||
+    /\b(deixar|guardar|depositar).{0,15}(mala|bagagem).{0,30}(antes|depois|recep|hotel|pegar|voltar|13|14|15)/.test(t) ||
+    /\barmazen.{0,15}(mala|bagagem)/.test(t)
+  );
+}
+
 function shouldSendGreeting(text) {
   if (!text) return false;
   // FIX (Valney 17/05): exige que mensagem SEJA saudacao curta, sem perguntas
@@ -604,6 +635,8 @@ module.exports = {
   shouldSendCleaning,
   shouldSendInternet,
   shouldSendLuggage,
+  shouldEscalateLateCheckout,
+  shouldEscalateLuggageStorage,
   shouldSendGreeting,
   shouldSendThanks,
   shouldSendGratitudeFarewell,
