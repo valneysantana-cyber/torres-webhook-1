@@ -446,6 +446,94 @@ async function sendCancellationRetention(phone, { firstName, ota } = {}) {
  * @param {string} phone     5511999073135
  * @param {Array<{type:'text', text:string}>} parameters  Built by `utils/templates.buildDailyReportVars`
  */
+/**
+ * Sends the `post_checkout_review_v1` MARKETING template (2 vars) — solicita
+ * avaliação na OTA usada pelo hóspede. Disparado 6h pós-checkout pelo cron
+ * `/root/postcheckout_sweep.js`. Aprovado Meta 21/05/2026.
+ *
+ * Body: "Olá, {{1}}, ... cada avaliação no {{2}} é extremamente importante ..."
+ * Assinatura "Sofia" hardcoded no template (Meta proíbe variável no fim).
+ *
+ * @param {string} phone     5511999073135
+ * @param {{firstName:string, otaName:string}} data
+ */
+async function sendPostCheckoutReview(phone, { firstName, otaName } = {}) {
+  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) return { skipped: true, reason: 'missing credentials' };
+  const templateName = process.env.WA_REVIEW_TEMPLATE_NAME || 'post_checkout_review_v1';
+  try {
+    const r = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: phone,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: 'pt_BR' },
+          components: [{
+            type: 'body',
+            parameters: [
+              { type: 'text', text: firstName || 'Hospede' },
+              { type: 'text', text: otaName || 'sua plataforma' },
+            ],
+          }],
+        },
+      }),
+    });
+    const data = await r.json();
+    if (!r.ok) return { ok: false, error: data };
+    return { ok: true, messageId: data.messages?.[0]?.id };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+/**
+ * Sends the `frigobar_pix_charge_v1` UTILITY template (4 vars) — cobrança
+ * preventiva do consumo frigobar via PIX. Disparado 2h pós-checkout pelo
+ * cron `/root/postcheckout_sweep.js`. Aprovado Meta 21/05/2026.
+ *
+ * Body: "Olá, {{1}}, ... Chave: {{2}} · Titular: {{3}} · comprovante pra {{4}} ..."
+ * Assinatura "Sofia" hardcoded no template.
+ *
+ * @param {string} phone     5511999073135
+ * @param {{firstName:string, pixKey:string, pixHolder:string, confirmationWa:string}} data
+ */
+async function sendFrigobarPixCharge(phone, { firstName, pixKey, pixHolder, confirmationWa } = {}) {
+  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) return { skipped: true, reason: 'missing credentials' };
+  const templateName = process.env.WA_FRIGOBAR_PIX_TEMPLATE_NAME || 'frigobar_pix_charge_v1';
+  try {
+    const r = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: phone,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: 'pt_BR' },
+          components: [{
+            type: 'body',
+            parameters: [
+              { type: 'text', text: firstName || 'Hospede' },
+              { type: 'text', text: pixKey || '' },
+              { type: 'text', text: pixHolder || '' },
+              { type: 'text', text: confirmationWa || '' },
+            ],
+          }],
+        },
+      }),
+    });
+    const data = await r.json();
+    if (!r.ok) return { ok: false, error: data };
+    return { ok: true, messageId: data.messages?.[0]?.id };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
 async function sendDailyReportTemplate(phone, parameters) {
   if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) return { skipped: true, reason: 'missing credentials' };
   const templateName = process.env.WA_DAILY_REPORT_TEMPLATE_NAME || 'daily_report_v1';
@@ -483,4 +571,6 @@ module.exports = {
   sendWelcomeKit,
   sendCancellationRetention,
   sendDailyReportTemplate,
+  sendPostCheckoutReview,
+  sendFrigobarPixCharge,
 };
