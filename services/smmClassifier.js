@@ -391,6 +391,20 @@ async function classifyAndRespond(args) {
     };
   }
 
+  // (0.9) Alteração de datas — exige Sofia decidir caso a caso (política da reserva,
+  // disponibilidade no PMS, canal OTA). NUNCA tentar processar via bot.
+  // Caso real 22/05/2026 (Paulo Bincoletto): bot pedia 4 dados (nome, data atual,
+  // nova data, canal) mas não tinha como processar — só Sofia. Agora dispara dispatch.
+  if (shouldHandleDateChange(normalized)) {
+    return {
+      reply: getResponseForTenant('DATE_CHANGE', lang || 'pt', tenant) || DATE_CHANGE_RESPONSE,
+      source: 'dispatch:date_change',
+      channel,
+      dispatchAlert: true,
+      dispatchBody: '📅 *Pedido de alteração de datas*\n👤 Hóspede: ' + (guestName || 'sem nome') + ' (' + channel + ')\n💬 "' + String(text).slice(0, 250) + '"\n\nVerificar política/disponibilidade/canal e responder via SMM:\nhttps://conciergecloud.com.br/admin/mensagens.html',
+    };
+  }
+
   // (1) Escalation classifier (Urgência/Praga/Manutenção/Limpeza/etc) — tem Sofia line nativo
   // Bug 15/05/2026 (caso Mayra/Airbnb KF04J "lâmpada não acende"): hóspede recebia
   // reply mas Sofia NÃO recebia o dispatch WhatsApp — o canal SMM nunca setou
