@@ -265,7 +265,11 @@ const PT_DISPATCH = [
     reply: (lang, tenant) => getResponseForTenant('BEDDING', lang, tenant),
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Roupa de cama / enxoval extra'),
   },
-  { check: shouldHandleDateChange,     reply: (lang, tenant) => getResponseForTenant('DATE_CHANGE', lang, tenant) },
+  {
+    check: shouldHandleDateChange,
+    reply: (lang, tenant) => getResponseForTenant('DATE_CHANGE', lang, tenant),
+    notify: (from, body) => sendRoomRequestNotification(from, body, 'Pedido de alteração de datas'),
+  },
   { check: shouldSendHotelMaintenance, reply: (lang, tenant) => getResponseForTenant('HOTEL_MAINTENANCE', lang, tenant) },
   { check: shouldSendSecurity,    reply: (lang, tenant) => getResponseForTenant('SECURITY', lang, tenant) },
   {

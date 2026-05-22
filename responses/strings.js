@@ -105,15 +105,9 @@ const COMMON_AREAS_RESPONSE = `\ud83c\udfca Como h\u00f3spede TorresGuest, voc\u
 
 const BEDDING_RESPONSE = `\ud83d\udecf\ufe0f Posso verificar disponibilidade de itens extras de cama (travesseiro, cobertor, len\u00e7ol, fronha). Me envia o n\u00famero do quarto e o item que precisa, que aciono a governan\u00e7a. \ud83c\udf34`;
 
-const DATE_CHANGE_RESPONSE = `\ud83d\udcc5 Sobre altera\u00e7\u00e3o de datas: a possibilidade depende da pol\u00edtica da reserva, disponibilidade e canal onde foi feita.
+const DATE_CHANGE_RESPONSE = `\ud83d\udcc5 Sobre altera\u00e7\u00e3o de datas: depende da pol\u00edtica da reserva, disponibilidade e canal onde foi feita.
 
-Me envia por favor:
-1. Nome completo da reserva
-2. Data atual da reserva
-3. Nova data desejada
-4. Canal (Booking, Airbnb, Expedia, Decolar ou TorresGuest)
-
-Vou verificar e te retornar. \ud83c\udf34`;
+Vou acionar a *Sofia* (nossa equipe) agora mesmo \u2014 ela verifica direto com a opera\u00e7\u00e3o e te responde aqui em instantes. \ud83c\udf34`;
 
 const HOTEL_MAINTENANCE_RESPONSE = `\ud83d\udd27 O hotel pode passar por melhorias e manuten\u00e7\u00f5es pontuais, geralmente em hor\u00e1rio comercial. Caso qualquer obra ou ru\u00eddo impacte sua estadia, me avisa imediatamente que acompanho junto \u00e0 equipe do hotel. \ud83c\udf34`;
 
@@ -458,9 +452,9 @@ const I18N_RESPONSES = {
   },
   DATE_CHANGE: {
     pt: DATE_CHANGE_RESPONSE,
-    en: `📅 About date changes: the possibility depends on the reservation policy, availability and the channel where it was made.\n• If you booked directly with us, send me the new dates that I check with the team.\n• If you booked via Airbnb/Booking, the change must be requested in the original channel.\n\nNeed help with the request? Ping me. 🌴`,
-    es: `📅 Sobre el cambio de fechas: la posibilidad depende de la política de la reserva, disponibilidad y el canal donde fue hecha.\n• Si reservaste directo con nosotros, envíame las nuevas fechas que verifico con el equipo.\n• Si reservaste vía Airbnb/Booking, el cambio debe solicitarse en el canal original.\n\n¿Necesitas ayuda con el pedido? Avísame. 🌴`,
-    fr: `📅 À propos du changement de dates: la possibilité dépend de la politique de réservation, disponibilité et du canal où elle a été faite.\n• Si vous avez réservé directement avec nous, envoyez-moi les nouvelles dates et je vérifie avec l'équipe.\n• Si vous avez réservé via Airbnb/Booking, le changement doit être demandé sur le canal original.\n\nBesoin d'aide pour la demande ? Dites-moi. 🌴`,
+    en: `📅 About date changes: the possibility depends on the reservation policy, availability and the channel where it was made.\n\nI'll bring in *Sofia* (our team) right now — she'll check with operations and reply here shortly. 🌴`,
+    es: `📅 Sobre el cambio de fechas: depende de la política de la reserva, disponibilidad y canal donde fue hecha.\n\nVoy a llamar a *Sofia* (nuestro equipo) ahora — ella verifica con la operación y te responde acá en seguida. 🌴`,
+    fr: `📅 À propos du changement de dates: cela dépend de la politique de réservation, de la disponibilité et du canal où elle a été faite.\n\nJ'appelle *Sofia* (notre équipe) maintenant — elle vérifie avec l'opération et vous répond ici sous peu. 🌴`,
   },
   HOTEL_MAINTENANCE: {
     pt: HOTEL_MAINTENANCE_RESPONSE,
