@@ -49,6 +49,7 @@ const {
   shouldSendInternet,
   shouldSendLuggage,
   shouldEscalateLateCheckout,
+  shouldEscalateThirdPartyReservation,
   shouldEscalateLuggageStorage,
   shouldSendCurrentDate,
   shouldSendCurrentTime,
@@ -388,6 +389,20 @@ async function classifyAndRespond(args) {
       channel,
       dispatchAlert: true,
       dispatchBody: '🧳 *Pedido de guarda-malas no check-out*\n👤 Hóspede: ' + (guestName || 'sem nome') + ' (' + channel + ')\n💬 "' + String(text).slice(0, 250) + '"\n\nFlat sem armário do hotel — coordenar via SMM:\nhttps://conciergecloud.com.br/admin/mensagens.html',
+    };
+  }
+
+  // (0.95) Reserva em nome de terceiro — esposa/empresa reserva pra alguém.
+  // Caso real 22/05/2026 (Luciano via SMM Booking, reserva pro Jonas): bot pediu
+  // código 5x, alucinou Airbnb num thread Booking, mandou wa.me (sanitize bloqueia)
+  // e Luciano desistiu. Agora escala direto com dispatch interno (NÃO wa.me).
+  if (shouldEscalateThirdPartyReservation(normalized)) {
+    return {
+      reply: 'Entendi — a reserva é pra outra pessoa. Já estou acionando a Sofia que organiza tudo direto aqui na conversa. Se quiser adiantar, me passa o nome completo do hóspede e o CPF (qualquer um dos dois já basta). 🌴',
+      source: 'dispatch:third_party_reservation',
+      channel,
+      dispatchAlert: true,
+      dispatchBody: '👥 *Reserva em nome de terceiro*\n👤 Quem fala: ' + (guestName || 'sem nome') + ' (' + channel + ')\n💬 "' + String(text).slice(0, 250) + '"\n\nIdentificar hóspede real via nome/CPF e ajustar via SMM:\nhttps://conciergecloud.com.br/admin/mensagens.html',
     };
   }
 

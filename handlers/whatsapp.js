@@ -70,6 +70,7 @@ const {
   shouldSendRestaurantMenuI18n,
   shouldSendCheckin,
   shouldEscalateLateCheckout,
+  shouldEscalateThirdPartyReservation,
   shouldEscalateLuggageStorage,
   shouldSendHostingCourse,
   shouldSendDocuments,
@@ -252,6 +253,13 @@ const PT_DISPATCH = [
     check: shouldEscalateLuggageStorage,
     reply: () => 'Vou conferir agora com a Sofia o melhor jeito de te ajudar com as malas — em instantes respondemos aqui mesmo. 🧳',
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Guarda-malas no check-out'),
+  },
+  {
+    // Reserva em nome de terceiro (esposa→marido, empresa→funcionário, etc).
+    // Caso real 22/05/2026 (Luciano/Jonas via SMM Booking).
+    check: shouldEscalateThirdPartyReservation,
+    reply: () => 'Entendi — a reserva é pra outra pessoa. Já estou acionando a Sofia que organiza tudo direto aqui na conversa. Se quiser adiantar, me passa o nome completo do hóspede e o CPF (qualquer um dos dois já basta). 🌴',
+    notify: (from, body) => sendRoomRequestNotification(from, body, 'Reserva em nome de terceiro'),
   },
   { check: shouldSendCheckin,      reply: (lang, tenant) => getResponseForTenant('CHECKIN', lang, tenant) },
   // Hosting course (Hotmart "Desvendando o Airbnb") — prospects que querem ser anfitriões.
