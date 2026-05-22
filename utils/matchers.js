@@ -218,9 +218,12 @@ function shouldSendCommonAreas(text) {
 }
 
 function shouldSendBedding(text) {
-  // "Lençol", "fronha", "travesseiro extra", "edredom", "cobertor", "enxoval", "sofa-cama"
+  // "Lençol", "fronha", "travesseiro extra", "edredom", "cobertor", "coberta(s)", "enxoval", "sofa-cama"
   // Avaliado APÓS shouldSendTowels (toalha tem matcher próprio)
-  return /\b(lencol|fronha|travesseiro|cobertor|edredom|edredon|colcha|roupa de cama|trocar.{0,10}cama|mais.{0,5}travesseiro|mais.{0,5}cobertor|cama (mais )?dura|cama (mais )?mole|colchao|enxoval|sofa.?cama|sofa cama|cama extra|cama adicional)\b/.test(text);
+  // 22/05/2026: incluído "coberta/cobertas" (forma coloquial usada por hóspedes,
+  // caso Leticia Carvalho "Tem cobertas disponíveis?" — antes caía no LLM com
+  // resposta errada "pedir na recepção").
+  return /\b(lencol|fronha|travesseiro|cobertor|cobertas?|edredom|edredon|colcha|roupa de cama|trocar.{0,10}cama|mais.{0,5}travesseiro|mais.{0,5}cobert|cama (mais )?dura|cama (mais )?mole|colchao|enxoval|sofa.?cama|sofa cama|cama extra|cama adicional)\b/.test(text);
 }
 
 function shouldHandleDateChange(text) {
