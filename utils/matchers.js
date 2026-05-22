@@ -328,6 +328,31 @@ function shouldEscalateLateCheckout(text) {
   );
 }
 
+// Reserva feita em nome de outra pessoa — caso comum: esposa reserva pro marido,
+// empresa reserva pro funcionário, pai pro filho. Bot NUNCA deve ficar pedindo
+// código da reserva (cliente que reservou pode não ter, ou misturar canais).
+// Sofia tem acesso ao Stays e resolve pelo nome ou CPF.
+// Caso real 22/05/2026 (Luciano Mendes via SMM Booking, reserva pro Jonas):
+// bot pediu código 5x, alucinou Airbnb num thread Booking, mandou wa.me/sofia
+// (sanitize bloqueia em Booking) — Luciano desistiu. Solução: detecta intent
+// e escala direto.
+function shouldEscalateThirdPartyReservation(text) {
+  if (!text) return false;
+  const t = String(text).toLowerCase();
+  return (
+    // "fiz/reservei ... quem (vai/irá) hospedar/ficar"
+    /\b(fiz|reservei|comprei|fechei).{0,40}\b(mas\s+)?(quem|outra\s+pessoa)\s+.{0,15}(vai|ir[áa])\s+(se\s+)?(hospedar|ficar|estar)/.test(t) ||
+    // "quem vai se hospedar é X" standalone
+    /\bquem\s+(vai|ir[áa])\s+(se\s+)?(hospedar|ficar|estar)\b/.test(t) ||
+    // "no nome de X" / "no nome dele/dela" / "a reserva está no nome de"
+    /\b(reserva\s+(est[áa]\s+)?no\s+nome|no\s+nome\s+(dele|dela|deles|delas|do\s+meu|da\s+minha))/.test(t) ||
+    // "fiz/reservei pra meu marido/esposa/etc"
+    /\b(fiz|reservei|comprei).{0,15}(pra|para)\s+(meu|minha|o|a)\s+(marido|esposa|pai|m[ãa]e|filho|filha|namorad|companheir|funcion[áa]ri|colega|amig|s[óo]gr|cunhad|chefe|irm[ãa]o|irm[ãa])/.test(t) ||
+    // "ele/ela vai (se) hospedar" + "eu reservei/titular"
+    /\b(eu|titular)\s+(que\s+)?(fiz|reservei|comprei|sou\s+(o\s+)?titular).{0,40}\b(ela|ele|outra\s+pessoa).{0,15}(vai|ir[áa])\s+(se\s+)?(hospedar|ficar)/.test(t)
+  );
+}
+
 // Pergunta sobre onde DEIXAR/GUARDAR malas durante check-out window — flat sem
 // recepção própria do hotel não tem armário; requer coordenação humana (Sofia
 // avalia opções: armário do flat, locker próximo, partner). Diferente do
@@ -639,6 +664,7 @@ module.exports = {
   shouldSendInternet,
   shouldSendLuggage,
   shouldEscalateLateCheckout,
+  shouldEscalateThirdPartyReservation,
   shouldEscalateLuggageStorage,
   shouldSendGreeting,
   shouldSendThanks,
