@@ -42,6 +42,7 @@ const {
   shouldHandleDateChange,
   shouldSendHotelMaintenance,
   shouldSendSecurity,
+  shouldSendReceptionExtension,
   shouldSendTransfer,
   shouldSendLocation,
   shouldSendLongStay,
@@ -78,6 +79,7 @@ const {
   DATE_CHANGE_RESPONSE,
   HOTEL_MAINTENANCE_RESPONSE,
   SECURITY_RESPONSE,
+  RECEPTION_EXTENSION_RESPONSE,
   LONG_STAY_RESPONSE,
   CLEANING_RESPONSE,
   INTERNET_RESPONSE,
@@ -164,6 +166,9 @@ function getDispatchTable() {
     { check: shouldSendTransfer,    reply: (lang) => getTransferResponse ? getTransferResponse(lang) : 'Recepção do hotel arruma táxi/Uber. Disque *9 do telefone do quarto.', source: 'transfer' },
     { check: shouldSendLocation,    reply: (lang) => getLocationResponse(lang || 'pt'), source: 'location' },
     { check: shouldSendLongStay,    reply: i18n('LONG_STAY',     LONG_STAY_RESPONSE),     source: 'long_stay' },
+    // Reception extension ANTES de security — caso real Valney 19/05/2026
+    // ("Qual o ramal da recepção?"). Discagem interna *1 ou 9.
+    { check: shouldSendReceptionExtension, reply: i18n('RECEPTION_EXTENSION', RECEPTION_EXTENSION_RESPONSE), source: 'reception_extension' },
     { check: shouldSendSecurity,    reply: i18n('SECURITY',      SECURITY_RESPONSE),      source: 'security' },
     { check: shouldSendHostingCourse, reply: i18n('HOSTING_COURSE', HOSTING_COURSE_RESPONSE), source: 'hosting_course' },
 

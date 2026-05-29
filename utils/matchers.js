@@ -283,6 +283,44 @@ function shouldSendSecurity(text) {
   return /(seguranca|recepcao|portaria|24h|24 horas)/.test(text);
 }
 
+/**
+ * Pergunta sobre RAMAL / DISCAGEM INTERNA pra recepção do hotel.
+ * Caso real 19/05/2026 — Valney testou WA:
+ *   "Qual o ramal da recepção?" → bot disparava SECURITY_RESPONSE (info genérica
+ *   de 24h/controle de acesso), sem dizer COMO chamar a recepção.
+ *
+ * Do telefone do QUARTO: disque *1 ou 9.
+ * Ordenar ANTES de shouldSendSecurity no dispatch (mais específico).
+ *
+ * Cobre PT/EN/ES/FR. Importante: "qual o número da recepção" também
+ * dispara — a intenção mais comum é discagem interna; se for número
+ * externo, o hóspede pede explicitamente "telefone do hotel".
+ */
+function shouldSendReceptionExtension(text) {
+  const t = String(text || '');
+  // "recepção" tem ç + ão — cobrir com [cç] e [aã]o pra aceitar variações sem acento
+  const RECEP = 'recep[cç][aã]o';
+  // PT — ramal / como ligar/chamar / número da recepção
+  if (/\b(ramal|ramais)\b/i.test(t)) return true;
+  if (new RegExp(`\\b(numero|n[uú]mero|n\\.?\\s*o)\\s+(da|do|de|pra|para)\\s+${RECEP}`, 'i').test(t)) return true;
+  if (new RegExp(`\\b(como|qual)\\s+(eu\\s+)?(ligo|chamo|falo|disco|contato|aciono)\\s+(a\\s+|na\\s+|pra\\s+|para\\s+|com\\s+a\\s+)?${RECEP}`, 'i').test(t)) return true;
+  if (new RegExp(`\\b(discar|disco|disca|ligar|liga[cç]|ligo|telefonar)\\s+(pra|para|na|com|a|para\\s+a)\\s+${RECEP}`, 'i').test(t)) return true;
+  if (/\b(telefone|tel\.?|fone)\s+(do|no|de|em|num|dentro\s+do)\s+(quarto|apto|apartamento|flat)\b/i.test(t)) return true;
+  if (/\b(tem|tem\s+algum|h[aá])\s+(telefone|fone)\s+(no|do|em|dentro\s+do)\s+(quarto|apto|apartamento|flat)/i.test(t)) return true;
+  if (/\b(marca[cç][aã]o|disca[gç]em|atalho)\s+(r[aá]pida|interna|direta)/i.test(t)) return true;
+  // EN — extension / how to call reception / room phone
+  if (/\b(extension|how (do|can) i (call|reach|dial)|dial)\s+(the\s+)?reception/i.test(t)) return true;
+  if (/\b(reception|front desk)\s+(extension|ext\.?|number|phone)\b/i.test(t)) return true;
+  if (/\broom\s+phone\b/i.test(t)) return true;
+  // ES — extensión recepción / cómo llamo a recepción
+  if (/\b(extensi[oó]n|ext\.?)\s+(de(\s+la)?\s+)?recepci[oó]n/i.test(t)) return true;
+  if (/\bc[oó]mo\s+(llamo|hablo|marco|disco)\s+(a\s+)?(la\s+)?recepci[oó]n/i.test(t)) return true;
+  // FR — poste de la réception / comment appeler la réception
+  if (/\b(poste|num[eé]ro)\s+(de(\s+la)?\s+)?r[eé]ception/i.test(t)) return true;
+  if (/\bcomment\s+(j[ ']?|appeler|joindre|contacter|t[eé]l[eé]phoner|composer)\s+(la\s+|le\s+)?r[eé]ception/i.test(t)) return true;
+  return false;
+}
+
 function shouldSendLocation(text) {
   // Matcher SO dispara quando pergunta e sobre o hotel/torresguest, NAO sobre
   // outro lugar (Allianz, MASP, restaurante, PUC, etc).
@@ -552,12 +590,24 @@ function detectLanguage(text) {
   if (/\b(es|está|son|hay|necesito|quiero|puedo|tengo|qué|cómo|dónde|cuál|cuánto|por favor|gracias|hola|buenos días|buenas tardes|buenas noches|disculpe|perdón|sí|también)\b/.test(t)) scores.es += 3;
   if (/[¿¡ñ]/.test(t)) scores.es += 3;
   if (/\b(usted|tú|señor|señora)\b/.test(t)) scores.es += 2;
+  // Boost por palavras ES DIAGNÓSTICAS (raras/inexistentes em PT-BR) — desempate
+  // ES vs PT quando "por favor" / "gracias" casam em ambos. Adicionado 19/05/2026
+  // mesma classe do boost FR. Caso: "Necesito una factura por favor" caía em PT.
+  // "por favor" / "gracias" são compartilhados PT — NÃO incluir no diag senão
+  // PT puro cai em ES por boost (regressão "Preciso de ajuda por favor" 19/05).
+  const esDiag = (t.match(/\b(necesito|necesitamos|factura|facturas|recibos|hola|qué|cómo|cuál|cuánto|señor|señora|señorita)\b/g) || []).length;
+  if (esDiag > 0) scores.es += esDiag;
 
   // ── FR (function words exclusivas) ──
   if (/\b(est|sont|ai|veux|besoin|peux|où|comment|combien|quel|quelle|s'il vous plaît|merci|bonjour|bonsoir|bonne|salut|oui|aussi|maintenant|aujourd'hui|demain)\b/.test(t)) scores.fr += 3;
   if (/[œçâêîôûëïü]/.test(t) && !/[ãõ]/.test(t)) scores.fr += 2;
   if (/(qu'|c'|n'|l'|j'|s'|d')/.test(t)) scores.fr += 2; // elisions
   if (/\b(le|la|les|un|une|des|du|de la)\b/.test(t)) scores.fr += 1;
+  // Boost por palavras FR DIAGNÓSTICAS (raras/inexistentes em PT) — desempate
+  // FR vs PT quando ambos têm score base 3-4. Adicionado 19/05/2026 após bug
+  // de "Quel est le poste de la réception ?" cair em PT (tiebreaker default).
+  const frDiag = (t.match(/\b(comment|quel|quelle|combien|poste|appeler|joindre|composer|t[eé]l[eé]phoner|s'il\s+vous\s+pla[iî]t)\b/g) || []).length;
+  if (frDiag > 0) scores.fr += frDiag;
 
   // Encontrar score max; se 0, default PT
   let best = 'pt', bestScore = 0;
@@ -658,6 +708,7 @@ module.exports = {
   shouldHandleCancellationRequest,
   shouldRedirectToReservationSite,
   shouldSendSecurity,
+  shouldSendReceptionExtension,
   shouldSendLocation,
   shouldSendLongStay,
   shouldSendCleaning,

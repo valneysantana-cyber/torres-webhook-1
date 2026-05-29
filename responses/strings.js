@@ -170,6 +170,11 @@ function buildParkingResponse(tenant, lang) {
 
 const SECURITY_RESPONSE = `\ud83d\udd10 Contamos com Seguran\u00e7a & Recep\u00e7\u00e3o 24h, controle de acesso e equipe no local o tempo todo.\nPode chegar tranquilo(a), estamos sempre por perto. \ud83c\udf34`;
 
+// Discagem interna pra Recep\u00e7\u00e3o do hotel (do telefone do quarto).
+// Caso real Valney 19/05/2026 \u2014 bot disparava SECURITY gen\u00e9rico em vez de
+// dizer COMO chamar a recep\u00e7\u00e3o. Resposta criada com PT/EN/ES/FR.
+const RECEPTION_EXTENSION_RESPONSE = `\ud83d\udcde Pra falar com a *Recep\u00e7\u00e3o* direto do telefone do quarto, \u00e9 s\u00f3 discar *1* ou *9*.\nA equipe atende 24h. \ud83c\udf34`;
+
 // Transfer / t\u00e1xi \u2014 agora oferece DUAS op\u00e7\u00f5es:
 //   1) Uber direto (auto-servi\u00e7o, imediato) \u2014 UTM ConciergeCloud pra tracking
 //   2) Transfer organizado com motorista cadastrado pelo anfitri\u00e3o (premium)
@@ -468,6 +473,12 @@ const I18N_RESPONSES = {
     es: `🔐 Contamos con Seguridad y Recepción 24h, control de acceso y equipo en el lugar todo el tiempo.\nPuedes llegar tranquilo(a), siempre estamos cerca. 🌴`,
     fr: `🔐 Nous avons Sécurité et Réception 24h, contrôle d'accès et équipe sur place en permanence.\nVous pouvez arriver l'esprit tranquille, nous sommes toujours à proximité. 🌴`,
   },
+  RECEPTION_EXTENSION: {
+    pt: RECEPTION_EXTENSION_RESPONSE,
+    en: `📞 To reach the *Reception* from the room phone, just dial *1* or *9*.\nThe team is available 24h. 🌴`,
+    es: `📞 Para hablar con *Recepción* desde el teléfono de la habitación, marca *1* o *9*.\nEl equipo atiende 24h. 🌴`,
+    fr: `📞 Pour joindre la *Réception* depuis le téléphone de la chambre, composez *1* ou *9*.\nL'équipe répond 24h/24. 🌴`,
+  },
   LONG_STAY: {
     pt: LONG_STAY_RESPONSE,
     en: `💰 Long stays\nWe have special rates for extended periods.\nTell me how many nights and dates, and I'll check with the team at ${HUMAN_NUMBER_PRIMARY}/${HUMAN_NUMBER_SECONDARY} and come back with a proposal. 🌴`,
@@ -647,6 +658,7 @@ module.exports = {
   buildBreakfastResponse,
   buildParkingResponse,
   SECURITY_RESPONSE,
+  RECEPTION_EXTENSION_RESPONSE,
   TRANSFER_RESPONSE,
   TRANSFER_RESPONSE_I18N,
   getTransferResponse,
