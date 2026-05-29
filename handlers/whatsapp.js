@@ -88,6 +88,7 @@ const {
   shouldHandleCancellationRequest,
   shouldRedirectToReservationSite,
   shouldSendSecurity,
+  shouldSendReceptionExtension,
   shouldSendLocation,
   shouldSendLongStay,
   shouldSendCleaning,
@@ -279,6 +280,9 @@ const PT_DISPATCH = [
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Pedido de alteração de datas'),
   },
   { check: shouldSendHotelMaintenance, reply: (lang, tenant) => getResponseForTenant('HOTEL_MAINTENANCE', lang, tenant) },
+  // Reception extension ANTES de security — caso real Valney 19/05/2026
+  // ("Qual o ramal da recepção?"). Discagem interna *1 ou 9.
+  { check: shouldSendReceptionExtension, reply: (lang, tenant) => getResponseForTenant('RECEPTION_EXTENSION', lang, tenant) },
   { check: shouldSendSecurity,    reply: (lang, tenant) => getResponseForTenant('SECURITY', lang, tenant) },
   {
     check: shouldSendTransfer,
