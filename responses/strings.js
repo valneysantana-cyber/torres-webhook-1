@@ -289,10 +289,21 @@ function getLocationResponse(lang, tenant) {
   // Endereço REAL do tenant (se disponível) — vem PRIMEIRO pra resposta direta
   const addr = tenant && tenant.settings && (tenant.settings.address_full || tenant.settings.address);
   const addrLine = addr ? (lang === "en" ? `\ud83d\udccd *Address:* ${addr}\n\n` : `\ud83d\udccd *Endere\u00e7o:* ${addr}\n\n`) : "";
+
+  // Bug fix 30/05/2026 — branding adaptativo por tenant.
+  // Caso real Adilson KR07J (Glauco Flat 1704 Airbnb): smmClassifier nao
+  // passava tenant + label "Diferenciais TorresGuest" hardcoded -> cliente do
+  // Glauco recebia branding Torres. Agora: torres = label legado; demais
+  // tenants = label generico "Sobre a hospedagem" (mesma localizacao Perdizes).
+  const tid = tenant && tenant.tenantId;
+  const isTorres = !tid || tid === 'torres';
+  const labelPt = isTorres ? '\ud83c\udfe8 Diferenciais TorresGuest' : '\ud83c\udfe8 Sobre a hospedagem';
+  const labelEn = isTorres ? '\ud83c\udfe8 TorresGuest Highlights' : '\ud83c\udfe8 About the property';
+
   if (lang === "en") {
-    return `${addrLine}\ud83c\udfe8 TorresGuest Highlights\n\u2022 Private flats inside a full-service hotel (pool, gym, restaurant)\n\u2022 Excellent location in Perdizes, S\u00e3o Paulo/SP\n\u2022 Close to Allianz Parque (7km), PUC-SP (150m walk!) and Shopping Bourbon (700m)\n\u2022 Personal and humanized service, concierge style\n\nPerfect for leisure or business. Need anything specific? Just ask! \ud83c\udf34`;
+    return `${addrLine}${labelEn}\n\u2022 Private flat inside a full-service hotel (pool, gym, restaurant)\n\u2022 Excellent location in Perdizes, S\u00e3o Paulo/SP\n\u2022 Close to Allianz Parque (7km), PUC-SP (150m walk!) and Shopping Bourbon (700m)\n\u2022 Personal and humanized service, concierge style\n\nPerfect for leisure or business. Need anything specific? Just ask! \ud83c\udf34`;
   }
-  return `${addrLine}\ud83c\udfe8 Diferenciais TorresGuest\n\u2022 Flats dentro de um hotel completo (piscina, academia, restaurante)\n\u2022 Localiza\u00e7\u00e3o excelente em Perdizes, S\u00e3o Paulo/SP\n\u2022 Pr\u00f3ximo ao Allianz Parque (7km), PUC-SP (150m a p\u00e9!) e Shopping Bourbon (700m, 9min)\n\u2022 Atendimento pr\u00f3ximo e humanizado, estilo concierge\n\nIdeal para lazer ou trabalho. Precisa de algo espec\u00edfico? S\u00f3 chamar! \ud83c\udf34`;
+  return `${addrLine}${labelPt}\n\u2022 Flat dentro de um hotel completo (piscina, academia, restaurante)\n\u2022 Localiza\u00e7\u00e3o excelente em Perdizes, S\u00e3o Paulo/SP\n\u2022 Pr\u00f3ximo ao Allianz Parque (7km), PUC-SP (150m a p\u00e9!) e Shopping Bourbon (700m, 9min)\n\u2022 Atendimento pr\u00f3ximo e humanizado, estilo concierge\n\nIdeal para lazer ou trabalho. Precisa de algo espec\u00edfico? S\u00f3 chamar! \ud83c\udf34`;
 }
 
 
