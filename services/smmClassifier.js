@@ -164,7 +164,11 @@ function getDispatchTable() {
     { check: shouldHandleDateChange, reply: i18n('DATE_CHANGE',  DATE_CHANGE_RESPONSE),   source: 'date_change' },
     { check: shouldSendHotelMaintenance, reply: i18n('HOTEL_MAINTENANCE', HOTEL_MAINTENANCE_RESPONSE), source: 'hotel_maintenance' },
     { check: shouldSendTransfer,    reply: (lang) => getTransferResponse ? getTransferResponse(lang) : 'Recepção do hotel arruma táxi/Uber. Disque *9 do telefone do quarto.', source: 'transfer' },
-    { check: shouldSendLocation,    reply: (lang) => getLocationResponse(lang || 'pt'), source: 'location' },
+    // Bug fix 30/05/2026 — caso real Adilson KR07J (Glauco Flat 1704 via Airbnb):
+    // Antes passava só lang, ignorando tenant → resposta usava branding "TorresGuest"
+    // hardcoded em vez do endereço real do tenant Glauco. Agora passa tenant pra
+    // hidratar settings.address_full + landmarks específicos do flat.
+    { check: shouldSendLocation,    reply: (lang, tenant) => getLocationResponse(lang || 'pt', tenant), source: 'location' },
     { check: shouldSendLongStay,    reply: i18n('LONG_STAY',     LONG_STAY_RESPONSE),     source: 'long_stay' },
     // Reception extension ANTES de security — caso real Valney 19/05/2026
     // ("Qual o ramal da recepção?"). Discagem interna *1 ou 9.
