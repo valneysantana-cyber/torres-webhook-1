@@ -175,6 +175,11 @@ const SECURITY_RESPONSE = `\ud83d\udd10 Contamos com Seguran\u00e7a & Recep\u00e
 // dizer COMO chamar a recep\u00e7\u00e3o. Resposta criada com PT/EN/ES/FR.
 const RECEPTION_EXTENSION_RESPONSE = `\ud83d\udcde Pra falar com a *Recep\u00e7\u00e3o* direto do telefone do quarto, \u00e9 s\u00f3 discar *1* ou *9*.\nA equipe atende 24h. \ud83c\udf34`;
 
+// Resposta para h\u00f3spedes confusos com welcome-kit enviado por engano (reserva
+// passada ap\u00f3s sync de backfill Stays, etc). Caso real 29/05/2026 \u2014 Patr\u00edcia HA09J.
+// Quando disparada, handler tamb\u00e9m envia dispatch alert pro humano respons\u00e1vel.
+const STALE_RESERVATION_RESPONSE = `\ud83d\ude4f Ol\u00e1! Pe\u00e7o sinceras desculpas pela confus\u00e3o.\n\nDetectamos que esta mensagem foi enviada automaticamente ap\u00f3s uma *atualiza\u00e7\u00e3o recente do nosso sistema* (que reprocessou reservas antigas). Sua reserva j\u00e1 encerrou.\n\nNossa equipe foi avisada e vai te responder pessoalmente em instantes pra confirmar. Se preferir fazer uma nova reserva, \u00e9 s\u00f3 pelos canais oficiais (Booking, Airbnb).\n\nObrigado pela compreens\u00e3o! \ud83c\udf34`;
+
 // Transfer / t\u00e1xi \u2014 agora oferece DUAS op\u00e7\u00f5es:
 //   1) Uber direto (auto-servi\u00e7o, imediato) \u2014 UTM ConciergeCloud pra tracking
 //   2) Transfer organizado com motorista cadastrado pelo anfitri\u00e3o (premium)
@@ -479,6 +484,12 @@ const I18N_RESPONSES = {
     es: `📞 Para hablar con *Recepción* desde el teléfono de la habitación, marca *1* o *9*.\nEl equipo atiende 24h. 🌴`,
     fr: `📞 Pour joindre la *Réception* depuis le téléphone de la chambre, composez *1* ou *9*.\nL'équipe répond 24h/24. 🌴`,
   },
+  STALE_RESERVATION: {
+    pt: STALE_RESERVATION_RESPONSE,
+    en: `🙏 Hello! I sincerely apologize for the confusion.\n\nWe detected this message was sent automatically after a *recent system update* (which reprocessed old reservations). Your reservation has already ended.\n\nOur team has been notified and will reach out to you personally in a few minutes. If you'd like to make a new reservation, please use the official channels (Booking, Airbnb).\n\nThank you for your understanding! 🌴`,
+    es: `🙏 ¡Hola! Te pido sinceras disculpas por la confusión.\n\nDetectamos que este mensaje fue enviado automáticamente tras una *actualización reciente de nuestro sistema* (que reprocessó reservas antiguas). Tu reserva ya terminó.\n\nNuestro equipo fue avisado y te responderá personalmente en instantes. Si prefieres hacer una nueva reserva, usa los canales oficiales (Booking, Airbnb).\n\n¡Gracias por la comprensión! 🌴`,
+    fr: `🙏 Bonjour ! Toutes mes excuses pour la confusion.\n\nNous avons détecté que ce message a été envoyé automatiquement suite à une *mise à jour récente de notre système* (qui a retraité d'anciennes réservations). Votre réservation est déjà terminée.\n\nNotre équipe a été prévenue et vous contactera personnellement dans quelques instants. Si vous souhaitez faire une nouvelle réservation, utilisez les canaux officiels (Booking, Airbnb).\n\nMerci de votre compréhension ! 🌴`,
+  },
   LONG_STAY: {
     pt: LONG_STAY_RESPONSE,
     en: `💰 Long stays\nWe have special rates for extended periods.\nTell me how many nights and dates, and I'll check with the team at ${HUMAN_NUMBER_PRIMARY}/${HUMAN_NUMBER_SECONDARY} and come back with a proposal. 🌴`,
@@ -659,6 +670,7 @@ module.exports = {
   buildParkingResponse,
   SECURITY_RESPONSE,
   RECEPTION_EXTENSION_RESPONSE,
+  STALE_RESERVATION_RESPONSE,
   TRANSFER_RESPONSE,
   TRANSFER_RESPONSE_I18N,
   getTransferResponse,

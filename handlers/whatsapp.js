@@ -89,6 +89,7 @@ const {
   shouldRedirectToReservationSite,
   shouldSendSecurity,
   shouldSendReceptionExtension,
+  shouldEscalateStaleReservation,
   shouldSendLocation,
   shouldSendLongStay,
   shouldSendCleaning,
@@ -524,6 +525,40 @@ async function handleIncoming(payload) {
         const isTorresContext = !guestTenant || guestTenant.tenantId === 'torres';
         if (!isTorresContext) {
           console.log('[tenant-guest] from=' + from + ' → ' + guestTenant.tenantId + ' (skip torres-flavored matchers)');
+        }
+
+        // ── STALE RESERVATION ESCALATION ──
+        // Caso 29/05/2026 — Patrícia HA09J: Stays.net reenviou emails antigos
+        // após sync manual, 20 welcome-kits saíram pra reservas passadas. Quando
+        // hóspede responde "não fiz reserva" / "data errada" / etc, e a reserva
+        // associada tem checkin no passado (>24h), envia reply educada de
+        // desculpas + dispatch alert pro humano responsável tomar ação.
+        // Gate ANTES dos matchers torres-flavored e do AI fallback.
+        if (shouldEscalateStaleReservation(body) && Reservation) {
+          try {
+            const { phoneVariants } = require('../utils/matchers');
+            const { parseDateOnly } = require('../services/whatsapp');
+            const phones = phoneVariants(from);
+            const recentResv = await Reservation.findOne({
+              guestPhoneClean: { $in: phones },
+            }).sort({ createdAt: -1 }).lean();
+            if (recentResv && recentResv.checkin) {
+              const ci = parseDateOnly(recentResv.checkin);
+              if (ci && !isNaN(ci) && ci.getTime() < Date.now() - 86400000) {
+                console.log('[stale-resv] match from=' + from + ' tenant=' + (guestTenant && guestTenant.tenantId) + ' code=' + recentResv.confirmationCode + ' checkin=' + recentResv.checkin);
+                const { detectLanguage } = require('../utils/matchers');
+                const lang = detectLanguage(body) || 'pt';
+                const reply = getResponseForTenant('STALE_RESERVATION', lang, guestTenant);
+                await replyAndSave(from, reply, { alsoSendAudio: camFromAudio });
+                await sendRoomRequestNotification(from, body,
+                  '⚠️ Reserva antiga (sync backfill) — ' + recentResv.confirmationCode + ' / ' + recentResv.checkin + ' / tenant=' + recentResv.tenantId);
+                continue;
+              }
+            }
+          } catch (e) {
+            console.warn('[stale-resv] guard error:', e.message);
+            // fall-through pro fluxo normal
+          }
         }
 
         // ---- escalation classifier (prioridade máxima p/ fluxo normal) --
