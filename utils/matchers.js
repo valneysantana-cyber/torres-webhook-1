@@ -284,6 +284,43 @@ function shouldSendSecurity(text) {
 }
 
 /**
+ * Hóspede reagindo com confusão a welcome-kit que foi enviado por engano
+ * (reserva já encerrada, sync de backfill, data errada, etc).
+ *
+ * Caso real 29/05/2026: Stays.net reenviou 72 emails antigos após sync manual,
+ * 20 welcome-kits saíram pra reservas passadas. Patrícia HA09J respondeu:
+ *   - "A data está incorreta"
+ *   - "Não fiz reserva"
+ * Bot tentou responder como Concierge do Flat 1704 — confundiu mais.
+ *
+ * Quando ESTE matcher dispara E a reserva tem checkin no passado (>24h),
+ * o handler envia reply educada de desculpas + dispatch alert pro humano.
+ *
+ * Cobre PT/EN/ES/FR.
+ */
+function shouldEscalateStaleReservation(text) {
+  const t = String(text || '').toLowerCase();
+  // PT — "não fiz reserva", "que reserva é essa", "não tenho reserva", "data errada"
+  if (/\b(n[aã]o\s+(fiz|tenho|conhe[çc]o|reconhe[çc]o)\s+(essa\s+|esta\s+|uma\s+|nenhuma\s+|a\s+)?reserva)/i.test(t)) return true;
+  if (/\b(que|qual)\s+reserva(\s+[eé]\s+essa)?\b/i.test(t)) return true;
+  if (/\b(a\s+)?data\s+(est[aá]\s+|[eé]\s+)?(incorreta|errada|incorret[oa]|equivocada|antiga|passada|passou|invertida|trocada)/i.test(t)) return true;
+  if (/\b(reserva|hospedagem|estadia)\s+([eé]\s+|est[aá]\s+|j[aá]\s+)?(antiga|passada|passou|encerrou|encerrada|terminou|terminada|venceu|expirou|de\s+\d{4})/i.test(t)) return true;
+  if (/\b(j[aá]\s+(fiz|tive)\s+(o\s+)?check\s*-?\s*out|j[aá]\s+sa[ií]\s+(do\s+)?(hotel|flat|apto))/i.test(t)) return true;
+  // EN — "I didn't make this reservation", "wrong date", "old booking"
+  if (/\b(i\s+)?(didn[' ]?t|do not|don[' ]?t)\s+(make|have|recognize)\s+(this|that|a|any)?\s*(reservation|booking)/i.test(t)) return true;
+  if (/\b(wrong|incorrect|old|past)\s+(date|booking|reservation)/i.test(t)) return true;
+  if (/\b(date|booking|reservation)\s+(is\s+)?(wrong|incorrect|old|expired|past)/i.test(t)) return true;
+  if (/\bwhat\s+(reservation|booking)/i.test(t)) return true;
+  // ES — "no hice esta reserva", "fecha incorrecta", "fecha está equivocada"
+  if (/\b(no\s+(hice|tengo|reconozco)\s+(esta|esa|ninguna)?\s*reserva)/i.test(t)) return true;
+  if (/\b(fecha|reserva)\s+(es\s+|est[aá]\s+)?(incorrecta|equivocada|antigua|pasada|vencida|expirada)/i.test(t)) return true;
+  // FR — "je n'ai pas fait cette réservation", "date incorrecte", "date est incorrecte"
+  if (/\b(je\s+n[' ]?ai\s+(pas\s+)?fait|n[' ]?ai\s+pas\s+de)\s+(cette\s+)?r[eé]servation/i.test(t)) return true;
+  if (/\b(date|r[eé]servation)\s+(est\s+)?(incorrecte|fausse|ancienne|pass[eé]e|expir[eé]e)/i.test(t)) return true;
+  return false;
+}
+
+/**
  * Pergunta sobre RAMAL / DISCAGEM INTERNA pra recepção do hotel.
  * Caso real 19/05/2026 — Valney testou WA:
  *   "Qual o ramal da recepção?" → bot disparava SECURITY_RESPONSE (info genérica
@@ -709,6 +746,7 @@ module.exports = {
   shouldRedirectToReservationSite,
   shouldSendSecurity,
   shouldSendReceptionExtension,
+  shouldEscalateStaleReservation,
   shouldSendLocation,
   shouldSendLongStay,
   shouldSendCleaning,
