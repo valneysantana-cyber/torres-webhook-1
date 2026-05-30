@@ -573,4 +573,8 @@ module.exports = {
   sendDailyReportTemplate,
   sendPostCheckoutReview,
   sendFrigobarPixCharge,
+  // Helper PT-BR date parser — handles "27 fev 2026" / "03 ago. 2026" / "1 de julho de 2026"
+  // Exposed for reuse in emailMonitor.js (autosend skip gate) and other callers
+  // that need to compare Stays.net email date strings.
+  parseDateOnly,
 };

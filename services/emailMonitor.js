@@ -212,12 +212,20 @@ async function maybeSendCheckinTemplate(saved, reservationData) {
     return;
   }
   try {
-    const ci = new Date(saved.checkin || reservationData.checkin);
-    if (!isNaN(ci) && ci.getTime() < Date.now() - 24 * 3600 * 1000) {
-      console.log('[email][autosend] check-in already past, skipping');
+    // Bug fix 29/05/2026 — caso Patrícia HA09J (Glauco Flat 1704):
+    // Stays.net reenviou emails de reservas antigas (backfill). `new Date("27 fev 2026")`
+    // retorna Invalid Date (Node só entende abreviações EN), então o gate passou
+    // e mandou welcome-kit pra reserva de fev/2026 (3 meses atrás). Patrícia
+    // respondeu "A data está incorreta" e bot caiu como concierge da reserva.
+    // Meses PT que quebram: fev, abr, mai, ago, set, out, dez.
+    // Usar parseDateOnly (services/whatsapp.js) que cobre PT short + long + ISO.
+    const { parseDateOnly } = require('./whatsapp');
+    const ci = parseDateOnly(saved.checkin || reservationData.checkin);
+    if (ci && !isNaN(ci) && ci.getTime() < Date.now() - 24 * 3600 * 1000) {
+      console.log('[email][autosend] check-in already past, skipping (parsed=' + ci.toISOString().slice(0,10) + ')');
       return;
     }
-  } catch {}
+  } catch (e) { console.warn('[email][autosend] date parse warn:', e.message); }
 
   const firstName   = (saved.guestName || '').split(' ')[0] || 'Hospede';
   const listingName = saved.accommodation || saved.property || '-';
