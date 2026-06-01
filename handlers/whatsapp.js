@@ -89,6 +89,7 @@ const {
   shouldRedirectToReservationSite,
   shouldSendSecurity,
   shouldSendReceptionExtension,
+  shouldSendVoltage,
   shouldEscalateStaleReservation,
   shouldSendLocation,
   shouldSendLongStay,
@@ -284,6 +285,8 @@ const PT_DISPATCH = [
   // Reception extension ANTES de security — caso real Valney 19/05/2026
   // ("Qual o ramal da recepção?"). Discagem interna *1 ou 9.
   { check: shouldSendReceptionExtension, reply: (lang, tenant) => getResponseForTenant('RECEPTION_EXTENSION', lang, tenant) },
+  // Voltage/outlet — caso real 31/05/2026 (LLM alucinou "tem 220V"). Hotel é 110V only.
+  { check: shouldSendVoltage,            reply: (lang, tenant) => getResponseForTenant('VOLTAGE', lang, tenant) },
   { check: shouldSendSecurity,    reply: (lang, tenant) => getResponseForTenant('SECURITY', lang, tenant) },
   {
     check: shouldSendTransfer,

@@ -180,6 +180,11 @@ const RECEPTION_EXTENSION_RESPONSE = `\ud83d\udcde Pra falar com a *Recep\u00e7\
 // Quando disparada, handler tamb\u00e9m envia dispatch alert pro humano respons\u00e1vel.
 const STALE_RESERVATION_RESPONSE = `\ud83d\ude4f Ol\u00e1! Pe\u00e7o sinceras desculpas pela confus\u00e3o.\n\nDetectamos que esta mensagem foi enviada automaticamente ap\u00f3s uma *atualiza\u00e7\u00e3o recente do nosso sistema* (que reprocessou reservas antigas). Sua reserva j\u00e1 encerrou.\n\nNossa equipe foi avisada e vai te responder pessoalmente em instantes pra confirmar. Se preferir fazer uma nova reserva, \u00e9 s\u00f3 pelos canais oficiais (Booking, Airbnb).\n\nObrigado pela compreens\u00e3o! \ud83c\udf34`;
 
+// Voltagem/tomada do quarto — Hotel Transamerica Executive Perdizes opera em 110V.
+// Caso real 31/05/2026: LLM alucinou "Sim tem 220V" (mas e\u00e9 so 110V).
+// Resposta clara + i18n previne alucina\u00e7\u00e3o futura.
+const VOLTAGE_RESPONSE = `\u26a1 *Tomadas: 110V* (padr\u00e3o do hotel).\n\nN\u00e3o temos tomadas 220V no quarto. Se voc\u00ea tem aparelhos 220V (alguns secadores de cabelo, carregadores estrangeiros), recomendamos trazer um *adaptador / transformador*.\n\nQualquer d\u00favida sobre seus aparelhos, me chama aqui que ajudo! \ud83c\udf34`;
+
 // Transfer / t\u00e1xi \u2014 agora oferece DUAS op\u00e7\u00f5es:
 //   1) Uber direto (auto-servi\u00e7o, imediato) \u2014 UTM ConciergeCloud pra tracking
 //   2) Transfer organizado com motorista cadastrado pelo anfitri\u00e3o (premium)
@@ -501,6 +506,12 @@ const I18N_RESPONSES = {
     es: `🙏 ¡Hola! Te pido sinceras disculpas por la confusión.\n\nDetectamos que este mensaje fue enviado automáticamente tras una *actualización reciente de nuestro sistema* (que reprocessó reservas antiguas). Tu reserva ya terminó.\n\nNuestro equipo fue avisado y te responderá personalmente en instantes. Si prefieres hacer una nueva reserva, usa los canales oficiales (Booking, Airbnb).\n\n¡Gracias por la comprensión! 🌴`,
     fr: `🙏 Bonjour ! Toutes mes excuses pour la confusion.\n\nNous avons détecté que ce message a été envoyé automatiquement suite à une *mise à jour récente de notre système* (qui a retraité d'anciennes réservations). Votre réservation est déjà terminée.\n\nNotre équipe a été prévenue et vous contactera personnellement dans quelques instants. Si vous souhaitez faire une nouvelle réservation, utilisez les canaux officiels (Booking, Airbnb).\n\nMerci de votre compréhension ! 🌴`,
   },
+  VOLTAGE: {
+    pt: VOLTAGE_RESPONSE,
+    en: `\u26a1 *Outlets: 110V* (hotel standard).\n\nWe do not have 220V outlets in the room. If you have 220V devices (some hair dryers, foreign chargers), we recommend bringing an *adapter / transformer*.\n\nAny question about your devices, just ask me here! \ud83c\udf34`,
+    es: `\u26a1 *Enchufes: 110V* (est\u00e1ndar del hotel).\n\nNo tenemos enchufes 220V en la habitaci\u00f3n. Si tienes aparatos 220V (algunos secadores de pelo, cargadores extranjeros), recomendamos traer un *adaptador / transformador*.\n\nCualquier duda sobre tus aparatos, av\u00edsame aqu\u00ed! \ud83c\udf34`,
+    fr: `\u26a1 *Prises: 110V* (standard de l'h\u00f4tel).\n\nNous n'avons pas de prises 220V dans la chambre. Si vous avez des appareils 220V (certains s\u00e8che-cheveux, chargeurs \u00e9trangers), nous recommandons d'apporter un *adaptateur / transformateur*.\n\nUne question sur vos appareils, dites-moi ici! \ud83c\udf34`,
+  },
   LONG_STAY: {
     pt: LONG_STAY_RESPONSE,
     en: `💰 Long stays\nWe have special rates for extended periods.\nTell me how many nights and dates, and I'll check with the team at ${HUMAN_NUMBER_PRIMARY}/${HUMAN_NUMBER_SECONDARY} and come back with a proposal. 🌴`,
@@ -682,6 +693,7 @@ module.exports = {
   SECURITY_RESPONSE,
   RECEPTION_EXTENSION_RESPONSE,
   STALE_RESERVATION_RESPONSE,
+  VOLTAGE_RESPONSE,
   TRANSFER_RESPONSE,
   TRANSFER_RESPONSE_I18N,
   getTransferResponse,

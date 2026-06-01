@@ -284,6 +284,29 @@ function shouldSendSecurity(text) {
 }
 
 /**
+ * Pergunta sobre voltagem/tomada do quarto (110V vs 220V, adaptador, etc).
+ *
+ * Caso real 31/05/2026: hóspede perguntou "sabe informar se tem tomada com
+ * voltagem de 220V no quarto?". Sem matcher dedicado, caiu no AI fallback e o
+ * LLM ALUCINOU "Sim, tem 220V! O flat conta com tomadas padrão brasileiro
+ * (110V e 220V)". Errado — Hotel Transamerica Executive Perdizes é 110V only.
+ *
+ * Cobre PT/EN/ES/FR — qualquer pergunta sobre voltagem/tomada/adaptador.
+ */
+function shouldSendVoltage(text) {
+  const t = String(text || '').toLowerCase();
+  // PT — tomada/voltagem/tensão/110V/220V/adaptador
+  if (/\b(tomada|tomadas|voltagem|tens[aã]o|\d{3}\s?v(olt)?s?|110\s?v|220\s?v|carregador|adaptador|plugue|plug)\b/i.test(t)) return true;
+  // EN — outlet/voltage/plug/adapter/110V/220V
+  if (/\b(outlet|outlets|voltage|110\s?v|220\s?v|plug|plugs|adapter|adaptor|socket|sockets)\b/i.test(t)) return true;
+  // ES — enchufe/tensión/voltaje/adaptador
+  if (/\b(enchufe|tensi[oó]n|voltaje|adaptador|toma\s+corriente|clavija)\b/i.test(t)) return true;
+  // FR — prise/voltage/adaptateur
+  if (/\b(prise|prises|voltage|tension|adaptateur|fiche|fiches)\b/i.test(t)) return true;
+  return false;
+}
+
+/**
  * Hóspede reagindo com confusão a welcome-kit que foi enviado por engano
  * (reserva já encerrada, sync de backfill, data errada, etc).
  *
@@ -746,6 +769,7 @@ module.exports = {
   shouldRedirectToReservationSite,
   shouldSendSecurity,
   shouldSendReceptionExtension,
+  shouldSendVoltage,
   shouldEscalateStaleReservation,
   shouldSendLocation,
   shouldSendLongStay,
