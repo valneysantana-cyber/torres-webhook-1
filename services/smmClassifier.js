@@ -43,6 +43,7 @@ const {
   shouldSendHotelMaintenance,
   shouldSendSecurity,
   shouldSendReceptionExtension,
+  shouldSendVoltage,
   shouldSendTransfer,
   shouldSendLocation,
   shouldSendLongStay,
@@ -80,6 +81,7 @@ const {
   HOTEL_MAINTENANCE_RESPONSE,
   SECURITY_RESPONSE,
   RECEPTION_EXTENSION_RESPONSE,
+  VOLTAGE_RESPONSE,
   LONG_STAY_RESPONSE,
   CLEANING_RESPONSE,
   INTERNET_RESPONSE,
@@ -173,6 +175,9 @@ function getDispatchTable() {
     // Reception extension ANTES de security — caso real Valney 19/05/2026
     // ("Qual o ramal da recepção?"). Discagem interna *1 ou 9.
     { check: shouldSendReceptionExtension, reply: i18n('RECEPTION_EXTENSION', RECEPTION_EXTENSION_RESPONSE), source: 'reception_extension' },
+    // Voltage/outlet ANTES de location/security — caso real 31/05: LLM alucinou
+    // "tem 220V" pra hóspede. Agora resposta direta: 110V only + recomenda adaptador.
+    { check: shouldSendVoltage,     reply: i18n('VOLTAGE',       VOLTAGE_RESPONSE),       source: 'voltage' },
     { check: shouldSendSecurity,    reply: i18n('SECURITY',      SECURITY_RESPONSE),      source: 'security' },
     { check: shouldSendHostingCourse, reply: i18n('HOSTING_COURSE', HOSTING_COURSE_RESPONSE), source: 'hosting_course' },
 
