@@ -1,5 +1,11 @@
 'use strict';
 
+// PR #127 — global fetch monkey-patch ANTES de qualquer require que use fetch.
+// Força Accept-Encoding: identity em todas requests pra evitar bug undici em
+// Node 18/20 do Render que não descomprime gzip auto. Caso real 02/06: audio
+// transcribe + send WA template + Stays calls falhavam com JSON parse "\xff".
+require('./utils/safeFetch');
+
 /**
  * torres-webhook Ã¢ÂÂ entry point
  *
