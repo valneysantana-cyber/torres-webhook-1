@@ -20,6 +20,13 @@ async function staysFetch(path) {
       headers: {
         Authorization: `Basic ${getStaysAuth()}`,
         'Content-Type': 'application/json',
+        // Bug fix 02/06/2026 — relatório 08:00 saiu vazio porque Stays API
+        // retornava bytes gzip e undici (Node 18/20 no Render) NÃO descomprimia
+        // automaticamente em alguns casos → "Unexpected token '\xff'" no JSON.parse.
+        // Forçar identity elimina compressão server-side (payload pequeno, OK).
+        // Validado direto via Node v25 local: 'identity' retorna content-encoding=null
+        // e JSON válido. Production Node 18/20 idem após este fix.
+        'Accept-Encoding': 'identity',
       },
     });
     if (!res.ok) {
