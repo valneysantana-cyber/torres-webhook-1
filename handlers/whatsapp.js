@@ -539,7 +539,9 @@ async function handleIncoming(payload) {
         // Gate ANTES dos matchers torres-flavored e do AI fallback.
         if (shouldEscalateStaleReservation(body) && Reservation) {
           try {
-            const { phoneVariants } = require('../utils/matchers');
+            // Bug fix 02/06/2026: phoneVariants vive em services/tenant.js, não em utils/matchers.js.
+            // PR #123 importava errado → "phoneVariants is not a function" silencioso no fluxo stale-resv.
+            const { phoneVariants } = require('../services/tenant');
             const { parseDateOnly } = require('../services/whatsapp');
             const phones = phoneVariants(from);
             const recentResv = await Reservation.findOne({
