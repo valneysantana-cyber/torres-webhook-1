@@ -4,21 +4,17 @@
 # Atualiza UMA env var no service Render via PUT per-env (não bulk).
 # Endpoint: PUT /v1/services/{id}/env-vars/{key}
 #
-# ⚠️ AVISO 02/06/2026: Render API tem comportamento BIZARRO em alguns
-# momentos — PUT per-env pode causar OUTRA env (não a alvo) sumir
-# silenciosamente. Causa ainda desconhecida. Salvaguardas detectam +
-# abortam, mas precisa restaurar manualmente via dashboard se acontecer:
-# https://dashboard.render.com/web/srv-d6srgcea2pns738drreg/env
+# ⚠️ NOTA IMPORTANTE 02/06/2026 sobre Render API:
+# O endpoint LIST `GET /env-vars` retorna lista incompleta/stale — não é
+# fonte de verdade. O endpoint INDIVIDUAL `GET /env-vars/{key}` SIM é fonte
+# de verdade. Por isso esse script valida cada CRITICAL_ENV via GET
+# individual (não pela lista). Falso alarme do incident 02/06 16:25 levou
+# a essa descoberta.
 #
 # Por que NÃO usar PUT bulk (POST a /env-vars):
-# Bug 02/06/2026 — bulk replace pode perder envs silenciosamente. MONGODB_URI
-# sumiu numa PUT bulk e bot ficou 4h down. Per-env é mais seguro mas
-# AINDA não é 100%. Caso real 02/06 16:25: ao adicionar WA_DAILY_REPORT_USE_TEMPLATE
-# via per-env, ANTHROPIC_MODEL sumiu. Adicionar ANTHROPIC_MODEL fez LLM_PROVIDER
-# sumir. Adicionar LLM_PROVIDER fez ANTHROPIC_API_KEY sumir.
-#
-# REGRA DE OURO: depois de QUALQUER mudança via este script, verificar lista
-# completa de envs e restaurar manual se algo sumir.
+# Bug 02/06/2026 — bulk replace PODE perder envs (não comprovado mas evidência
+# circumstancial). MONGODB_URI sumiu numa PUT bulk e bot ficou 4h down. PUT
+# per-env é mais seguro porque só toca a env alvo.
 #
 # Uso:
 #   ./scripts/render-env-update.sh <KEY> <VALUE>
@@ -70,39 +66,31 @@ echo "  key:      $KEY"
 echo "  value:    ${#VALUE} chars"
 echo ""
 
-# ── 1. GET estado atual ──
-echo "[1/4] GET estado atual..."
-BEFORE_JSON=$(curl -fsS -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  "https://api.render.com/v1/services/${SERVICE_ID}/env-vars")
-BEFORE_COUNT=$(echo "$BEFORE_JSON" | jq 'length')
-echo "  envs atuais: $BEFORE_COUNT"
-
-if [ "$BEFORE_COUNT" -lt "$MIN_ENV_COUNT" ]; then
-  echo "ABORT: count $BEFORE_COUNT < min $MIN_ENV_COUNT — estado anormal" >&2
-  exit 2
-fi
-
-# ── 2. Validar envs CRÍTICAS presentes ANTES ──
-echo "[2/4] Validar envs críticas..."
+# ── 1. Validar envs CRÍTICAS via GET INDIVIDUAL (fonte de verdade) ──
+# Render API LIST endpoint tem bug intermitente: retorna lista incompleta/stale.
+# GET individual /env-vars/{key} é a fonte de verdade real.
+echo "[1/3] Validar envs críticas (GET individual)..."
 MISSING=()
 for c in "${CRITICAL_ENVS[@]}"; do
-  PRESENT=$(echo "$BEFORE_JSON" | jq -r --arg k "$c" '.[] | select(.envVar.key == $k) | .envVar.key')
-  if [ -z "$PRESENT" ]; then
-    MISSING+=("$c")
-    echo "  ✗ $c AUSENTE"
-  else
+  HTTP=$(curl -s -o /dev/null -w '%{http_code}' \
+    -H "Authorization: Bearer ${RENDER_API_KEY}" \
+    "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/${c}")
+  if [ "$HTTP" = "200" ]; then
     echo "  ✓ $c"
+  else
+    MISSING+=("$c")
+    echo "  ✗ $c AUSENTE (HTTP $HTTP)"
   fi
 done
 
 if [ "${#MISSING[@]}" -gt 0 ]; then
   echo "ABORT: ${#MISSING[@]} env(s) crítica(s) ausente(s): ${MISSING[*]}" >&2
-  echo "Restaurar manualmente antes de prosseguir." >&2
+  echo "Restaurar manualmente via dashboard antes de prosseguir." >&2
   exit 3
 fi
 
-# ── 3. PUT per-env (não toca outras) ──
-echo "[3/4] PUT per-env /env-vars/${KEY}..."
+# ── 2. PUT per-env (não toca outras) ──
+echo "[2/3] PUT per-env /env-vars/${KEY}..."
 PAYLOAD=$(jq -n --arg v "$VALUE" '{value: $v}')
 HTTP=$(curl -s -X PUT -H "Authorization: Bearer ${RENDER_API_KEY}" -H "Content-Type: application/json" \
   "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/${KEY}" \
@@ -115,40 +103,34 @@ if [ "$HTTP" != "200" ] && [ "$HTTP" != "201" ]; then
 fi
 echo "  HTTP $HTTP ✓"
 
-# ── 4. Validar pós ──
-echo "[4/4] Validar pós-PUT..."
+# ── 3. Validar pós (GET INDIVIDUAL — único confiável) ──
+echo "[3/3] Validar pós-PUT (GET individual)..."
 sleep 2
-AFTER_JSON=$(curl -fsS -H "Authorization: Bearer ${RENDER_API_KEY}" \
-  "https://api.render.com/v1/services/${SERVICE_ID}/env-vars")
-AFTER_COUNT=$(echo "$AFTER_JSON" | jq 'length')
-echo "  envs após: $AFTER_COUNT"
 
-# Esperar count >= BEFORE_COUNT (pode ser igual se update, +1 se nova)
-if [ "$AFTER_COUNT" -lt "$BEFORE_COUNT" ]; then
-  echo "ABORT: count caiu! $BEFORE_COUNT → $AFTER_COUNT — envs perdidas" >&2
+# Validar nossa env tem o valor enviado
+APPLIED=$(curl -fsS -H "Authorization: Bearer ${RENDER_API_KEY}" \
+  "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/${KEY}" | jq -r '.value')
+if [ "$APPLIED" != "$VALUE" ]; then
+  echo "ABORT: $KEY valor aplicado != enviado ('$(echo $APPLIED | head -c 30)' != '$(echo $VALUE | head -c 30)')" >&2
   exit 5
 fi
+echo "  $KEY valor confirmado ✓"
 
-# Validar envs críticas presentes DEPOIS
+# Validar todas críticas continuam presentes (GET individual)
 for c in "${CRITICAL_ENVS[@]}"; do
-  PRESENT=$(echo "$AFTER_JSON" | jq -r --arg k "$c" '.[] | select(.envVar.key == $k) | .envVar.key')
-  if [ -z "$PRESENT" ]; then
-    echo "ABORT: env crítica '$c' DESAPARECEU após PUT — investigar" >&2
+  HTTP=$(curl -s -o /dev/null -w '%{http_code}' \
+    -H "Authorization: Bearer ${RENDER_API_KEY}" \
+    "https://api.render.com/v1/services/${SERVICE_ID}/env-vars/${c}")
+  if [ "$HTTP" != "200" ]; then
+    echo "ABORT: env crítica '$c' DESAPARECEU após PUT (HTTP $HTTP) — investigar" >&2
     exit 6
   fi
 done
 
-# Validar nossa env tem o valor enviado
-ACTUAL=$(echo "$AFTER_JSON" | jq -r --arg k "$KEY" '.[] | select(.envVar.key == $k) | .envVar.value')
-if [ "$ACTUAL" != "$VALUE" ]; then
-  echo "ABORT: $KEY tem valor diferente ('$(echo $ACTUAL | head -c 30)' != '$(echo $VALUE | head -c 30)')" >&2
-  exit 7
-fi
-
 echo ""
 echo "✅ OK — $KEY = '${VALUE:0:50}$( [ ${#VALUE} -gt 50 ] && echo '...' )' aplicado"
-echo "  ${#CRITICAL_ENVS[@]} críticas confirmadas"
-echo "  total $AFTER_COUNT envs (era $BEFORE_COUNT)"
+echo "  ${#CRITICAL_ENVS[@]} críticas confirmadas via GET individual"
 echo ""
-echo "Lembra: env nova requer deploy pra entrar em vigor."
-echo "  ./scripts/render-deploy.sh   (ou via Render dashboard)"
+echo "Lembra: env nova requer DEPLOY pra entrar em vigor (não apenas restart)."
+echo "  curl -X POST -H 'Authorization: Bearer \$RENDER_API_KEY' \\"
+echo "    https://api.render.com/v1/services/${SERVICE_ID}/deploys -d '{\"clearCache\":\"do_not_clear\"}'"
