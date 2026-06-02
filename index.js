@@ -80,6 +80,25 @@ app.get('/', (_req, res) => {
   res.status(200).send('torres-webhook online');
 });
 
+// /health — endpoint pra Render healthCheckPath. Retorna 503 se Mongoose
+// disconnected → Render reinicia o service automaticamente. Pré PR #129,
+// Render não detectava bug "MongoDB buffering timeout" e bot ficava down 4h+
+// sem alerta (caso 02/06: 219 falhas em 4 dias antes do incidente Vinicius).
+app.get('/health', (_req, res) => {
+  const { isDBConnected } = require('./services/db');
+  const dbOk = isDBConnected();
+  const status = dbOk ? 200 : 503;
+  res.status(status).json({
+    status: dbOk ? 'healthy' : 'degraded',
+    checks: {
+      db: dbOk ? 'connected' : 'disconnected',
+      llm: process.env.LLM_PROVIDER || 'gpt-4o',
+    },
+    uptime_s: Math.round(process.uptime()),
+    ts: new Date().toISOString(),
+  });
+});
+
 // ===========================================================================
 // WHATSAPP WEBHOOK
 // ===========================================================================
