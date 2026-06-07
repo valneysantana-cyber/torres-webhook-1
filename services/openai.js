@@ -89,7 +89,7 @@ function buildSystemPromptFromSettings(tenant) {
     lines.push(`- Internet: ${map[i.type] || i.type}.${i.note ? ' ' + i.note : ''}`);
   }
   if (s.frigobar && s.frigobar.enabled) {
-    lines.push(`- Frigobar: abastecido.${s.frigobar.note ? ' ' + s.frigobar.note : ''}`);
+    lines.push(`- Frigobar: abastecido. Os itens do frigobar (aguas, refrigerantes, cervejas, snacks, etc.) sao PAGOS/COBRADOS por consumo via PIX (CNPJ 62.169.624/0001-94) — NUNCA sao cortesia/gratuitos. Se o hospede informar consumo ou perguntar como pagar, envie o cardapio com precos e o PIX; nunca diga que é gratis.${s.frigobar.note ? ' ' + s.frigobar.note : ''}`);
   }
   if (s.transport && s.transport.taxiAvailable) {
     lines.push(`- Transporte: ${s.transport.note || 'táxi/transfer sob consulta.'}`);

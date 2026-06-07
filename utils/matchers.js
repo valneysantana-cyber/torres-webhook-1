@@ -725,7 +725,14 @@ function shouldSendFrigobarPix(text) {
   // Antes: "quanto custa?" sozinho disparava cardapio frigobar — confundia
   // hospede perguntando sobre diaria. Agora isPaymentOrMenu so vale como
   // BOOST se ja ha mention de frigobar, nao como gatilho isolado.
-  return isFrigobarMention
+  //
+  // FIX (Valney 07/06): hospede relata CONSUMO de item do frigobar sem dizer
+  // a palavra "frigobar" — ex: "Tomei 2 aguas", "bebi uma cerveja", "peguei
+  // um refri". Antes caia no LLM, que inventava "agua e cortesia" (ERRADO:
+  // agua R$ 7,50). Verbo de consumo + item do frigobar => cardapio + PIX.
+  const isConsumptionVerb = /\b(tomei|tomamos|bebi|bebemos|consumi|consumimos|peguei|pegamos|usei|usamos|comi|comemos|abri|abrimos)\b/.test(t);
+  const consumedFrigobarItem = isConsumptionVerb && FRIGOBAR_ITEMS_REGEX.test(t);
+  return (isFrigobarMention || consumedFrigobarItem)
     && !isReservationContext
     && !isRestockIntent
     && !isRestaurantContext;
