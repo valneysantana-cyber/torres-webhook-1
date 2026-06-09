@@ -7,7 +7,9 @@
   var stored = localStorage.getItem('API_BASE');
   var sameOrigin = (location.protocol === 'http:' || location.protocol === 'https:')
     ? location.origin + '/app/v1' : null;
+  // Produção (atrás do nginx, /crm/ proxy → :3001, SEM auth_basic em /crm/app/v1):
+  var PROD = 'https://conciergecloud.com.br/crm/app/v1';
   window.CC_CONFIG = {
-    API_BASE: stored || sameOrigin || 'https://crm.conciergecloud.com.br/app/v1',
+    API_BASE: stored || sameOrigin || PROD,
   };
 })();
