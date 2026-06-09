@@ -60,6 +60,8 @@ document.getElementById('logoutBtn').addEventListener('click', logout);
 async function afterLogin(){
   document.getElementById('who').textContent = `${state.user.name} · ${roleLabel(state.user.role)}`;
   state.listings = state.user.listings || [];
+  try{ state.listingOptions = await api('/listings'); }catch{ state.listingOptions = (state.listings||[]).map(id=>({id,name:id})); }
+  if(!state.listingOptions.length) state.listingOptions = (state.listings||[]).map(id=>({id,name:id}));
   registerPush();
   await goHome();
 }
@@ -103,11 +105,12 @@ function statusLabel(s){ return ({pending:'Pendente',in_progress:'Em andamento',
 // ---------- VISTORIA ----------
 async function startVistoria(){
   if(!state.checklist.length){ try{ state.checklist = (await api('/inspections/checklist')).checklist; }catch{ state.checklist=[]; } }
-  state.draft = { listingId: state.listings[0]||'', date: new Date().toISOString().slice(0,10), geo:null,
+  const opts = state.listingOptions && state.listingOptions.length ? state.listingOptions : [];
+  state.draft = { listingId: opts[0]?opts[0].id:'', listingName: opts[0]?opts[0].name:'', date: new Date().toISOString().slice(0,10), geo:null,
     items: state.checklist.map(c=>({ category:c.category, key:c.key, label:c.label, status:null, note:'', photos:[] })) };
   const sel = document.getElementById('listingSelect');
-  sel.innerHTML = (state.listings.length?state.listings:['(sem imóvel atribuído)']).map(l=>`<option value="${l}">${l}</option>`).join('');
-  sel.onchange = ()=> state.draft.listingId = sel.value;
+  sel.innerHTML = (opts.length?opts:[{id:'',name:'(sem imóvel atribuído)'}]).map(o=>`<option value="${o.id}">${o.name}</option>`).join('');
+  sel.onchange = ()=>{ state.draft.listingId = sel.value; const o=opts.find(x=>x.id===sel.value); state.draft.listingName = o?o.name:sel.value; };
   document.getElementById('geoStatus').textContent='Localização: capturando…';
   captureGeo();
   renderChecklist();
@@ -188,7 +191,7 @@ async function captureGeo(){
 document.getElementById('submitVistoria').addEventListener('click', async ()=>{
   const d = state.draft; const msg=document.getElementById('vistoriaMsg');
   if(!d.listingId){ msg.textContent='Selecione o imóvel.'; return; }
-  const payload = { listingId:d.listingId, listingName:d.listingId, date:d.date, status:'submitted', items:d.items, geo:d.geo };
+  const payload = { listingId:d.listingId, listingName:d.listingName||d.listingId, date:d.date, status:'submitted', items:d.items, geo:d.geo };
   if(!navigator.onLine){ await enqueue(payload); msg.textContent='Sem conexão — vistoria salva na fila.'; updateOffline(); setTimeout(goHome,800); return; }
   document.getElementById('submitVistoria').disabled=true;
   try{ await api('/inspections', { method:'POST', body:payload }); msg.textContent='Vistoria enviada!'; setTimeout(goHome,600); }
@@ -225,7 +228,9 @@ async function openDetail(id){
 // ---------- PROPRIETÁRIO ----------
 async function renderOwner(){
   show('owner'); const body=document.getElementById('ownerBody'); body.innerHTML='<div class="hint">Carregando…</div>';
-  const listing = state.listings[0];
+  const opt = (state.listingOptions && state.listingOptions[0]) || (state.listings[0] ? {id:state.listings[0],name:state.listings[0]} : null);
+  const listing = opt && opt.id;
+  if(opt && opt.name){ const h=document.querySelector('#screen-owner h1'); if(h) h.textContent = 'Imóvel '+opt.name; }
   if(!listing){ body.innerHTML='<div class="hint">Nenhum imóvel vinculado.</div>'; return; }
   try{
     const s = await api('/listings/'+encodeURIComponent(listing)+'/stats');

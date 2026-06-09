@@ -164,6 +164,23 @@ function mountAuthRoutes(router, db) {
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
+  // GET /app/v1/listings — imóveis do usuário (com nome amigável), conforme escopo
+  router.get('/listings', requireAuth, async (req, res) => {
+    try {
+      const q = {};
+      if (req.user.role === 'admin') { if (req.query.tenantId) q.tenantId = req.query.tenantId; }
+      else { q.tenantId = req.user.tenantId; }
+      if (req.user.role === 'provider' || req.user.role === 'owner') {
+        q.listingId = { $in: (req.user.listings || []).map(String) };
+      }
+      const docs = await db.collection('app_listings').find(q, { projection: { _id: 0, listingId: 1, name: 1, address: 1 } }).toArray();
+      const known = new Set(docs.map(d => String(d.listingId)));
+      // imóveis no token sem cadastro em app_listings entram com o próprio id como nome
+      const extra = (req.user.listings || []).filter(l => !known.has(String(l))).map(l => ({ listingId: String(l), name: String(l) }));
+      res.json([...docs, ...extra].map(d => ({ id: String(d.listingId), name: d.name || String(d.listingId), address: d.address || null })));
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
   // GET /app/v1/users?role=provider — lista usuários do tenant (host/admin)
   router.get('/users', requireAuth, requireRole('admin', 'host'), async (req, res) => {
     try {

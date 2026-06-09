@@ -5,3 +5,4 @@ mobile-app/node_modules/
 mobile-app/ios/
 mobile-app/android/
 crm-server/node_modules/
+.claude/launch.json

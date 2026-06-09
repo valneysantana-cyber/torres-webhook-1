@@ -125,6 +125,12 @@ function req(server, method, path, { token, body } = {}) {
   ok(r.status === 200 && r.body.length >= 2 && !JSON.stringify(r.body).includes('passwordHash'), 'host lista prestadores (sem passwordHash)');
   const provId = r.body.find(u => u.login === 'prest@cc').id;
 
+  console.log('\n— LISTINGS (nome amigável) —');
+  r = await req(server, 'GET', '/listings', { token: tProv });
+  ok(r.status === 200 && r.body.length === 1 && r.body[0].name === '1704' && r.body[0].id === L, 'provider vê seu imóvel com nome amigável (1704)');
+  r = await req(server, 'GET', '/listings', { token: tOwner });
+  ok(r.status === 200 && r.body[0] && r.body[0].name === '1704', 'owner vê só o seu imóvel com nome');
+
   console.log('\n— ATRIBUIÇÃO —');
   r = await req(server, 'POST', '/inspections/assign', { token: tHost, body: { providerId: provId, listingId: L, listingName: '1704', date: '2026-06-10' } });
   ok(r.status === 200 && r.body.status === 'pending', 'host atribui vistoria pendente ao prestador');
