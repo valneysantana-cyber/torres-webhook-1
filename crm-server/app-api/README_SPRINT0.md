@@ -29,6 +29,22 @@ Não altera nenhuma rota existente; usa autenticação própria (Bearer JWT).
 | `APP_AI_MODEL` | não | default `claude-sonnet-4-5` |
 | `APP_GEOFENCE_METERS` | não (200) | raio aceito na validação de presença |
 | `MONGODB_URI` | já existe | mesmo banco do CRM |
+| `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET` | p/ fotos no R2 | offload das fotos (senão ficam inline base64) |
+| `R2_PUBLIC_BASE` | não | base pública/CDN; sem ela usa URL assinada |
+| `FIREBASE_SERVICE_ACCOUNT` (JSON) | p/ push | emissor FCM (Android + iOS/APNs); sem ela, push vira no-op |
+
+## Endpoints `/app/v1`
+- `POST /auth/login` · `GET /me` · `GET /users?role=` · `POST /users` · `POST /devices`
+- `GET /inspections/checklist` · `GET /inspections` · `GET /inspections/:id`
+- `POST /inspections` (provider/host cria+envia) · `POST /inspections/assign` (host/admin agenda p/ prestador)
+- `POST /inspections/:id/ai-report` (host/admin — Claude vision)
+- `GET /listings/:id/stats` (owner/host/admin — quantitativo, sem valores)
+
+## Sprint 1–2 já incluídos (além do Sprint 0)
+- **Fotos no Cloudflare R2** (`storage.js`) com URL assinada; fallback inline base64 se R2 ausente.
+- **Push FCM** (`push.js`) com gatilhos: vistoria enviada → host; relatório pronto → host+proprietário; vistoria atribuída → prestador. Degrada para no-op sem credenciais.
+- **Atribuição** de vistoria (host agenda, prestador recebe push e vê como pendente) + **listagem de usuários**.
+- Smoke test ampliado: **26/26**.
 
 ## Rodar localmente
 ```bash

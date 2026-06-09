@@ -116,11 +116,30 @@ function req(server, method, path, { token, body } = {}) {
   // owner não é provider/host: scopeFilter restringe por listings; deve ver a vistoria do L (read)
   ok(r.status === 200, 'owner lista vistorias (somente do seu escopo)');
 
-  console.log('\n— ADMIN —');
+  console.log('\n— ADMIN / USUÁRIOS —');
   r = await req(server, 'POST', '/users', { token: tProv, body: { name: 'x', login: 'x@x', password: 'x', role: 'host' } });
   ok(r.status === 403, 'provider NÃO cria usuário → 403');
   r = await req(server, 'POST', '/users', { token: tAdmin, body: { name: 'Nova Camareira', login: 'cam@cc', password: 'c123', role: 'provider', tenantId: 'glauco-vaz', listings: [L] } });
   ok(r.status === 200 && r.body.id, 'admin cria usuário');
+  r = await req(server, 'GET', '/users?role=provider', { token: tHost });
+  ok(r.status === 200 && r.body.length >= 2 && !JSON.stringify(r.body).includes('passwordHash'), 'host lista prestadores (sem passwordHash)');
+  const provId = r.body.find(u => u.login === 'prest@cc').id;
+
+  console.log('\n— ATRIBUIÇÃO —');
+  r = await req(server, 'POST', '/inspections/assign', { token: tHost, body: { providerId: provId, listingId: L, listingName: '1704', date: '2026-06-10' } });
+  ok(r.status === 200 && r.body.status === 'pending', 'host atribui vistoria pendente ao prestador');
+  r = await req(server, 'POST', '/inspections/assign', { token: tProv, body: { providerId: provId, listingId: L, date: '2026-06-10' } });
+  ok(r.status === 403, 'provider NÃO atribui vistoria → 403');
+  r = await req(server, 'GET', '/inspections', { token: tProv });
+  ok(r.body.some(d => d.status === 'pending'), 'prestador vê a vistoria pendente atribuída a ele');
+
+  console.log('\n— STORAGE (fallback inline sem R2) —');
+  const px = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  r = await req(server, 'POST', '/inspections', { token: tProv, body: { listingId: L, listingName: '1704', date: '2026-06-09',
+    items: [{ category: 'frigobar', key: 'frigobar', label: 'Frigobar', photos: [{ data: px }] }], geo: { lat: -23.5388, lng: -46.6722 } } });
+  ok(r.status === 200 && r.body.storage === 'inline', 'sem R2 → fotos ficam inline (fallback)');
+  r = await req(server, 'GET', '/inspections/' + r.body.id, { token: tHost });
+  ok(r.status === 200 && r.body.items[0].photos[0].data, 'detalhe devolve a foto inline');
 
   console.log(`\n=== RESULTADO: ${passed} ok, ${failed} falhas ===`);
   server.close(); await client.close(); await mem.stop();

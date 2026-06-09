@@ -164,6 +164,19 @@ function mountAuthRoutes(router, db) {
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
+  // GET /app/v1/users?role=provider — lista usuários do tenant (host/admin)
+  router.get('/users', requireAuth, requireRole('admin', 'host'), async (req, res) => {
+    try {
+      const f = {};
+      if (req.user.role === 'host') f.tenantId = req.user.tenantId;
+      else if (req.query.tenantId) f.tenantId = req.query.tenantId;
+      if (req.query.role && ROLES.includes(req.query.role)) f.role = req.query.role;
+      const users = await db.collection('app_users')
+        .find(f, { projection: { passwordHash: 0 } }).sort({ name: 1 }).limit(200).toArray();
+      res.json(users.map(u => ({ id: String(u._id), name: u.name, login: u.login, role: u.role, tenantId: u.tenantId, listings: u.listings || [], active: u.active })));
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
   // POST /app/v1/devices — registra token de push do dispositivo
   router.post('/devices', requireAuth, async (req, res) => {
     try {

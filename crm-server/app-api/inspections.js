@@ -20,6 +20,8 @@
 
 const { requireAuth, requireRole, canAccessListing, scopeFilter } = require('./auth');
 const { generateReport } = require('./ai');
+const storage = require('./storage');
+const push = require('./push');
 
 // Checklist padrão (configurável por tenant no futuro). Reaproveita as categorias do inventário.
 const CHECKLIST = [
@@ -86,7 +88,8 @@ function mountInspectionRoutes(router, db) {
       if (!d) return res.status(404).json({ error: 'Vistoria não encontrada' });
       if (!canAccessListing(req.user, d.listingId)) return res.status(403).json({ error: 'Sem acesso' });
       if (req.user.role === 'provider' && d.providerId !== req.user.uid) return res.status(403).json({ error: 'Sem acesso' });
-      res.json({ ...d, id: String(d._id) });
+      const items = await storage.hydratePhotosForView(d.items); // { key } → { url } assinada
+      res.json({ ...d, items, id: String(d._id) });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
@@ -115,6 +118,10 @@ function mountInspectionRoutes(router, db) {
       }
 
       const tenantId = req.user.role === 'admin' ? (b.tenantId || req.user.tenantId) : req.user.tenantId;
+      const status = b.status === 'in_progress' ? 'in_progress' : 'submitted';
+      // fotos: sobe pro R2 (ou mantém base64 inline se R2 não configurado)
+      const rawItems = Array.isArray(b.items) ? b.items : [];
+      const items = await storage.processItemsPhotos(rawItems, `inspections/${tenantId}/${b.listingId}`);
       const doc = {
         tenantId,
         listingId: String(b.listingId),
@@ -123,15 +130,41 @@ function mountInspectionRoutes(router, db) {
         providerId: req.user.uid,
         providerName: req.user.name,
         date: b.date || new Date().toISOString().slice(0, 10),
-        status: b.status === 'in_progress' ? 'in_progress' : 'submitted',
-        items: Array.isArray(b.items) ? b.items : [],
+        status,
+        items,
         geo,
         aiReport: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       const r = await db.collection('inspections').insertOne(doc);
-      res.json({ ok: true, id: String(r.insertedId), status: doc.status });
+      if (status === 'submitted') push.notifyInspectionSubmitted(db, { ...doc, _id: r.insertedId }); // fire-and-forget
+      res.json({ ok: true, id: String(r.insertedId), status: doc.status, storage: storage.isConfigured() ? 'r2' : 'inline' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /app/v1/inspections/assign — host/admin agenda vistoria p/ um prestador
+  // body: { providerId, listingId, listingName, date, room }
+  router.post('/inspections/assign', requireAuth, requireRole('host', 'admin'), async (req, res) => {
+    try {
+      const b = req.body || {};
+      if (!b.providerId || !b.listingId || !b.date) return res.status(400).json({ error: 'providerId, listingId e date obrigatórios' });
+      if (!canAccessListing(req.user, b.listingId)) return res.status(403).json({ error: 'Sem acesso a este imóvel' });
+      const { ObjectId } = require('mongodb');
+      let provId; try { provId = new ObjectId(String(b.providerId)); } catch { return res.status(400).json({ error: 'providerId inválido' }); }
+      const provider = await db.collection('app_users').findOne({ _id: provId, role: 'provider' });
+      if (!provider) return res.status(404).json({ error: 'Prestador não encontrado' });
+      const tenantId = req.user.role === 'admin' ? (provider.tenantId || req.user.tenantId) : req.user.tenantId;
+      if (provider.tenantId !== tenantId) return res.status(403).json({ error: 'Prestador de outro tenant' });
+      const doc = {
+        tenantId, listingId: String(b.listingId), listingName: b.listingName || null, room: b.room || null,
+        providerId: String(provId), providerName: provider.name, date: String(b.date),
+        status: 'pending', items: [], geo: null, aiReport: null,
+        assignedBy: req.user.uid, createdAt: new Date(), updatedAt: new Date(),
+      };
+      const r = await db.collection('inspections').insertOne(doc);
+      push.notifyAssigned(db, { ...doc, _id: r.insertedId }); // fire-and-forget
+      res.json({ ok: true, id: String(r.insertedId), status: 'pending' });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
@@ -144,7 +177,9 @@ function mountInspectionRoutes(router, db) {
       if (!d) return res.status(404).json({ error: 'Vistoria não encontrada' });
       if (!canAccessListing(req.user, d.listingId)) return res.status(403).json({ error: 'Sem acesso' });
 
-      const report = await generateReport(d);
+      // alimenta a IA com as fotos (baixa do R2 se necessário)
+      const forAI = { ...d, items: await storage.hydratePhotosForAI(d.items) };
+      const report = await generateReport(forAI);
 
       // aplica status sugerido por item (se a IA rodou)
       const items = Array.isArray(d.items) ? [...d.items] : [];
@@ -160,6 +195,7 @@ function mountInspectionRoutes(router, db) {
         { _id },
         { $set: { items, aiReport: report, status: 'reviewed', updatedAt: new Date() } }
       );
+      if (report.ran) push.notifyReportReady(db, d, report); // fire-and-forget
       res.json({ ok: true, ran: report.ran, summary: report.summary, issues: report.issues, reason: report.reason });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
