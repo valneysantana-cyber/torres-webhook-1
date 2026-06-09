@@ -1,1 +1,7 @@
 node_modules/
+
+# App de Operação & Vistorias
+mobile-app/node_modules/
+mobile-app/ios/
+mobile-app/android/
+crm-server/node_modules/

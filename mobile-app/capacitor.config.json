@@ -1,0 +1,10 @@
+{
+  "appId": "br.com.conciergecloud.app",
+  "appName": "ConciergeCloud",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "plugins": {
+    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] },
+    "Camera": { "androidxCoreVersion": "1.13.1" }
+  }
+}

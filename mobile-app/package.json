@@ -1,0 +1,26 @@
+{
+  "name": "conciergecloud-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ConciergeCloud — App de Operação & Vistorias (Capacitor iOS + Android)",
+  "scripts": {
+    "serve": "node serve-dev.js",
+    "cap:add:ios": "cap add ios",
+    "cap:add:android": "cap add android",
+    "cap:sync": "cap sync",
+    "cap:open:ios": "cap open ios",
+    "cap:open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.0",
+    "@capacitor/camera": "^6.1.0",
+    "@capacitor/geolocation": "^6.0.1",
+    "@capacitor/preferences": "^6.0.2",
+    "@capacitor/push-notifications": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/ios": "^6.1.0",
+    "@capacitor/android": "^6.1.0"
+  }
+}
