@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>ConciergeCloud — Operação</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- TOPO -->
+  <header id="topbar" class="hidden">
+    <div class="brand">ConciergeCloud</div>
+    <div class="spacer"></div>
+    <span id="who" class="who"></span>
+    <button id="logoutBtn" class="ghost">Sair</button>
+  </header>
+
+  <div id="offlineBanner" class="offline hidden">Sem conexão — vistorias serão enviadas ao reconectar (<span id="queueCount">0</span> na fila)</div>
+
+  <main id="app">
+    <!-- LOGIN -->
+    <section id="screen-login" class="screen">
+      <div class="login-wrap">
+        <div class="login-brand">ConciergeCloud</div>
+        <div class="login-sub">Operação &amp; Vistorias</div>
+        <form id="loginForm" class="card">
+          <label>Usuário (e-mail)</label>
+          <input id="login" type="email" autocomplete="username" placeholder="voce@exemplo.com" required />
+          <label>Senha</label>
+          <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" required />
+          <button type="submit" class="primary" id="loginSubmit">Entrar</button>
+          <div id="loginError" class="error hidden"></div>
+        </form>
+        <div class="login-foot">operado por TorresGuest</div>
+      </div>
+    </section>
+
+    <!-- HOME -->
+    <section id="screen-home" class="screen hidden">
+      <h1 id="homeTitle">Hoje</h1>
+      <div id="homeActions" class="actions"></div>
+      <h2 class="section-h">Vistorias</h2>
+      <div id="inspList" class="list"></div>
+    </section>
+
+    <!-- VISTORIA -->
+    <section id="screen-vistoria" class="screen hidden">
+      <button class="back" data-back>‹ Voltar</button>
+      <h1>Nova vistoria</h1>
+      <div class="card">
+        <label>Imóvel</label>
+        <select id="listingSelect"></select>
+        <div id="geoStatus" class="hint">Localização: não capturada</div>
+      </div>
+      <div id="checklist"></div>
+      <button id="submitVistoria" class="primary big">Enviar vistoria</button>
+      <div id="vistoriaMsg" class="hint"></div>
+    </section>
+
+    <!-- DETALHE / RELATÓRIO -->
+    <section id="screen-detail" class="screen hidden">
+      <button class="back" data-back>‹ Voltar</button>
+      <h1 id="detailTitle">Vistoria</h1>
+      <div id="detailBody"></div>
+    </section>
+
+    <!-- PROPRIETÁRIO -->
+    <section id="screen-owner" class="screen hidden">
+      <h1>Meu imóvel</h1>
+      <div id="ownerBody"></div>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

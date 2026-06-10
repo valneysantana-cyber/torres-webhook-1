@@ -40,6 +40,12 @@ app.get('/', (_req, res) =>
 );
 
 // âââ 2. AUTH MIDDLEWARE âââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── APP API (JWT próprio) — registrada ANTES do gate de x-api-key ──────────
+// O app móvel (Operação & Vistorias) usa Bearer JWT, não a API key do CRM.
+// O router é populado no boot (start), assim que `db` conecta.
+const appApiRouter = express.Router();
+app.use('/app/v1', appApiRouter);
+
 app.use((req, res, next) => {
   if (API_KEY && req.headers['x-api-key'] !== API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -392,6 +398,16 @@ async function start() {
   await db.collection('guests').createIndex({ phone: 1 }, { unique: true });
   await db.collection('guests').createIndex({ name: 1 });
   console.log('[crm-server] MongoDB conectado');
+
+  // App API (Operação & Vistorias) — popula o router registrado no topo
+  try {
+    const { attachAppApi, ensureAppIndexes } = require('./app-api');
+    attachAppApi(appApiRouter, db);
+    await ensureAppIndexes(db);
+    console.log('[crm-server] app-api montada em /app/v1');
+  } catch (e) {
+    console.error('[crm-server] falha ao montar app-api:', e.message);
+  }
   app.listen(PORT, () => console.log(`[crm-server] Porta ${PORT}`));
     scheduleCampaigns();
 }
