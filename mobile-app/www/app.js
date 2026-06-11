@@ -84,8 +84,48 @@ async function goHome(){
     b.innerHTML='Nova vistoria<small>fotografe os itens da unidade</small>';
     b.onclick=startVistoria; actions.appendChild(b);
   }
+  // v6: painel consolidado pro admin/gestor (não bloqueia o resto da tela)
+  const dash=document.getElementById('adminDash');
+  if(role==='admin'||role==='host'){ renderAdminDash().catch(()=>{ if(dash) dash.innerHTML=''; }); }
+  else if(dash) dash.innerHTML='';
   await flushQueue();
   await renderInspList();
+}
+
+function brlK(n){ n=Number(n)||0; return n>=1000 ? 'R$ '+(n/1000).toFixed(1).replace('.',',')+'k' : 'R$ '+n.toFixed(0); }
+async function renderAdminDash(){
+  const el=document.getElementById('adminDash'); if(!el) return;
+  el.innerHTML='<div class="hint">Carregando resumo…</div>';
+  const d = await api('/admin/overview');
+  let h='<div class="dash">';
+  // status do sistema (só admin recebe `system`)
+  if(d.system){
+    const s=d.system, cls=s.overall==='green'?'ok':(s.overall==='yellow'?'warn':'bad');
+    const bads=(s.checks||[]).filter(c=>c.status!=='green');
+    h+=`<div class="dcard ${cls}"><h4>Status do sistema</h4><div class="big"><span class="led ${s.overall}"></span>${s.overall==='green'?'Tudo operacional':(s.overall==='yellow'?'Atenção':'Crítico')}</div><div class="sub">${bads.length? bads.map(c=>c.label+': '+c.status).join(' · ') : (s.checks||[]).length+' serviços verificados'}</div></div>`;
+  }
+  // ocupação + receita
+  const o=d.occupancy||{}, m=d.month||{};
+  h+=`<div class="drow">
+    <div class="dcard"><h4>Ocupação hoje</h4><div class="big">${o.occupied??'—'}/${o.total??'—'}</div><div class="sub">${o.free??'—'} livre(s) · ${o.pct??'—'}%</div></div>
+    <div class="dcard"><h4>Receita ${m.label||'mês'}</h4><div class="big">${brlK(m.revenue)}</div><div class="sub">check-ins no período</div></div>
+  </div>`;
+  // vistorias do dia
+  const i=d.inspections||{};
+  if(i.required){
+    const ok=i.ok, cls=ok?'ok':(i.required.length?'bad':'ok');
+    h+=`<div class="dcard ${cls}"><h4>Vistorias hoje</h4><div class="big">${(i.done||[]).length}/${(i.required||[]).length} ${ok?'✓':''}</div><div class="sub">${ok?'todas as vistorias do dia concluídas':(i.required.length?'faltam: '+(i.pending||[]).join(', '):'sem movimento hoje')}</div></div>`;
+  }
+  // chegadas e saídas
+  const ins=i.checkins||[], outs=i.checkouts||[];
+  if(ins.length||outs.length){
+    h+=`<div class="drow">
+      <div class="dcard"><h4>✈️ Chegadas (${ins.length})</h4><div class="chips">${ins.map(c=>`<span class="chip">${c.room} <small>${c.guest||''}</small></span>`).join('')||'<span class="sub">—</span>'}</div></div>
+      <div class="dcard"><h4>🧳 Saídas (${outs.length})</h4><div class="chips">${outs.map(c=>`<span class="chip">${c.room} <small>${c.guest||''}</small></span>`).join('')||'<span class="sub">—</span>'}</div></div>
+    </div>`;
+  }
+  h+='</div>';
+  el.innerHTML=h;
 }
 
 async function renderInspList(){
