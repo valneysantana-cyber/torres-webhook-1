@@ -256,7 +256,20 @@ async function renderOwner(){
 
 // ---------- FILA OFFLINE ----------
 async function getQueue(){ try{ return JSON.parse(await store.get('queue')||'[]'); }catch{ return []; } }
-async function enqueue(p){ const q=await getQueue(); q.push({...p, _queuedAt:Date.now()}); await store.set('queue', JSON.stringify(q)); }
+async function enqueue(p){
+  // FIX v4 (11/06): payload com fotos base64 na fila = Preferences gigante →
+  // leitura pela bridge nativa estourava o app no boot (crash-loop Galaxy A03).
+  // Acima de ~700KB, guarda SEM fotos (estados/notas preservados).
+  let entry = {...p, _queuedAt:Date.now()};
+  try{
+    if(JSON.stringify(entry).length > 700000){
+      entry = {...entry, items:(entry.items||[]).map(it=>({...it, photos:[], _photosDropped:(it.photos||[]).length})), _photosStripped:true};
+    }
+  }catch{ entry = {...entry, items:[], _photosStripped:true}; }
+  const q=await getQueue(); q.push(entry);
+  if(q.length>10) q.splice(0, q.length-10); // teto da fila
+  await store.set('queue', JSON.stringify(q));
+}
 async function flushQueue(){
   if(!navigator.onLine) return; let q=await getQueue(); if(!q.length) return;
   const rest=[];
@@ -286,9 +299,25 @@ async function registerPush(){
 
 // ---------- BOOT ----------
 (async function boot(){
+  // FIX v4: crash-guard — se 2 boots seguidos não terminaram, a fila offline é
+  // a suspeita nº 1 (Preferences gigante): descarta SEM ler e segue vivo.
+  try{
+    const booting = await store.get('booting');
+    if(booting === '1'){
+      const n = (parseInt(await store.get('bootCrashes')||'0',10) || 0) + 1;
+      await store.set('bootCrashes', String(n));
+      if(n >= 2){ await store.del('queue'); await store.set('bootCrashes','0'); }
+    }
+    await store.set('booting','1');
+  }catch{}
   state.token = await store.get('token');
   const u = await store.get('user'); if(u){ try{ state.user=JSON.parse(u); }catch{} }
-  updateOffline();
-  if(state.token && state.user){ try{ await afterLogin(); return; }catch{} }
-  show('login');
+  // fila offline só DEPOIS da UI estar de pé (e fora do caminho crítico)
+  setTimeout(()=>{ updateOffline().catch(()=>{}); }, 2000);
+  try{
+    if(state.token && state.user){ try{ await afterLogin(); }catch{ show('login'); } }
+    else show('login');
+  } finally {
+    try{ await store.set('booting','0'); await store.set('bootCrashes','0'); }catch{}
+  }
 })();
