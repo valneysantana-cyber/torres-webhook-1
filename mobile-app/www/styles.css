@@ -80,3 +80,20 @@ button{cursor:pointer}
 .occ .row .p{width:42px;text-align:right;font-size:.78rem;font-weight:600;color:var(--navy)}
 .issue{background:#FBEAEA;border-left:3px solid var(--prob);padding:.5rem .7rem;border-radius:6px;margin:.35rem 0;font-size:.88rem}
 .summary{background:#EAF0F7;border-left:3px solid var(--navy);padding:.6rem .8rem;border-radius:6px;margin:.5rem 0}
+
+/* ── Admin dashboard (v6) ── */
+.dash{display:grid;gap:10px;margin-bottom:14px}
+.drow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dcard{background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 1px 4px rgba(16,42,67,.08)}
+.dcard h4{margin:0 0 4px;font-size:.72rem;letter-spacing:.4px;text-transform:uppercase;color:#5A7080}
+.dcard .big{font-size:1.35rem;font-weight:800;color:#14457A}
+.dcard .sub{font-size:.78rem;color:#5A7080;margin-top:2px}
+.dcard.ok{box-shadow:inset 3px 0 0 #2ecc71,0 1px 4px rgba(16,42,67,.08)}
+.dcard.warn{box-shadow:inset 3px 0 0 #f1c40f,0 1px 4px rgba(16,42,67,.08)}
+.dcard.bad{box-shadow:inset 3px 0 0 #e74c3c,0 1px 4px rgba(16,42,67,.08)}
+.led{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+.led.green{background:#2ecc71;box-shadow:0 0 6px rgba(46,204,113,.6)}
+.led.yellow{background:#f1c40f}.led.red{background:#e74c3c;box-shadow:0 0 6px rgba(231,76,60,.6)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{background:#EAF4F9;color:#14457A;border-radius:10px;padding:3px 9px;font-size:.74rem;font-weight:700}
+.chip small{font-weight:400;color:#5A7080}
