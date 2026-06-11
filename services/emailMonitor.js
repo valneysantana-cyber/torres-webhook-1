@@ -471,6 +471,16 @@ async function startEmailMonitor() {
     ]).finally(() => clearTimeout(timer));
   };
 
+  // FIX 11/06: ImapFlow é EventEmitter — um 'error' emitido SEM listener
+  // (ex.: Socket timeout fora de um await, crash-loop de 11/06 no Render)
+  // derruba o processo inteiro ("Unhandled 'error' event" → exit 1).
+  // Com o listener, o erro vira reconexão controlada.
+  client.on('error', (err) => {
+    console.error(`[email] ImapFlow error event: ${err?.message || err}`);
+    scheduleReconnect(`imap error event: ${String(err?.message || 'unknown').slice(0, 80)}`, 60_000);
+  });
+  client.on('close', () => { console.log('[email] IMAP connection closed'); });
+
   try {
     await client.connect();
     console.log('[email] IMAP connected successfully');
