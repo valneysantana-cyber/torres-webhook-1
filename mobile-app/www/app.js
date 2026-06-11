@@ -62,7 +62,12 @@ async function afterLogin(){
   state.listings = state.user.listings || [];
   try{ state.listingOptions = await api('/listings'); }catch{ state.listingOptions = (state.listings||[]).map(id=>({id,name:id})); }
   if(!state.listingOptions.length) state.listingOptions = (state.listings||[]).map(id=>({id,name:id}));
-  registerPush();
+  // FIX v5 (11/06): registerPush DESLIGADO até o FCM estar configurado.
+  // PushNotifications.register() SEM google-services.json crasha o app
+  // NATIVAMENTE pós-login ("Default FirebaseApp is not initialized") —
+  // era a verdadeira causa das "falhas contínuas". Religar quando o
+  // Firebase do projeto for criado (roadmap RM FCM).
+  // registerPush();
   await goHome();
 }
 function roleLabel(r){ return ({admin:'Equipe',host:'Gestor',provider:'Vistoriador',owner:'Proprietário'})[r]||r; }
