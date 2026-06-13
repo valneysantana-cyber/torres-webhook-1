@@ -36,6 +36,14 @@ function resolveApartmentName(r, listingsMap) {
   if (fromNested) return fromNested;
   const id = r._idlisting || r.listingId || r.unitId || r.accommodationId || nested._id || nested.id;
   if (id && listingsMap && listingsMap.get(id)) return listingsMap.get(id);
+  // Fallback resiliente (13/06/2026): se o listingsMap (env LISTING_NAMES_JSON) estiver
+  // vazio/malformado, usar o nome que a própria reserva já carrega. Evita "Apto desconhecido"
+  // em massa quando o env quebra (incidente env duplo-encodado 13/06).
+  const fromReservation =
+    (typeof r.listingName === 'string' && r.listingName.trim()) ||
+    (typeof r.accommodation === 'string' && r.accommodation.trim()) ||
+    (typeof r.property === 'string' && r.property.trim());
+  if (fromReservation) return fromReservation;
   return 'Apto desconhecido';
 }
 
