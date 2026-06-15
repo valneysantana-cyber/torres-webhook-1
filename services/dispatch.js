@@ -66,15 +66,29 @@ async function dailyCheckinDispatch() {
       return ` • ${name} → ${apt} — ${guests} hóspede${guests !== 1 ? 's' : ''} (saída: ${checkout})`;
     };
 
-    const fmtCheckins  = checkinsHoje.length  === 0 ? [' (nenhum check-in hoje)']        : checkinsHoje.map(formatLine);
-    const fmtEstadia   = emEstadia.length     === 0 ? [' (nenhum hóspede em estadia)']   : emEstadia.map(formatLine);
-    const fmtCheckouts = checkoutsHoje.length === 0 ? [' (nenhum check-out hoje)']       : checkoutsHoje.map(formatLine);
+    // Unidades EXTRA do predio (outros tenants, ex.: 1704 glauco-vaz) — Opcao B (15/06/2026)
+    let extraUnits = { arrivals:{count:0,lines:[]}, midStay:{count:0,lines:[]}, departures:{count:0,lines:[]}, active:0 };
+    try {
+      if (process.env.RECEPCAO_EXTRA_URL) {
+        const _er = await fetch(process.env.RECEPCAO_EXTRA_URL, { headers: { 'x-recepcao-secret': process.env.RECEPCAO_EXTRA_SECRET || '' } });
+        if (_er.ok) { const _ed = await _er.json(); if (_ed && _ed.ok) extraUnits = _ed; }
+        else console.error('[dispatch] recepcao-extra HTTP', _er.status);
+      }
+    } catch (e) { console.error('[dispatch] recepcao-extra error', e.message); }
+    const exA = (extraUnits.arrivals   && extraUnits.arrivals.lines)   ? extraUnits.arrivals.lines   : [];
+    const exM = (extraUnits.midStay    && extraUnits.midStay.lines)    ? extraUnits.midStay.lines    : [];
+    const exD = (extraUnits.departures && extraUnits.departures.lines) ? extraUnits.departures.lines : [];
+    const checkinsCount  = checkinsHoje.length  + exA.length;
+    const estadiaCount   = emEstadia.length     + exM.length;
+    const checkoutsCount = checkoutsHoje.length + exD.length;
 
-    // Total ativo = quem fica no hotel após o fim do dia.
-    // Exclui check-outs (já de saída) e diárias (entra+sai no mesmo dia).
+    const fmtCheckins  = checkinsCount  === 0 ? [' (nenhum check-in hoje)']      : [...checkinsHoje.map(formatLine),  ...exA];
+    const fmtEstadia   = estadiaCount   === 0 ? [' (nenhum hóspede em estadia)'] : [...emEstadia.map(formatLine),     ...exM];
+    const fmtCheckouts = checkoutsCount === 0 ? [' (nenhum check-out hoje)']     : [...checkoutsHoje.map(formatLine), ...exD];
+
     const departureIds = new Set(checkoutsHoje.map((r) => String(r._id || r.id)));
     const checkinsAtivos = checkinsHoje.filter((r) => !departureIds.has(String(r._id || r.id)));
-    const totalAtivos = checkinsAtivos.length + emEstadia.length;
+    const totalAtivos = checkinsAtivos.length + emEstadia.length + (extraUnits.active || 0);
 
     const numbers = DISPATCH_NUMBER.split(',').map(n => n.trim()).filter(Boolean);
 
@@ -84,13 +98,13 @@ async function dailyCheckinDispatch() {
       `🏨 *TorresGuest — Relatório Diário*`,
       `📅 ${today}`,
       ``,
-      `🛎 *Check-ins de hoje (${fmtCheckins.length === 1 && fmtCheckins[0].startsWith(' (nenhum') ? 0 : checkinsHoje.length}):*`,
+      `🛎 *Check-ins de hoje (${checkinsCount}):*`,
       fmtCheckins.join('\n'),
       ``,
-      `🏠 *Em estadia (${fmtEstadia.length === 1 && fmtEstadia[0].startsWith(' (nenhum') ? 0 : emEstadia.length}):*`,
+      `🏠 *Em estadia (${estadiaCount}):*`,
       fmtEstadia.join('\n'),
       ``,
-      `🚪 *Check-outs de hoje (${fmtCheckouts.length === 1 && fmtCheckouts[0].startsWith(' (nenhum') ? 0 : checkoutsHoje.length}):*`,
+      `🚪 *Check-outs de hoje (${checkoutsCount}):*`,
       fmtCheckouts.join('\n'),
       ``,
       `📊 *Total de hóspedes ativos hoje: ${totalAtivos}*`,
