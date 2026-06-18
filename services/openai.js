@@ -91,6 +91,33 @@ function buildSystemPromptFromSettings(tenant) {
   if (s.frigobar && s.frigobar.enabled) {
     lines.push(`- Frigobar: abastecido. Os itens do frigobar (aguas, refrigerantes, cervejas, snacks, etc.) sao PAGOS/COBRADOS por consumo via PIX (CNPJ 62.169.624/0001-94) — NUNCA sao cortesia/gratuitos. Se o hospede informar consumo ou perguntar como pagar, envie o cardapio com precos e o PIX; nunca diga que é gratis.${s.frigobar.note ? ' ' + s.frigobar.note : ''}`);
   }
+  // Perfil operacional do imovel (signup v2, 12/06 — experiencia Glauco)
+  if (s.voltage && s.voltage.value) {
+    const vmap = { '110': '110V', '220': '220V', both: '110V e 220V (tomadas mistas — confira a etiqueta de cada tomada)' };
+    lines.push(`- Tensão elétrica: ${vmap[s.voltage.value] || s.voltage.value}.${s.voltage.note ? ' ' + s.voltage.note : ''}`);
+  }
+  if (s.internet && (s.internet.network || s.internet.password)) {
+    lines.push(`- Wi-Fi: rede "${s.internet.network || 'informada no check-in'}"${s.internet.password ? ', senha "' + s.internet.password + '"' : ''}. Pode informar ao hóspede da reserva quando solicitado.`);
+  }
+  if (s.accessControl) {
+    const a = s.accessControl;
+    const parts = [];
+    if (a.precheckinRequired) parts.push('pré-check-in obrigatório ANTES da chegada' + (a.photoAllGuests ? ' com foto de documento de TODOS os hóspedes (sem exceção — exigência da portaria)' : ''));
+    if (a.biofacial) parts.push('o prédio usa biometria facial — o cadastro facial é feito ' + (a.biofacialNote || 'na primeira entrada na portaria'));
+    if (parts.length) lines.push(`- Acesso ao prédio: ${parts.join('; ')}.${a.instructions ? ' ' + a.instructions : ''}`);
+    else if (a.instructions) lines.push(`- Acesso ao prédio: ${a.instructions}`);
+  }
+  if (s.frigobar && s.frigobar.enabled && Array.isArray(s.frigobar.items) && s.frigobar.items.length) {
+    const cat = s.frigobar.items.filter(i => i.label && i.price).map(i => `${i.label} R$${i.price}`).join(' · ');
+    if (cat) lines.push(`- Cardápio do frigobar (preços por unidade): ${cat}.`);
+  }
+  if (s.linens) {
+    if (s.linens.provided === false) lines.push(`- Enxoval: NÃO fornecido — hóspede deve trazer roupa de cama e toalhas.${s.linens.note ? ' ' + s.linens.note : ''}`);
+    else if (s.linens.provided) lines.push(`- Enxoval completo fornecido (roupa de cama e toalhas).${s.linens.note ? ' ' + s.linens.note : ''}`);
+  }
+  if (s.trash && s.trash.instructions) lines.push(`- Lixo: ${s.trash.instructions}`);
+  if (s.quietHours && s.quietHours.hours) lines.push(`- Horário de silêncio do prédio: ${s.quietHours.hours}.${s.quietHours.note ? ' ' + s.quietHours.note : ''} Oriente o hóspede a respeitar.`);
+  if (s.houseRules) lines.push(`- Regras da casa: ${s.houseRules}`);
   if (s.transport && s.transport.taxiAvailable) {
     lines.push(`- Transporte: ${s.transport.note || 'táxi/transfer sob consulta.'}`);
   }
