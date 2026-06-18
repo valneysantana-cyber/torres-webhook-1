@@ -486,10 +486,14 @@ async function handleIncoming(payload) {
                 ],
                 autoCheckinSentAt: { $gte: since },
               }).sort({ autoCheckinSentAt: -1 }).lean();
+              // FIX 18/06/2026: usar staysId (ObjectId Stays, GLOBALMENTE ÚNICO) PRIMEIRO.
+              // staysReservationId/confirmationCode são códigos curtos do Stays (ex.: LH02J) que
+              // COLIDEM entre tenants (435 colisões torres×glauco-vaz) → link caía na reserva de
+              // OUTRO tenant (vazamento LGPD: Alana/1208 → Luiza/1003). staysId nunca colide.
               const reservationCode = recent && (
-                recent.staysReservationId ||  // mongoose shape (email parser)
-                recent.confirmationCode ||    // stays_sync shape (preferred — humano-amigável)
-                recent.staysId                // fallback ObjectId
+                recent.staysId ||             // ObjectId Stays — único (anti-colisão multi-tenant)
+                recent.staysReservationId ||
+                recent.confirmationCode
               );
               if (recent && reservationCode) {
                 const publicUrl = process.env.PUBLIC_URL || 'https://conciergecloud.com.br';
