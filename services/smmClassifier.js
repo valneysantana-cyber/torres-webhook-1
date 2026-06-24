@@ -217,6 +217,10 @@ function sanitizeForChannel(text, channel, bookingConfirmed = false) {
     // Heurística conservadora: remove apenas se a linha tiver CNPJ/CPF ou chave PIX
     out = out.replace(/^.*\b(chave\s+pix|pix\s*:)\b.*$/gim, '');
   }
+  // 5b) Resposta de reserva/contato fica gutada no airbnb apos sanitize -> troca por msg limpa de OTA [RM-062]
+  if (/acesse nosso site|nosso site oficial|fale com a \*?Sofia/i.test(out)) {
+    out = 'Para sua reserva, já estou acionando a Sofia, que organiza tudo direto aqui na conversa. 🌴';
+  }
   // 6) Limpa quebras / pontuação solta deixada
   out = out.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').replace(/[:\s\-]+$/gm, '').trim();
   return out;
