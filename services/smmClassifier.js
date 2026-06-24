@@ -200,6 +200,8 @@ function sanitizeForChannel(text, channel, bookingConfirmed = false) {
   if (channel !== 'airbnb') return text;
   // 1) Remove URLs (https/http e wa.me/...)
   let out = String(text).replace(/https?:\/\/\S+/gi, '').replace(/\bwa\.me\/\S+/gi, '');
+  // 1b) URLs "peladas" (www. e dominios da marca sem http://) — Airbnb bloqueia [RM-062]
+  out = out.replace(/\bwww\.\S+/gi, '').replace(/\b(?:torresguest|conciergecloud)\.com(?:\.br)?\S*/gi, '').replace(/\u{1F310}\s*(?=\n|$)/gu, '');
   // 2) Remove números de telefone BR formatados: (DD) NNNN-NNNN, +55 13 99615-5505, 11 92543 9200
   out = out.replace(/\+?\d{0,3}\s*\(?\d{2}\)?\s*\d{4,5}[-\s]?\d{4}/g, '');
   // 3) Remove menção a "WhatsApp" / "Whats App" / "WA"
