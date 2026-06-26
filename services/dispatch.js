@@ -51,11 +51,19 @@ async function dailyCheckinDispatch() {
   try {
     const today = getCurrentDateBRT();
     const {
-      arrivals: checkinsHoje,
-      midStay: emEstadia,
-      departures: checkoutsHoje = [],
+      arrivals: checkinsHojeRaw,
+      midStay: emEstadiaRaw,
+      departures: checkoutsHojeRaw = [],
       listingsMap,
     } = await fetchTodayAllActiveGuests();
+
+    // FIX 26/06: o 1704 (glauco-vaz) vem na conta Stays da torres E pelo recepcao-extra → duplicava.
+    // Removemos do pull principal as unidades cobertas pelo recepcao-extra (fonte única delas).
+    const EXTRA_UNITS = new Set((process.env.DAILY_REPORT_EXTRA_UNITS || '1704').split(',').map((s) => s.trim()).filter(Boolean));
+    const _isExtraUnit = (r) => EXTRA_UNITS.has(String(resolveApartmentName(r, listingsMap)).trim());
+    const checkinsHoje  = checkinsHojeRaw.filter((r) => !_isExtraUnit(r));
+    const emEstadia     = emEstadiaRaw.filter((r) => !_isExtraUnit(r));
+    const checkoutsHoje = checkoutsHojeRaw.filter((r) => !_isExtraUnit(r));
 
     const formatLine = (r) => {
       const name = resolveGuestName(r);
