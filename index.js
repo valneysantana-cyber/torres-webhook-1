@@ -255,7 +255,7 @@ app.post('/internal/smm-classify', async (req, res) => {
         const tid = (req.body && req.body.tenantId) || 'torres';
         if (CRM_API_URL && CRM_API_KEY) {
           const tr = await fetch(`${CRM_API_URL}/admin/tenant-by-id/${encodeURIComponent(tid)}`, { headers: { 'x-api-key': CRM_API_KEY, 'Accept': 'application/json' } });
-          if (tr.ok) tenantDoc = await tr.json();
+          if (tr.ok) { const j = await tr.json(); tenantDoc = (j && j.tenant) ? j.tenant : j; } // endpoint retorna {tenant:{...}} — desembrulha
         }
       } catch (e) { console.error('[smm-classify] fetchTenant err:', e.message); }
     }
