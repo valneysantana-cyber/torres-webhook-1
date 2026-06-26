@@ -494,6 +494,19 @@ async function classifyAndRespond(args) {
     return { reply: sanitizeForChannel(menu, channel, bookingConfirmed), source: 'menu', channel };
   }
 
+  // (2.5) IA-FIRST com base de conhecimento — UNIFICA o OTA com a inteligência do WhatsApp.
+  // Lê a mensagem INTEIRA (multi-pergunta), responde no idioma do hóspede e usa a KB do tenant.
+  // Evita o matcher errado capturar (ex.: "horário do check in" sequestrar pergunta de BAGAGEM).
+  // Só roda se allowAi + tenant (com KB) presente; senão cai nos matchers determinísticos abaixo.
+  if (allowAi && tenant && tenant.settings && tenant.settings.knowledgeBase) {
+    try {
+      const ai = await getChatGptFallbackReply(text, '', history, null, tenant);
+      if (ai && String(ai).trim()) {
+        return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai-first', channel };
+      }
+    } catch (e) { console.error('[smmClassifier] AI-first err:', e.message); }
+  }
+
   // (3) PT_DISPATCH table — todos os matchers torres
   const table = getDispatchTable();
   for (const entry of table) {

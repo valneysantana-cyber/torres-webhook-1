@@ -247,11 +247,23 @@ app.post('/internal/smm-classify', async (req, res) => {
     if (!text || typeof text !== 'string') {
       return res.status(400).json({ error: 'text obrigatorio' });
     }
+    // Busca o tenant (com settings.knowledgeBase) se nao veio no body — sem isso a IA do OTA fica SEM a base.
+    let tenantDoc = tenant || null;
+    if (!tenantDoc) {
+      try {
+        const { CRM_API_URL, CRM_API_KEY } = require('./config');
+        const tid = (req.body && req.body.tenantId) || 'torres';
+        if (CRM_API_URL && CRM_API_KEY) {
+          const tr = await fetch(`${CRM_API_URL}/admin/tenant-by-id/${encodeURIComponent(tid)}`, { headers: { 'x-api-key': CRM_API_KEY, 'Accept': 'application/json' } });
+          if (tr.ok) tenantDoc = await tr.json();
+        }
+      } catch (e) { console.error('[smm-classify] fetchTenant err:', e.message); }
+    }
     const result = await classifyAndRespond({
       text,
       channel: channel || 'unknown',
       guestName: guestName || '',
-      tenant: tenant || null,
+      tenant: tenantDoc,
       history: Array.isArray(history) ? history : [],
       lang: lang || 'pt',
       allowAi: allowAi === true || allowAi === 'true',
