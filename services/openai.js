@@ -232,7 +232,7 @@ const LEVEL_BENEFITS = {
 function buildProfileBlock(profile) {
   if (!profile) return '';
   const lines = [];
-  if (profile.name) lines.push(`Nome do hóspede: ${profile.name}`);
+  if (profile.name) lines.push(`Nome de quem está enviando a mensagem (pode NÃO ser o titular da reserva — ex.: filho(a) reservando pro pai/mãe): ${profile.name}. NÃO repita o primeiro nome em toda saudação nem assuma que é o hóspede da reserva; prefira saudação neutra ("Olá!", "Oi!"). Se a pessoa disser que a reserva é de outra pessoa, refira-se ao titular pelo nome que ela informar.`);
   if (profile.level) lines.push(`Nível de fidelidade: ${profile.level}`);
   if (profile.totalStays) lines.push(`Total de estadias: ${profile.totalStays}`);
   if (profile.totalNights) lines.push(`Total de noites hospedado: ${profile.totalNights}`);

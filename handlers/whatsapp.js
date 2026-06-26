@@ -63,6 +63,7 @@ const {
   shouldSendBreakfast,
   shouldSendPool,
   shouldSendParking,
+  shouldSendNoise,
   shouldSendSnacks,
   shouldSendTowels,
   shouldSendRestaurant,
@@ -251,6 +252,11 @@ const PT_DISPATCH = [
     check: shouldEscalateLateCheckout,
     reply: () => 'Combinado! Já estou repassando seu pedido pra Sofia agora — ela responde aqui em instantes confirmando o horário estendido. 🙌',
     notify: (from, body) => sendRoomRequestNotification(from, body, 'Late check-out solicitado'),
+  },
+  {
+    check: shouldSendNoise,
+    reply: () => 'Poxa, sinto muito pelo incômodo! 😟 Já estou direcionando pra Sofia tratar agora — ela avalia a melhor solução (inclusive troca de quarto, se for o caso) e responde aqui rapidinho. WhatsApp dela: +55 13 99615-5505.',
+    notify: (from, body) => sendRoomRequestNotification(from, body, '🔊 Reclamação de RUÍDO / barulho'),
   },
   {
     check: shouldEscalateLuggageStorage,

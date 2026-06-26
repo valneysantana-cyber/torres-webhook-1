@@ -745,8 +745,14 @@ function shouldRequestFrigobarRestock(text) {
 }
 
 
+// Reclamação de RUÍDO/barulho (obra, gerador, etc.) → acolher + notificar Sofia (dispatch).
+function shouldSendNoise(t) {
+  return /\b(barulho|ruido|barulhent[oa]|gerador|britadeira|martelando|martelad[oa])\b/.test(t) || /\bobras?\b/.test(t);
+}
+
 module.exports = {
   isNumericSelection,
+  shouldSendNoise,
   shouldSendMenu,
   shouldSendWifi,
   shouldSendBreakfast,
