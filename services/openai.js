@@ -296,6 +296,13 @@ async function getChatGptFallbackReply(userMessage, phone, context = [], profile
       basePrompt = basePrompt + '\n\nEndereco oficial do hotel: ' + addr + '. (Use este endereco quando hospede pedir endereco/localizacao/onde fica.)';
     }
   }
+  // Base de conhecimento EDITÁVEL do imóvel (fatos: café, cápsula, estacionamento, etc.).
+  // Vale p/ QUALQUER tenant. Editável pelo admin sem código (ERP → Mensagens → Conhecimento do bot).
+  if (tenant && tenant.settings && tenant.settings.knowledgeBase && String(tenant.settings.knowledgeBase).trim()) {
+    basePrompt = basePrompt
+      + '\n\n## INFORMAÇÕES ESPECÍFICAS DESTE IMÓVEL (fonte da verdade — use estes fatos exatos; se o hóspede fizer VÁRIAS perguntas numa mensagem, responda TODAS, não pule nenhuma):\n'
+      + String(tenant.settings.knowledgeBase).trim();
+  }
   const systemContent = profileBlock ? `${basePrompt}${profileBlock}` : basePrompt;
   // ⚠️ NÃO incluir o phone do remetente no userInput — AI alucina usando-o como
   // contato humano quando user pede "fala com o Valney/Sofia/atendente". Bug

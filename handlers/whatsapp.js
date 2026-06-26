@@ -776,6 +776,7 @@ async function handleIncoming(payload) {
           const isMultiIntent =
             matches.length >= 2 ||
             (matches.length === 0 && qCount >= 2) ||
+            qCount >= 3 ||           // FIX 26/06: 3+ perguntas reais (ex.: café+estacionamento+checkout da Nilce) → IA holística com a KB, nunca pula apontamento. (saudação BR tem qCount<=2, não dispara)
             queryCount >= 3;
           // Sinaliza pra log quando saudação salva da heurística antiga
           if (matches.length === 1 && (qCount >= 2 || sentenceCount >= 3)) {
