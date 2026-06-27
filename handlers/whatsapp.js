@@ -618,6 +618,19 @@ async function handleIncoming(payload) {
           }
         }
 
+        // ── IA-FIRST opt-in (settings.aiFirst) ───────────────────────────
+        // Tenant marcado com aiFirst responde 100% pela própria KB/settings
+        // (buildSystemPromptFromSettings), pulando os matchers torres-flavored.
+        // A escalação/handoff acima já rodou. Torres e tenants SEM o flag seguem
+        // o fluxo normal abaixo. É assim que cliente novo nasce IA-first sem risco.
+        if (guestTenant && guestTenant.settings && guestTenant.settings.aiFirst) {
+          try {
+            const [aiCtx, aiProf] = await Promise.all([getContext(from), getProfile(from)]);
+            const aiFirstReply = await getChatGptFallbackReply(body, from, aiCtx, aiProf, guestTenant);
+            if (aiFirstReply) { await replyAndSave(from, aiFirstReply, { alsoSendAudio: camFromAudio }); continue; }
+          } catch (e) { console.error('[aiFirst] erro, caindo no fluxo normal:', e.message); }
+        }
+
         // ═══════════════════════════════════════════════════════════════════
         // BLOCO TORRES-FLAVORED — só executa pra tenant torres
         // ─────────────────────────────────────────────────────────────────
