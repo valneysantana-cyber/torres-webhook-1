@@ -211,7 +211,7 @@ const FAQ_ENTRIES = [
   },
   {
     patterns: [/(pet|animal)/],
-    response: 'Sobre pets, a pol\u00edtica varia conforme a unidade e as regras do hotel \u2014 a Sofia confirma pra voc\u00ea antes da reserva. \ud83d\udc3e',
+    response: 'Infelizmente o hotel n\u00e3o aceita pets / animais de estima\u00e7\u00e3o. (C\u00e3es-guia ou de assist\u00eancia s\u00e3o permitidos por lei.) \ud83d\udc3e',
   },
   {
     patterns: [/(lavanderia)/],

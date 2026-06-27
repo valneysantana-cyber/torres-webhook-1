@@ -97,7 +97,7 @@ const HOTEL_ACCESS_RESPONSE = `\ud83c\udfe8 Sua hospedagem \u00e9 em um *flat pr
 
 Ao chegar, \u00e9 s\u00f3 ir direto na *recep\u00e7\u00e3o 24h do hotel*, apresentar seu documento com foto e informar o nome da reserva. A recep\u00e7\u00e3o faz seu cadastro de entrada. \ud83c\udf34`;
 
-const SAFE_RESPONSE = `\ud83d\udd10 O quarto possui cofre dispon\u00edvel para uso. Em caso de d\u00favida sobre opera\u00e7\u00e3o ou se travar, me avisa o n\u00famero do quarto que oriento ou aciono a recep\u00e7\u00e3o pra te ajudar com o procedimento de seguran\u00e7a. \ud83c\udf34`;
+const SAFE_RESPONSE = `\ud83d\udd10 O quarto possui cofre dispon\u00edvel para uso. Em caso de d\u00favida sobre opera\u00e7\u00e3o ou se travar, me avisa o n\u00famero do quarto que oriento, ou aciono a Sofia/equipe pra te ajudar com o procedimento. \ud83c\udf34`;
 
 const INVOICE_RESPONSE = `\ud83e\uddfe Pra emiss\u00e3o de *nota fiscal ou recibo*, vou conectar voc\u00ea com a *Sofia* (nossa equipe administrativa) que cuida disso:\n\n\ud83d\udcde ${HUMAN_NUMBER_SECONDARY}\n\nEla j\u00e1 foi avisada e vai te chamar em breve. \ud83c\udf34`;
 
@@ -111,9 +111,9 @@ Vou acionar a *Sofia* (nossa equipe) agora mesmo \u2014 ela verifica direto com 
 
 const HOTEL_MAINTENANCE_RESPONSE = `\ud83d\udd27 O hotel pode passar por melhorias e manuten\u00e7\u00f5es pontuais, geralmente em hor\u00e1rio comercial. Caso qualquer obra ou ru\u00eddo impacte sua estadia, me avisa imediatamente que acompanho junto \u00e0 equipe do hotel. \ud83c\udf34`;
 
-const BREAKFAST_COMPANION_RESPONSE = `\u2615 Pra incluir acompanhante ou caf\u00e9 extra, recomendamos consultar diretamente a *recep\u00e7\u00e3o do hotel* \u2014 eles confirmam disponibilidade e valores atualizados na hora. Se preferir, me avisa o n\u00famero do quarto que verifico junto \u00e0 equipe. \ud83c\udf34`;
+const BREAKFAST_COMPANION_RESPONSE = `\u2615 Pra incluir acompanhante ou caf\u00e9 extra, me avisa o n\u00famero do quarto que a Sofia confirma a disponibilidade e os valores pra voc\u00ea. \ud83c\udf34`;
 
-const PARKING_EARLY_RESPONSE = `\ud83d\ude97 A possibilidade de deixar o carro antes do hor\u00e1rio de check-in depende da disponibilidade e libera\u00e7\u00e3o da recep\u00e7\u00e3o do hotel no momento da chegada. Recomendamos confirmar diretamente na recep\u00e7\u00e3o quando chegar. \ud83c\udf34`;
+const PARKING_EARLY_RESPONSE = `\ud83d\ude97 A possibilidade de deixar o carro antes do hor\u00e1rio de check-in depende da disponibilidade no momento da chegada. A Sofia confirma pra voc\u00ea se d\u00e1 pra deixar o carro mais cedo. \ud83c\udf34`;
 
 // \u2500\u2500 Tenant-aware builders \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 // Quando tenantId !== 'torres' E tenant.settings tem o campo, montamos resposta
@@ -209,7 +209,7 @@ const LOCATION_RESPONSE = `\ud83d\udccd Diferenciais TorresGuest\n\u2022 Flats d
 
 const LONG_STAY_RESPONSE = `\ud83d\udcb0 Estadias longas\nTemos condi\u00e7\u00f5es especiais para per\u00edodos estendidos.\nMe conta quantas noites e datas que converso com a equipe no ${HUMAN_NUMBER_PRIMARY}/${HUMAN_NUMBER_SECONDARY} e j\u00e1 retorno com a proposta. \ud83c\udf34`;
 
-const CLEANING_RESPONSE = `\ud83e\uddf9 Limpeza / Governan\u00e7a\nA limpeza \u00e9 realizada pela equipe do hotel, geralmente entre 10:00 e 15:00.\nSe precisar de um hor\u00e1rio espec\u00edfico ou prefere n\u00e3o ser inc\u00f3modado nesse intervalo, me avise com 24h de anteced\u00eancia que eu agendo pra voc\u00ea. \ud83c\udf34`;
+const CLEANING_RESPONSE = `\ud83e\uddf9 Limpeza / Governan\u00e7a\nA limpeza \u00e9 di\u00e1ria, feita pela equipe do hotel (geralmente entre 10h e 15h). A troca de enxoval/len\u00e7\u00f3is \u00e9 a cada 2 dias nas estadias acima de 3 dias.\nSe precisar de um hor\u00e1rio espec\u00edfico ou prefere n\u00e3o ser inc\u00f3modado nesse intervalo, \u00e9 s\u00f3 avisar a Sofia. \ud83c\udf34`;
 
 const INTERNET_RESPONSE = `\ud83d\udce1 Internet\nO Wi-Fi do hotel \u00e9 fibra, ideal para trabalho remoto e streaming.\nSe notar qualquer instabilidade, me chama que aciono o time t\u00e9cnico na hora. \ud83c\udf34`;
 
@@ -436,9 +436,9 @@ const I18N_RESPONSES = {
   },
   SAFE: {
     pt: SAFE_RESPONSE,
-    en: `🔐 The room has a safe available for use. If you have any doubt about operation or if it gets locked, tell me your room number and I'll guide you or call reception to help with the security procedure. 🌴`,
-    es: `🔐 La habitación cuenta con caja fuerte disponible. Si tienes duda sobre el uso o si se bloquea, avísame el número de habitación que te oriento o llamo a recepción para ayudar con el procedimiento. 🌴`,
-    fr: `🔐 La chambre dispose d'un coffre-fort disponible. En cas de doute sur l'utilisation ou s'il se bloque, dites-moi le numéro de chambre et je vous guide ou j'appelle la réception pour aider avec la procédure. 🌴`,
+    en: `🔐 The room has a safe available for use. If you have any doubt about operation or if it gets locked, tell me your room number and I'll guide you or get Sofia/our team to help. 🌴`,
+    es: `🔐 La habitación cuenta con caja fuerte disponible. Si tienes duda sobre el uso o si se bloquea, avísame el número de habitación que te oriento o aviso a Sofia/el equipo para ayudar. 🌴`,
+    fr: `🔐 La chambre dispose d'un coffre-fort disponible. En cas de doute sur l'utilisation ou s'il se bloque, dites-moi le numéro de chambre et je vous guide ou je préviens Sofia/l'équipe pour aider. 🌴`,
   },
   INVOICE: {
     pt: INVOICE_RESPONSE,
@@ -448,9 +448,9 @@ const I18N_RESPONSES = {
   },
   PARKING_EARLY: {
     pt: PARKING_EARLY_RESPONSE,
-    en: `🚗 The possibility of leaving your car before check-in time depends on availability and authorization from the hotel reception at the moment of arrival. We recommend confirming directly at reception upon arrival. 🌴`,
-    es: `🚗 La posibilidad de dejar el coche antes del horario de check-in depende de la disponibilidad y autorización de la recepción del hotel al momento de llegar. Recomendamos confirmar directamente en la recepción al llegar. 🌴`,
-    fr: `🚗 La possibilité de laisser votre voiture avant l'heure de check-in dépend de la disponibilité et autorisation de la réception de l'hôtel à votre arrivée. Nous recommandons de confirmer directement à la réception en arrivant. 🌴`,
+    en: `🚗 The possibility of leaving your car before check-in time depends on availability at the moment of arrival. Sofia can confirm whether you can leave the car earlier. 🌴`,
+    es: `🚗 La posibilidad de dejar el coche antes del horario de check-in depende de la disponibilidad al momento de llegar. Sofia confirma si puedes dejar el coche antes. 🌴`,
+    fr: `🚗 La possibilité de laisser votre voiture avant l'heure de check-in dépend de la disponibilité à votre arrivée. Sofia confirme si vous pouvez laisser la voiture plus tôt. 🌴`,
   },
   HOSTING_COURSE: {
     pt: HOSTING_COURSE_RESPONSE,
@@ -460,9 +460,9 @@ const I18N_RESPONSES = {
   },
   BREAKFAST_COMPANION: {
     pt: BREAKFAST_COMPANION_RESPONSE,
-    en: `☕ To add a companion or extra breakfast, we recommend consulting directly with the *hotel reception* — they confirm availability and updated prices on the spot. If you prefer, send me the room number and I'll check with the team. 🌴`,
-    es: `☕ Para incluir acompañante o desayuno extra, recomendamos consultar directamente con la *recepción del hotel* — ellos confirman disponibilidad y valores actualizados al momento. Si prefieres, avísame el número de habitación que verifico con el equipo. 🌴`,
-    fr: `☕ Pour inclure un accompagnant ou un petit-déjeuner supplémentaire, nous recommandons de consulter directement la *réception de l'hôtel* — ils confirment disponibilité et tarifs à jour sur place. Si vous préférez, dites-moi le numéro de chambre et je vérifie avec l'équipe. 🌴`,
+    en: `☕ To add a companion or extra breakfast, send me your room number and Sofia confirms availability and prices for you. 🌴`,
+    es: `☕ Para incluir acompañante o desayuno extra, avísame el número de habitación que Sofia confirma disponibilidad y valores para ti. 🌴`,
+    fr: `☕ Pour inclure un accompagnant ou un petit-déjeuner supplémentaire, dites-moi le numéro de chambre et Sofia confirme disponibilité et tarifs pour vous. 🌴`,
   },
   COMMON_AREAS: {
     pt: COMMON_AREAS_RESPONSE,
