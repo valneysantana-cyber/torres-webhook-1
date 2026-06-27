@@ -336,7 +336,26 @@ async function maybeHandleReservationConfirmation({ rawText, normalizedText, fro
   const reservation = await fetchReservationByCode(code);
   if (reservation) {
     pendingConfirmations.delete(from);
-    await replyAndSave(from, formatReservationMessage(reservation), { alsoSendAudio: camFromAudio });
+    // Anti-IDOR (LGPD): só exibe os dados da reserva se o telefone do remetente bater
+    // com a reserva. Default permissivo se a reserva não tiver telefone (não bloqueia
+    // dono legítimo); bloqueia só em divergência clara (impersonação por código adivinhado).
+    let owns = true;
+    try {
+      const { phoneVariants } = require('../services/tenant');
+      const resPhones = [reservation.guestPhone, reservation.phone, reservation.client && reservation.client.phone]
+        .concat(Array.isArray(reservation.client && reservation.client.phones)
+          ? reservation.client.phones.map((p) => p && (p.iso || p.number || p)) : [])
+        .filter(Boolean).map((p) => String(p).replace(/\D/g, '')).filter((p) => p.length >= 8);
+      if (resPhones.length) {
+        const fromV = phoneVariants(from).map((p) => String(p).replace(/\D/g, ''));
+        owns = resPhones.some((rp) => fromV.some((fv) => rp.slice(-8) === fv.slice(-8)));
+      }
+    } catch (e) { owns = true; }
+    if (owns) {
+      await replyAndSave(from, formatReservationMessage(reservation), { alsoSendAudio: camFromAudio });
+    } else {
+      await replyAndSave(from, 'Encontrei uma reserva com esse código, mas por segurança não exibo os detalhes por aqui. Se a reserva for sua, a Sofia confirma rapidinho: (13) 99615-5505. 🌴', { alsoSendAudio: camFromAudio });
+    }
   } else {
     rememberPendingConfirmation(from);
     await replyAndSave(from, RESERVATION_NOT_FOUND(code), { alsoSendAudio: camFromAudio });
@@ -347,6 +366,9 @@ async function maybeHandleReservationConfirmation({ rawText, normalizedText, fro
 // ───────────────────────────────────────────────────────────────────────────────
 // Main entry point
 // ───────────────────────────────────────────────────────────────────────────────
+// Dedup de webhooks reentregues pela Meta (evita resposta dupla + custo LLM dobrado). TTL ~10min.
+const _seenMsgIds = new Map();
+
 async function handleIncoming(payload) {
   if (!payload?.entry) return;
 
@@ -368,6 +390,12 @@ async function handleIncoming(payload) {
       for (const message of messages) {
         const from = message.from;
         if (!from) continue;
+        // Dedup: Meta reentrega o mesmo webhook se a resposta demora/cai. Não processa 2x.
+        if (message.id) {
+          if (_seenMsgIds.has(message.id)) continue;
+          _seenMsgIds.set(message.id, Date.now());
+          if (_seenMsgIds.size > 2000) { const cut = Date.now() - 600000; for (const [k, t] of _seenMsgIds) { if (t < cut) _seenMsgIds.delete(k); } }
+        }
 
         // ── UX imediato: visto azul antes de processar ──
         markReadAndTyping(from, message.id).catch(() => {});

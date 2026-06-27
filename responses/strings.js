@@ -306,9 +306,9 @@ function getLocationResponse(lang, tenant) {
   const labelEn = isTorres ? '\ud83c\udfe8 TorresGuest Highlights' : '\ud83c\udfe8 About the property';
 
   if (lang === "en") {
-    return `${addrLine}${labelEn}\n\u2022 Private flat inside a full-service hotel (pool, gym, restaurant)\n\u2022 Excellent location in Perdizes, S\u00e3o Paulo/SP\n\u2022 Close to Allianz Parque (7km), PUC-SP (150m walk!) and Shopping Bourbon (700m)\n\u2022 Personal and humanized service, concierge style\n\nPerfect for leisure or business. Need anything specific? Just ask! \ud83c\udf34`;
+    return `${addrLine}${labelEn}\n\u2022 Private flat inside a full-service hotel (pool, gym, restaurant)\n\u2022 Excellent location in Perdizes, S\u00e3o Paulo/SP\n\u2022 Close to Allianz Parque (1.5km, ~18min walk), PUC-SP (150m walk!) and Shopping Bourbon (700m)\n\u2022 Personal and humanized service, concierge style\n\nPerfect for leisure or business. Need anything specific? Just ask! \ud83c\udf34`;
   }
-  return `${addrLine}${labelPt}\n\u2022 Flat dentro de um hotel completo (piscina, academia, restaurante)\n\u2022 Localiza\u00e7\u00e3o excelente em Perdizes, S\u00e3o Paulo/SP\n\u2022 Pr\u00f3ximo ao Allianz Parque (7km), PUC-SP (150m a p\u00e9!) e Shopping Bourbon (700m, 9min)\n\u2022 Atendimento pr\u00f3ximo e humanizado, estilo concierge\n\nIdeal para lazer ou trabalho. Precisa de algo espec\u00edfico? S\u00f3 chamar! \ud83c\udf34`;
+  return `${addrLine}${labelPt}\n\u2022 Flat dentro de um hotel completo (piscina, academia, restaurante)\n\u2022 Localiza\u00e7\u00e3o excelente em Perdizes, S\u00e3o Paulo/SP\n\u2022 Pr\u00f3ximo ao Allianz Parque (1,5km, ~18min a p\u00e9), PUC-SP (150m a p\u00e9!) e Shopping Bourbon (700m, 9min)\n\u2022 Atendimento pr\u00f3ximo e humanizado, estilo concierge\n\nIdeal para lazer ou trabalho. Precisa de algo espec\u00edfico? S\u00f3 chamar! \ud83c\udf34`;
 }
 
 

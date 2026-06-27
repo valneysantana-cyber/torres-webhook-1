@@ -254,8 +254,13 @@ app.post('/internal/smm-classify', async (req, res) => {
         const { CRM_API_URL, CRM_API_KEY } = require('./config');
         const tid = (req.body && req.body.tenantId) || 'torres';
         if (CRM_API_URL && CRM_API_KEY) {
-          const tr = await fetch(`${CRM_API_URL}/admin/tenant-by-id/${encodeURIComponent(tid)}`, { headers: { 'x-api-key': CRM_API_KEY, 'Accept': 'application/json' } });
-          if (tr.ok) { const j = await tr.json(); tenantDoc = (j && j.tenant) ? j.tenant : j; } // endpoint retorna {tenant:{...}} — desembrulha
+          const _ac = new AbortController();
+          const _to = setTimeout(() => _ac.abort(), 8000);
+          let tr;
+          try { tr = await fetch(`${CRM_API_URL}/admin/tenant-by-id/${encodeURIComponent(tid)}`, { headers: { 'x-api-key': CRM_API_KEY, 'Accept': 'application/json' }, signal: _ac.signal }); }
+          finally { clearTimeout(_to); }
+          if (tr && tr.ok) { const j = await tr.json(); tenantDoc = (j && j.tenant) ? j.tenant : j; } // endpoint retorna {tenant:{...}} — desembrulha
+          else { console.error(`[smm-classify] tenant-by-id ${tid} HTTP ${tr && tr.status} → respondendo SEM KB`); }
         }
       } catch (e) { console.error('[smm-classify] fetchTenant err:', e.message); }
     }

@@ -11,7 +11,7 @@ const FAQ_ENTRIES = [
   },
   {
     patterns: [/(ir a pe|caminha|andar).*allianz/],
-    response: 'D\u00e1 para ir a p\u00e9 at\u00e9 o Allianz Parque em cerca de 10 a 15 minutos, dependendo do ritmo. \ud83d\udeb6\u200d\u2642\ufe0f',
+    response: 'O Allianz Parque fica a ~1,5 km \u2014 cerca de 18 minutos a p\u00e9, ou um Uber bem curto. \ud83d\udeb6\u200d\u2642\ufe0f',
   },
   {
     patterns: [/(regiao segura|area segura|seguro ai|seguro o bairro)/],
@@ -95,7 +95,7 @@ const FAQ_ENTRIES = [
   },
   {
     patterns: [/(?:ver.*estadio|vista.*allianz)/],
-    response: 'Algumas unidades t\u00eam vista parcial do Allianz Parque \u2014 consulte a disponibilidade que eu verifico pra voc\u00ea. \ud83d\udc40',
+    response: 'Sobre vista do Allianz, varia por unidade \u2014 a Sofia confirma o que a sua oferece. \ud83d\udc40',
   },
   {
     patterns: [/(restaurante).*estadio/],
@@ -211,7 +211,7 @@ const FAQ_ENTRIES = [
   },
   {
     patterns: [/(pet|animal)/],
-    response: 'Pets podem ser aceitos mediante consulta \u2014 me avisa o porte e os dias pra eu confirmar. \ud83d\udc3e',
+    response: 'Sobre pets, a pol\u00edtica varia conforme a unidade e as regras do hotel \u2014 a Sofia confirma pra voc\u00ea antes da reserva. \ud83d\udc3e',
   },
   {
     patterns: [/(lavanderia)/],
@@ -231,11 +231,11 @@ const FAQ_ENTRIES = [
   },
   {
     patterns: [/(pedir comida|delivery)/],
-    response: 'Pode pedir delivery sem problema; avisamos a recep\u00e7\u00e3o pra autorizar a entrega.',
+    response: 'Pode pedir delivery sem problema \u2014 combine a entrega direto com o entregador; se precisar, a Sofia te orienta.',
   },
   {
     patterns: [/(acessibilidade|cadeirante)/],
-    response: 'Temos unidades com recursos de acessibilidade \u2014 me diz o que precisa que seleciono a melhor op\u00e7\u00e3o.',
+    response: 'Sobre acessibilidade, me diga exatamente o que voc\u00ea precisa que a Sofia verifica a disponibilidade pra voc\u00ea.',
   },
   {
     patterns: [/(blackout|cortina)/],
