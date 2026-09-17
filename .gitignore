@@ -6,3 +6,6 @@ mobile-app/ios/
 mobile-app/android/
 crm-server/node_modules/
 .claude/launch.json
+
+# Renders de vídeo (marketing)
+marketing/**/out/
