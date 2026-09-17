@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>HubGenial Launch Video</title>
+<meta name="description" content="Vídeo de lançamento HubGenial, animado por tempo e renderizado quadro a quadro pelo render.js">
+<style>
+  @font-face { font-family: Inter; font-weight: 400; src: url(fonts/inter-latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: Inter; font-weight: 600; src: url(fonts/inter-latin-600-normal.woff2) format('woff2'); }
+  @font-face { font-family: Inter; font-weight: 800; src: url(fonts/inter-latin-800-normal.woff2) format('woff2'); }
+  @font-face { font-family: Inter; font-weight: 900; src: url(fonts/inter-latin-900-normal.woff2) format('woff2'); }
+
+  /* ====== TOKENS DA MARCA (troque aqui) ====== */
+  :root {
+    --bg: #070A12;
+    --ink: #F6F8FF;
+    --muted: #9AA4C2;
+    --a1: #7C3AED;   /* violeta */
+    --a2: #22D3EE;   /* ciano   */
+    --a3: #A3E635;   /* lima    */
+    --card: rgba(255,255,255,0.06);
+    --line: rgba(255,255,255,0.12);
+    --w: 1080px; --h: 1920px;
+    --u: calc(var(--w) / 100);
+    --brand: 'hubgenial';
+    --site: 'hubgenial.com.br';
+  }
+
+  html, body { margin: 0; background: #000; width: var(--w); height: var(--h); overflow: hidden; }
+  #stage {
+    position: relative; width: var(--w); height: var(--h); overflow: hidden;
+    background: var(--bg); color: var(--ink);
+    font-family: Inter, 'Liberation Sans', 'FreeSans', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .glow { position: absolute; width: calc(var(--u) * 90); height: calc(var(--u) * 90); border-radius: 50%;
+    filter: blur(calc(var(--u) * 16)); opacity: .42; will-change: transform; }
+  #g1 { background: var(--a1); left: -20%; top: -10%; }
+  #g2 { background: var(--a2); right: -25%; bottom: -12%; opacity: .28; }
+  .grid { position: absolute; inset: 0; opacity: .08;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: calc(var(--u) * 10) calc(var(--u) * 10); }
+
+  .scene { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+    box-sizing: border-box; padding: 0 calc(var(--u) * 7); text-align: center; }
+  .scene.on { display: flex; }
+  .el { will-change: transform, opacity; opacity: 0; }
+
+  .grad { background: linear-gradient(90deg, var(--a2), var(--a1)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lime { color: var(--a3); }
+  .kicker { font-size: calc(var(--u) * 3.4); font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+
+  /* S1 hook */
+  .chip { position: absolute; padding: calc(var(--u) * 1.6) calc(var(--u) * 3); border-radius: 999px; background: var(--card);
+    border: 1px solid var(--line); font-size: calc(var(--u) * 3.6); font-weight: 600; color: var(--muted); white-space: nowrap; }
+  .h1 { font-size: calc(var(--u) * 8.6); font-weight: 900; line-height: 1.02; letter-spacing: -.035em; }
+
+  /* S2 words */
+  .word { font-size: calc(var(--u) * 21); font-weight: 900; line-height: .95; letter-spacing: -.05em; }
+
+  /* S3 logo */
+  .logo { display: flex; align-items: center; gap: calc(var(--u) * 3); }
+  .mark { width: calc(var(--u) * 15); height: calc(var(--u) * 15); }
+  .wordmark { font-size: calc(var(--u) * 12); font-weight: 900; letter-spacing: -.05em; line-height: 1; }
+  .wordmark .hub { color: var(--ink); }
+  .bar { height: calc(var(--u) * 1.1); width: calc(var(--u) * 40); border-radius: 999px;
+    background: linear-gradient(90deg, var(--a2), var(--a1)); transform-origin: left; margin-top: calc(var(--u) * 4); }
+  .tag { margin-top: calc(var(--u) * 3.5); font-size: calc(var(--u) * 4.2); font-weight: 600; color: var(--muted); letter-spacing: .06em; }
+  .tag b { color: var(--ink); }
+
+  /* S4 features */
+  .feat-head { position: absolute; top: calc(var(--u) * 22); left: 0; right: 0; }
+  .card { position: absolute; left: calc(var(--u) * 7); right: calc(var(--u) * 7); top: 50%; transform: translateY(-50%);
+    padding: calc(var(--u) * 7) calc(var(--u) * 6); border-radius: calc(var(--u) * 4);
+    background: var(--card); border: 1px solid var(--line); backdrop-filter: blur(10px); }
+  .card .ico { width: calc(var(--u) * 14); height: calc(var(--u) * 14); margin: 0 auto calc(var(--u) * 3.5);
+    border-radius: calc(var(--u) * 3.2); display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--a1), var(--a2)); }
+  .card .ico svg { width: 60%; height: 60%; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .card h2 { margin: 0; font-size: calc(var(--u) * 6.8); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; }
+  .card p { margin: calc(var(--u) * 2) 0 0; font-size: calc(var(--u) * 3.8); color: var(--muted); font-weight: 600; }
+  .dots { position: absolute; bottom: calc(var(--u) * 24); left: 0; right: 0; display: flex; justify-content: center; gap: calc(var(--u) * 1.4); }
+  .dots i { display: block; width: calc(var(--u) * 1.6); height: calc(var(--u) * 1.6); border-radius: 999px; background: var(--line); }
+  .dots i.on { width: calc(var(--u) * 6); background: var(--a2); }
+
+  /* S5 segments */
+  .seg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 2.2); width: 100%; margin-top: calc(var(--u) * 6); }
+  .seg { padding: calc(var(--u) * 3.2) calc(var(--u) * 1); border-radius: calc(var(--u) * 2.6); background: var(--card); border: 1px solid var(--line);
+    font-size: calc(var(--u) * 3.6); font-weight: 700; }
+  .seg.hi { background: linear-gradient(135deg, var(--a1), var(--a2)); border-color: transparent; }
+  .h2 { font-size: calc(var(--u) * 7.4); font-weight: 900; letter-spacing: -.035em; line-height: 1.05; }
+
+  /* S6 plans */
+  .price { font-size: calc(var(--u) * 12.5); font-weight: 900; letter-spacing: -.05em; line-height: 1; }
+  .price small { font-size: calc(var(--u) * 4.2); font-weight: 700; color: var(--muted); letter-spacing: 0; }
+  .plans { width: 100%; margin-top: calc(var(--u) * 6); display: flex; flex-direction: column; gap: calc(var(--u) * 2); }
+  .plan { position: relative; height: calc(var(--u) * 9.5); border-radius: calc(var(--u) * 2.4); background: var(--card); border: 1px solid var(--line); overflow: hidden; }
+  .plan .fill { position: absolute; inset: 0; transform-origin: left; background: linear-gradient(90deg, var(--a1), var(--a2)); opacity: .85; }
+  .plan .txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 calc(var(--u) * 3.5);
+    font-size: calc(var(--u) * 3.9); font-weight: 800; }
+  .plan .txt span:last-child { font-weight: 700; color: var(--ink); opacity: .9; }
+
+  /* S7 CTA */
+  .big { font-size: calc(var(--u) * 15.5); font-weight: 900; letter-spacing: -.05em; line-height: .95; }
+  .sub { margin-top: calc(var(--u) * 2.5); font-size: calc(var(--u) * 5); font-weight: 600; color: var(--muted); }
+  .btn { margin-top: calc(var(--u) * 7); padding: calc(var(--u) * 3.2) calc(var(--u) * 7); border-radius: 999px;
+    background: linear-gradient(90deg, var(--a2), var(--a1)); color: #fff; font-size: calc(var(--u) * 5); font-weight: 800;
+    box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 6) rgba(124,58,237,.45); }
+  .url { margin-top: calc(var(--u) * 5); font-size: calc(var(--u) * 4.6); font-weight: 700; letter-spacing: .02em; }
+  .mini-logo { position: absolute; bottom: calc(var(--u) * 20); left: 0; right: 0; font-size: calc(var(--u) * 5.5); font-weight: 900; letter-spacing: -.04em; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="glow" id="g1"></div>
+  <div class="glow" id="g2"></div>
+  <div class="grid"></div>
+
+  <!-- S1: gancho -->
+  <section class="scene" id="s1">
+    <div class="chip el" data-chip style="left:8%;top:18%;--r:-9deg">Planilha</div>
+    <div class="chip el" data-chip style="right:9%;top:23%;--r:7deg">Caderno</div>
+    <div class="chip el" data-chip style="left:14%;top:70%;--r:6deg">WhatsApp</div>
+    <div class="chip el" data-chip style="right:12%;top:66%;--r:-6deg">Bloco de notas</div>
+    <div class="chip el" data-chip style="left:35%;top:80%;--r:-3deg">Maquininha</div>
+    <div class="chip el" data-chip style="right:30%;top:12%;--r:4deg">Agenda de papel</div>
+    <div class="h1 el" id="h1a">Seu negócio ainda vive em</div>
+    <div class="h1 el" id="h1b" style="margin-top:.1em"><span class="grad">5 apps</span> diferentes?</div>
+  </section>
+
+  <!-- S2: palavras -->
+  <section class="scene" id="s2">
+    <div class="word el" data-word>SITE</div>
+    <div class="word el grad" data-word>LOJA</div>
+    <div class="word el" data-word>CRM</div>
+    <div class="word el grad" data-word>ERP</div>
+  </section>
+
+  <!-- S3: reveal -->
+  <section class="scene" id="s3">
+    <div class="kicker el" id="s3k">Em um só lugar</div>
+    <div class="logo el" id="s3l" style="margin-top:calc(var(--u)*4)">
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22D3EE"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs>
+        <path d="M50 4 L90 27 V73 L50 96 L10 73 V27 Z" fill="url(#lg)"/>
+        <path d="M34 30 V70 M66 30 V70 M34 50 H66" stroke="#fff" stroke-width="9" stroke-linecap="round" fill="none"/>
+      </svg>
+      <div class="wordmark"><span class="hub">hub</span><span class="grad">genial</span></div>
+    </div>
+    <div class="bar el" id="s3b"></div>
+    <div class="tag el" id="s3t"><b>Site</b> · <b>Loja</b> · <b>CRM</b> · <b>ERP</b> · <b>IA</b></div>
+  </section>
+
+  <!-- S4: features -->
+  <section class="scene" id="s4">
+    <div class="feat-head kicker el" id="s4h">Tudo que sua empresa precisa</div>
+    <div class="card el" data-card>
+      <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg></div>
+      <h2>Site profissional</h2><p>Pronto em minutos, no seu domínio</p>
+    </div>
+    <div class="card el" data-card>
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.5 11h11L21 7H7"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg></div>
+      <h2>Loja online</h2><p>Catálogo, carrinho e pagamento integrado</p>
+    </div>
+    <div class="card el" data-card>
+      <div class="ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-4 3-6.5 6.5-6.5S15.5 16 15.5 20"/><path d="M17 4.5c1.8 0 3 1.4 3 3s-1.2 3-3 3M16 13.5c3 0 5.5 2.5 5.5 6.5"/></svg></div>
+      <h2>CRM inteligente</h2><p>Memória completa de cada cliente</p>
+    </div>
+    <div class="card el" data-card>
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+      <h2>ERP completo</h2><p>Financeiro, estoque, NF-e e NFS-e</p>
+    </div>
+    <div class="card el" data-card>
+      <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15l2.5 2.5L16 12"/></svg></div>
+      <h2>Agenda online</h2><p>Clientes marcam sozinhos, 24 h por dia</p>
+    </div>
+    <div class="card el" data-card>
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M12 8l.9 2.1L15 11l-2.1.9L12 14l-.9-2.1L9 11l2.1-.9z"/></svg></div>
+      <h2>Concierge IA</h2><p>Atende no WhatsApp por você</p>
+    </div>
+    <div class="dots" id="dots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  </section>
+
+  <!-- S5: segmentos -->
+  <section class="scene" id="s5">
+    <div class="h2 el" id="s5h">Feito para quem<br><span class="grad">faz acontecer</span></div>
+    <div class="seg-grid">
+      <div class="seg el" data-seg>Salão</div><div class="seg el" data-seg>Barbearia</div><div class="seg el" data-seg>Clínica</div>
+      <div class="seg el" data-seg>Consultório</div><div class="seg el" data-seg>Petshop</div><div class="seg el" data-seg>Restaurante</div>
+      <div class="seg el" data-seg>Delivery</div><div class="seg el" data-seg>Corretor</div><div class="seg el" data-seg>Loja física</div>
+    </div>
+  </section>
+
+  <!-- S6: planos -->
+  <section class="scene" id="s6">
+    <div class="kicker el" id="s6k">Planos a partir de</div>
+    <div class="price el" id="s6p" style="margin-top:calc(var(--u)*2)">R$ 49,90<small>/mês</small></div>
+    <div class="plans">
+      <div class="plan el" data-plan="30"><div class="fill"></div><div class="txt"><span>Vitrine</span><span>R$ 49,90</span></div></div>
+      <div class="plan el" data-plan="46"><div class="fill"></div><div class="txt"><span>Loja</span><span>R$ 99,90</span></div></div>
+      <div class="plan el" data-plan="62"><div class="fill"></div><div class="txt"><span>Gestão</span><span>R$ 179,90</span></div></div>
+      <div class="plan el" data-plan="80"><div class="fill"></div><div class="txt"><span>Empresa</span><span>R$ 399</span></div></div>
+      <div class="plan el" data-plan="100"><div class="fill"></div><div class="txt"><span>Concierge IA</span><span>sob consulta</span></div></div>
+    </div>
+  </section>
+
+  <!-- S7: CTA -->
+  <section class="scene" id="s7">
+    <div class="big el" id="s7a"><span class="grad">15 dias</span><br>grátis</div>
+    <div class="sub el" id="s7b">para testar tudo</div>
+    <div class="btn el" id="s7c">Começar agora →</div>
+    <div class="url el" id="s7d">hubgenial.com.br</div>
+    <div class="mini-logo el" id="s7e"><span>hub</span><span class="grad">genial</span></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---- setup de tamanho (?w=1080&h=1920) ----
+  const q = new URLSearchParams(location.search);
+  const W = +q.get('w') || 1080, H = +q.get('h') || 1920;
+  const root = document.documentElement.style;
+  root.setProperty('--w', W + 'px'); root.setProperty('--h', H + 'px');
+  // em formatos baixos (1:1, 16:9) a unidade segue a menor dimensão para caber tudo
+  root.setProperty('--u', (Math.min(W, H * 0.62) / 100) + 'px');
+
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const E = {
+    linear: p => p,
+    outCubic: p => 1 - Math.pow(1 - p, 3),
+    outExpo: p => p >= 1 ? 1 : 1 - Math.pow(2, -10 * p),
+    outBack: p => { const c = 1.70158; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); },
+    inCubic: p => p * p * p,
+  };
+  const P = (t, t0, d, e = 'outExpo') => E[e](clamp((t - t0) / d, 0, 1));
+  const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+
+  const pop = (el, p, dy = 40, s0 = .92, extra = '') => {
+    el.style.opacity = p;
+    el.style.transform = `translateY(${(1 - p) * dy}px) scale(${s0 + (1 - s0) * p}) ${extra}`;
+  };
+  const fadeOut = (el, p) => { // p: 0..1 progress of exit
+    if (p <= 0) return;
+    el.style.opacity = (1 - p) * +el.style.opacity;
+    el.style.transform += ` translateY(${-30 * p}px)`;
+  };
+
+  // ---- cenas ----
+  const scenes = [];
+  const scene = (id, start, end, render) => scenes.push({ el: $(id), start, end, render });
+
+  // S1 gancho 0.0–3.2
+  scene('#s1', 0, 3.2, t => {
+    $$('[data-chip]').forEach((c, i) => {
+      const p = P(t, 0.05 + i * 0.09, 0.6, 'outBack');
+      c.style.opacity = p;
+      const bob = Math.sin(t * 2.2 + i) * 6;
+      c.style.transform = `rotate(${getComputedStyle(c).getPropertyValue('--r')}) translateY(${(1 - p) * 30 + bob}px) scale(${.7 + .3 * p})`;
+      fadeOut(c, P(t, 2.85, .35, 'inCubic'));
+    });
+    pop($('#h1a'), P(t, 0.75, 0.8), 50);
+    pop($('#h1b'), P(t, 0.98, 0.8), 50);
+    [$('#h1a'), $('#h1b')].forEach(el => fadeOut(el, P(t, 2.9, .3, 'inCubic')));
+  });
+
+  // S2 palavras 3.2–6.6
+  scene('#s2', 3.2, 6.6, t => {
+    $$('[data-word]').forEach((w, i) => {
+      const p = P(t, 0.12 + i * 0.55, 0.5);
+      w.style.opacity = p;
+      w.style.transform = `scale(${1.7 - .7 * p})`;
+      fadeOut(w, P(t, 3.05, .35, 'inCubic'));
+    });
+  });
+
+  // S3 reveal 6.6–10.0
+  scene('#s3', 6.6, 10.0, t => {
+    pop($('#s3k'), P(t, 0.05, 0.7), 20);
+    pop($('#s3l'), P(t, 0.45, 0.9, 'outBack'), 60, .6);
+    const b = $('#s3b'); const bp = P(t, 1.0, 0.8); b.style.opacity = 1; b.style.transform = `scaleX(${bp})`;
+    pop($('#s3t'), P(t, 1.5, 0.7), 20);
+    [$('#s3k'), $('#s3l'), $('#s3b'), $('#s3t')].forEach(el => fadeOut(el, P(t, 3.05, .35, 'inCubic')));
+  });
+
+  // S4 features 10.0–18.4 (6 × 1.4 s)
+  const CARD = 1.4;
+  scene('#s4', 10.0, 18.4, t => {
+    pop($('#s4h'), P(t, 0.05, 0.6), 20);
+    const cards = $$('[data-card]');
+    const idx = clamp(Math.floor(t / CARD), 0, cards.length - 1);
+    cards.forEach((c, i) => {
+      const lt = t - i * CARD; // tempo local do card
+      if (lt < -0.05 || lt > CARD + 0.05) { c.style.opacity = 0; return; }
+      const pin = P(lt, 0, 0.4, 'outExpo');
+      const pout = i < cards.length - 1 ? P(lt, CARD - 0.28, 0.28, 'inCubic') : 0;
+      c.style.opacity = pin * (1 - pout);
+      c.style.transform = `translateY(calc(-50% + ${(1 - pin) * 140 - pout * 140}px)) scale(${.94 + .06 * pin})`;
+    });
+    $$('#dots i').forEach((d, i) => d.classList.toggle('on', i === idx));
+    $('#dots').style.opacity = P(t, 0.3, 0.5);
+    if (t > 8.05) { const p = P(t, 8.05, .35, 'inCubic'); [$('#s4h'), $('#dots'), cards[5]].forEach(el => fadeOut(el, p)); }
+  });
+
+  // S5 segmentos 18.4–22.4
+  scene('#s5', 18.4, 22.4, t => {
+    pop($('#s5h'), P(t, 0.05, 0.8), 40);
+    const segs = $$('[data-seg]');
+    segs.forEach((s, i) => {
+      pop(s, P(t, 0.55 + i * 0.09, 0.55, 'outBack'), 30, .7);
+      // destaque percorre os segmentos
+      const hi = Math.floor((t - 1.5) / 0.28);
+      s.classList.toggle('hi', t > 1.5 && (hi % segs.length) === i);
+      fadeOut(s, P(t, 3.65, .35, 'inCubic'));
+    });
+    fadeOut($('#s5h'), P(t, 3.65, .35, 'inCubic'));
+  });
+
+  // S6 planos 22.4–26.6
+  scene('#s6', 22.4, 26.6, t => {
+    pop($('#s6k'), P(t, 0.05, 0.6), 20);
+    pop($('#s6p'), P(t, 0.25, 0.8, 'outBack'), 40, .8);
+    $$('[data-plan]').forEach((p, i) => {
+      const pin = P(t, 0.8 + i * 0.16, 0.6);
+      p.style.opacity = pin; p.style.transform = `translateX(${(1 - pin) * -80}px)`;
+      const f = P(t, 1.0 + i * 0.16, 0.9, 'outCubic');
+      p.querySelector('.fill').style.transform = `scaleX(${f * (+p.dataset.plan / 100)})`;
+      fadeOut(p, P(t, 3.85, .35, 'inCubic'));
+    });
+    [$('#s6k'), $('#s6p')].forEach(el => fadeOut(el, P(t, 3.85, .35, 'inCubic')));
+  });
+
+  // S7 CTA 26.6–30.0
+  scene('#s7', 26.6, 30.0, t => {
+    pop($('#s7a'), P(t, 0.05, 0.9, 'outBack'), 60, .7);
+    pop($('#s7b'), P(t, 0.55, 0.7), 20);
+    const pulse = 1 + 0.025 * Math.sin((t - 1.2) * 5);
+    pop($('#s7c'), P(t, 0.95, 0.7, 'outBack'), 30, .8, `scale(${t > 1.6 ? pulse : 1})`);
+    pop($('#s7d'), P(t, 1.35, 0.7), 20);
+    pop($('#s7e'), P(t, 1.7, 0.7), 20);
+  });
+
+  // ---- fundo ----
+  const g1 = $('#g1'), g2 = $('#g2');
+  const bg = t => {
+    g1.style.transform = `translate(${Math.sin(t * .35) * 90}px, ${Math.cos(t * .28) * 70}px)`;
+    g2.style.transform = `translate(${Math.cos(t * .3) * 90}px, ${Math.sin(t * .22) * 70}px)`;
+  };
+
+  // ---- API do render ----
+  window.DURATION = 30;
+  window.seek = t => {
+    t = clamp(t, 0, window.DURATION - 1e-4);
+    bg(t);
+    for (const s of scenes) {
+      const on = t >= s.start && t < s.end;
+      s.el.classList.toggle('on', on);
+      if (on) s.render(t - s.start);
+    }
+  };
+  window.ready = document.fonts.ready.then(() => { window.seek(0); return true; });
+
+  // preview no navegador: ?play=1
+  if (q.get('play')) {
+    const t0 = performance.now();
+    const loop = () => { window.seek(((performance.now() - t0) / 1000) % window.DURATION); requestAnimationFrame(loop); };
+    window.ready.then(loop);
+  } else {
+    window.ready.then(() => window.seek(+q.get('t') || 0));
+  }
+})();
+</script>
+</body>
+</html>
