@@ -146,7 +146,24 @@ function getDispatchTable() {
     // ── Serviços do flat ──
     { check: shouldSendWifi,        reply: i18n('WIFI',          WIFI_RESPONSE),          source: 'wifi' },
     { check: shouldSendInternet,    reply: i18n('INTERNET',      INTERNET_RESPONSE),      source: 'internet' },
-    { check: shouldSendBreakfast,   reply: (lang, t) => buildBreakfastResponse ? buildBreakfastResponse(t, lang) : 'Café da manhã incluso, servido das 06:30 às 10:00 no restaurante do hotel.', source: 'breakfast' },
+    // Café = fato operacional por reserva (incidente QF04J 30/09/2026): exige
+    // veredito do CRM. Sem veredito, NÃO afirma — encaminha pra Sofia.
+    { check: shouldSendBreakfast,
+      reply: async (lang, t, ctx) => {
+        let st = null;
+        try {
+          const { getBreakfastStatus } = require('./breakfastStatus');
+          st = await getBreakfastStatus({
+            code: (ctx && ctx.reservationCode) || null,
+            partnerCode: (ctx && ctx.partnerCode) || null,
+            guestName: (ctx && (ctx.reservationCode || ctx.partnerCode)) ? null : ((ctx && ctx.guestName) || null),
+            tenantId: (t && t.tenantId) || null,
+          });
+        } catch (e) { console.error('[smmClassifier] breakfast status err:', e.message); }
+        if (buildBreakfastResponse) return buildBreakfastResponse(t, lang, st);
+        return 'Sobre o café da manhã: a regra depende da tarifa da sua reserva. Já estou confirmando com a nossa equipe e te respondo aqui em instantes.';
+      },
+      source: 'breakfast' },
     { check: shouldSendBreakfastCompanion, reply: i18n('BREAKFAST_COMPANION', BREAKFAST_COMPANION_RESPONSE), source: 'breakfast_companion' },
     { check: shouldSendPool,        reply: i18n('POOL',          POOL_RESPONSE),          source: 'pool' },
     { check: shouldSendParking,     reply: (lang, t) => buildParkingResponse ? buildParkingResponse(t, lang) : 'Estacionamento valet incluso — ao chegar, informe "Flat condomínio".', source: 'parking' },
@@ -256,6 +273,7 @@ async function classifyAndRespond(args) {
     text, channel = 'unknown', guestName = '', tenant = null,
     history = [], lang: callerLang, allowAi = false,
     bookingConfirmed = false, // padrão strict: assume pré-confirmação
+    reservationCode = null, partnerCode = null, // identificam a reserva (café/quarto/data)
   } = args || {};
   if (!text || !String(text).trim()) {
     return { reply: null, source: 'noop:empty', channel };
@@ -494,13 +512,58 @@ async function classifyAndRespond(args) {
     return { reply: sanitizeForChannel(menu, channel, bookingConfirmed), source: 'menu', channel };
   }
 
+  // (2.4) CAFE DA MANHA — fato operacional POR RESERVA (incidente QF04J 30/09/2026).
+  // Resolvido ANTES da IA de proposito: (a) com veredito do CRM a resposta e
+  // deterministica, sem parafrase do modelo; (b) SEM veredito o bot nao afirma E
+  // escala de verdade — a IA nao tem como abrir alerta, e prometer "ja estou
+  // confirmando" sem avisar ninguem foi parte do incidente.
+  // Gate LARGO: alem de shouldSendBreakfast ('cafe da manha'/breakfast/desayuno...),
+  // captura 'o cafe esta incluso na diaria?' / 'tem que pagar o cafe?' — perguntas
+  // sobre cafe SEM o literal 'manha', que antes escapavam pro LLM parafrasear.
+  const _bfLoose = /(caf[eé]\b[^.?!]{0,60}\b(inclu|cobrad|pag|tarifa|di[aá]ria|valor|pre[cç]o|quanto)|\b(inclu|cobrad|pag|tarifa|di[aá]ria|valor|pre[cç]o|quanto)[^.?!]{0,60}\bcaf[eé]\b)/i;
+  if (shouldSendBreakfast(normalized) || _bfLoose.test(normalized)) {
+    let st = null;
+    try {
+      const { getBreakfastStatus } = require('./breakfastStatus');
+      st = await getBreakfastStatus({
+        code: reservationCode || null,
+        partnerCode: partnerCode || null,
+        guestName: (reservationCode || partnerCode) ? null : (guestName || null),
+        tenantId: (tenant && tenant.tenantId) || null,
+      });
+    } catch (e) { console.error('[smmClassifier] breakfast status err:', e.message); }
+    const _bfTxt = buildBreakfastResponse
+      ? buildBreakfastResponse(tenant, lang, st)
+      : 'Sobre o cafe da manha: a regra depende da tarifa da sua reserva. Vou confirmar com a nossa equipe e te respondo por aqui.';
+    const _bfOut = {
+      reply: sanitizeForChannel(_bfTxt, channel, bookingConfirmed),
+      source: 'breakfast:' + ((st && st.reason) || 'sem-veredito'),
+      channel,
+    };
+    // Tenant que cadastrou cafe ESTATICO no ERP (type != conditional) responde
+    // pela propria config — resposta correta, nao ha o que escalar.
+    const _bfCfg = tenant && tenant.settings && tenant.settings.breakfast;
+    const _bfStatic = !!_bfCfg && _bfCfg.type !== 'conditional_by_reservation'
+      && !(!tenant || tenant.tenantId === 'torres');
+    if (!_bfStatic && (!st || st.known !== true)) {
+      _bfOut.dispatchAlert = true;
+      _bfOut.dispatchBody = '\u2615 *Cafe — reserva nao identificada, hospede aguardando resposta*\n'
+        + '\ud83d\udc64 ' + (guestName || 'sem nome')
+        + (reservationCode ? '\n\ud83d\udd16 ' + reservationCode : '')
+        + '\n\ud83d\udcac "' + String(text).slice(0, 200) + '"'
+        + '\n\nmotivo: ' + ((st && st.reason) || 'sem resposta do CRM')
+        + '\nResponder em https://conciergecloud.com.br/admin/mensagens.html';
+    }
+    return _bfOut;
+  }
+
   // (2.5) IA-FIRST com base de conhecimento — UNIFICA o OTA com a inteligência do WhatsApp.
   // Lê a mensagem INTEIRA (multi-pergunta), responde no idioma do hóspede e usa a KB do tenant.
   // Evita o matcher errado capturar (ex.: "horário do check in" sequestrar pergunta de BAGAGEM).
   // Só roda se allowAi + tenant (com KB) presente; senão cai nos matchers determinísticos abaixo.
   if (allowAi && tenant && tenant.settings && tenant.settings.knowledgeBase) {
     try {
-      const ai = await getChatGptFallbackReply(text, '', history, null, tenant);
+      const ai = await getChatGptFallbackReply(text, '', history, null, tenant, { reservationCode, guestName });
       if (ai && String(ai).trim()) {
         return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai-first', channel };
       }
@@ -508,13 +571,16 @@ async function classifyAndRespond(args) {
   }
 
   // (3) PT_DISPATCH table — todos os matchers torres
+  // bfCtx: contexto da reserva pros entries que exigem fonte (café). Os demais
+  // entries ignoram o 3º argumento e devolvem string (await em não-Promise = no-op).
+  const bfCtx = { reservationCode, partnerCode, guestName };
   const table = getDispatchTable();
   for (const entry of table) {
     let matched = false;
     try { matched = !!entry.check(normalized); } catch (e) { /* skip */ }
     if (!matched) continue;
     let reply;
-    try { reply = entry.reply(lang, tenant); } catch (e) { reply = null; }
+    try { reply = await entry.reply(lang, tenant, bfCtx); } catch (e) { reply = null; }
     if (reply) {
       return { reply: sanitizeForChannel(reply, channel, bookingConfirmed), source: 'matcher:' + entry.source, channel };
     }
@@ -523,7 +589,7 @@ async function classifyAndRespond(args) {
   // (4) AI fallback (opcional — só se allowAi=true)
   if (allowAi) {
     try {
-      const ai = await getChatGptFallbackReply(text, '', history, null, tenant);
+      const ai = await getChatGptFallbackReply(text, '', history, null, tenant, { reservationCode, guestName });
       if (ai) {
         return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai', channel };
       }

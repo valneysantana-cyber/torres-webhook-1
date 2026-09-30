@@ -243,7 +243,8 @@ app.post('/internal/smm-classify', async (req, res) => {
   if (!checkSecret(req, res)) return;
   try {
     const { classifyAndRespond } = require('./services/smmClassifier');
-    const { text, channel, guestName, tenant, history, lang, allowAi, bookingConfirmed } = req.body || {};
+    const { text, channel, guestName, tenant, history, lang, allowAi, bookingConfirmed,
+            reservationCode, partnerCode } = req.body || {};
     if (!text || typeof text !== 'string') {
       return res.status(400).json({ error: 'text obrigatorio' });
     }
@@ -276,6 +277,9 @@ app.post('/internal/smm-classify', async (req, res) => {
       // Default false (strict) — smm_sync.js passa true quando a reserva
       // estiver confirmada na thread (reservation.status === 'confirmed' etc).
       bookingConfirmed: bookingConfirmed === true || bookingConfirmed === 'true',
+      // Identificacao da reserva p/ a fonte de verdade do cafe (QF04J 30/09/2026).
+      reservationCode: reservationCode ? String(reservationCode).trim() : null,
+      partnerCode: partnerCode ? String(partnerCode).replace(/\D/g, '') : null,
     });
 
     // Se classifier marcou pra dispatch — manda alerta WhatsApp pra Sofia

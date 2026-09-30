@@ -78,7 +78,8 @@ const {
 // -----------------------------------------------------------------------------
 const EMAIL_DISPATCH = [
   { check: shouldSendWifi,       reply: () => WIFI_RESPONSE },
-  { check: shouldSendBreakfast,  reply: () => BREAKFAST_RESPONSE },
+  // Café depende da reserva; esta tabela não passa tenant/idioma/reserva -> NÃO afirma.
+  { check: shouldSendBreakfast,  reply: () => 'Sobre o café da manhã: a regra depende da tarifa da sua reserva. Vou confirmar com o nosso atendimento e retorno em instantes.' },
   { check: shouldSendPool,       reply: () => POOL_RESPONSE },
   { check: shouldSendParking,    reply: () => PARKING_RESPONSE },
   { check: shouldSendSnacks,     reply: () => SNACKS_RESPONSE },

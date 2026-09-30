@@ -138,8 +138,9 @@ const FAQ_ENTRIES = [
     response: 'Tem academia equipada aberta das 08h \u00e0s 21h. \ud83d\udcaa',
   },
   {
+    // Cafe depende da reserva (tarifa/canal) - o FAQ nao tem a reserva em maos, logo NAO afirma.
     patterns: [/(cafe da manha)/],
-    response: 'O caf\u00e9 da manh\u00e3 est\u00e1 incluso e servido no restaurante do lobby, das 06h30 \u00e0s 10h.',
+    response: 'Sobre o caf\u00e9 da manh\u00e3: a regra depende da tarifa da sua reserva, ent\u00e3o n\u00e3o vou arriscar te dar uma informa\u00e7\u00e3o errada. J\u00e1 estou confirmando com a Sofia e te respondo aqui em instantes.',
   },
   {
     patterns: [/(wifi|internet)/],

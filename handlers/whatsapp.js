@@ -124,6 +124,7 @@ const {
   sendRoomRequestNotification,
   sendCancellationReasonToHost,
 } = require('../services/dispatch');
+const { getBreakfastStatus } = require('../services/breakfastStatus');
 let Reservation;
 try { Reservation = require('../models/Reservation'); }
 catch (e) { console.warn('[whatsapp] Reservation model not available:', e.message); }
@@ -787,6 +788,31 @@ async function handleIncoming(payload) {
           await replyAndSave(from, FRIGOBAR_RESTOCK_RESPONSE, { alsoSendAudio: camFromAudio });
           await sendFrigobarRestockNotification(from, body);
           continue;
+        }
+
+        // ---- café da manhã: FONTE DE VERDADE por reserva ------------------
+        // Incidente Calebe QF04J 30/09/2026: bot prometeu café incluso numa
+        // reserva marcada SEM café (custo real R$31,50/hóspede/diária).
+        // Fica ANTES do PT_DISPATCH porque:
+        //  (a) vale para TODOS os idiomas (PT_DISPATCH só roda em pt);
+        //  (b) 'cafe da manha' também casa shouldSendRestaurant → 2 matches →
+        //      multi-intent mandava a pergunta pro LLM, que afirmava "incluso".
+        // Só intercepta quando café é a ÚNICA intenção operacional: pergunta
+        // composta continua indo pro LLM (que agora recebe o veredito no prompt).
+        if (shouldSendBreakfast(normalized) && !shouldSendBreakfastCompanion(normalized)) {
+          const bfOthers = PT_DISPATCH.filter(({ check }) =>
+            check !== shouldSendBreakfast && check !== shouldSendRestaurant && check(normalized));
+          if (bfOthers.length === 0) {
+            const bfTenant = guestTenant || tenant;
+            const bfStatus = await getBreakfastStatus({ phone: from, tenantId: bfTenant && bfTenant.tenantId });
+            await replyAndSave(from, buildBreakfastResponse(bfTenant, language, bfStatus), { alsoSendAudio: camFromAudio });
+            if (!bfStatus || bfStatus.known !== true) {
+              sendRoomRequestNotification(from, body,
+                '☕ CAFÉ DA MANHÃ — o bot NÃO afirmou (motivo: ' + ((bfStatus && bfStatus.reason) || 'sem reserva') + '). Confirmar a tarifa e responder o hóspede.'
+              ).catch(() => {});
+            }
+            continue;
+          }
         }
 
         // ---- PT_DISPATCH ------------------------------------------------
