@@ -29,6 +29,43 @@ const BREAKFAST_RESPONSE_FR = `☕ Le petit-déjeuner est inclus dans votre séj
 Mentionnez simplement votre chambre à votre arrivée.
 Toute question, faites-moi savoir ! 🌴`;
 
+// Cafe da manha NAO incluso / DESCONHECIDO - incidente Calebe QF04J 30/09/2026.
+// A regra do cafe depende da RESERVA (tarifa/canal) e vive no CRM (cafe_rule.js).
+// Aqui so ha texto: quem decide e o veredito passado em `status`.
+function _bfHours(h, lang) {
+  const raw = String(h || '06:30-10:00');
+  if (lang && lang !== 'pt') return raw.replace(/\s*-\s*/, '–');
+  return raw.replace(/:/g, 'h').replace(/\s*-\s*/, ' às ');
+}
+function _bfPrice(b, lang) {
+  const v = b && Number(b.paidPricePerPerson);
+  if (!v) return '';
+  if (lang === 'en') return ' — BRL ' + v.toFixed(2) + ' per person';
+  if (lang === 'es') return ' — R$ ' + v.toFixed(2).replace('.', ',') + ' por persona';
+  if (lang === 'fr') return ' — R$ ' + v.toFixed(2).replace('.', ',') + ' par personne';
+  return ' — R$ ' + v.toFixed(2).replace('.', ',') + ' por pessoa';
+}
+function _bfWho(lang, isTorres) {
+  if (lang === 'en') return isTorres ? 'Sofia' : 'our team';
+  if (lang === 'es') return isTorres ? 'Sofía' : 'nuestro equipo';
+  if (lang === 'fr') return isTorres ? 'Sofia' : 'notre équipe';
+  return isTorres ? 'a *Sofia*' : 'nossa equipe';
+}
+function BREAKFAST_NOT_INCLUDED(lang, b, isTorres) {
+  const h = _bfHours(b && b.hours, lang), p = _bfPrice(b, lang), who = _bfWho(lang, isTorres);
+  if (lang === 'en') return `☕ On your reservation, breakfast is *not included* in the rate.\n🍽️ You can still have it at the hotel lobby restaurant (${h})${p}. ${who} confirms the exact amount and how to pay.\nAnything else, just ask! 🌴`;
+  if (lang === 'es') return `☕ En tu reserva el desayuno *no está incluido* en la tarifa.\n🍽️ Puedes tomarlo en el restaurante del lobby (${h})${p}. Quien te confirma el valor exacto y la forma de pago es ${who}.\n¡Cualquier duda, avísame! 🌴`;
+  if (lang === 'fr') return `☕ Sur votre réservation, le petit-déjeuner *n'est pas inclus* dans le tarif.\n🍽️ Vous pouvez le prendre au restaurant du lobby (${h})${p}. ${who} confirme le montant exact et le paiement.\nÀ votre disposition ! 🌴`;
+  return `☕ Na sua reserva o café da manhã *não está incluso* na tarifa.\n🍽️ Se quiser, pode tomar no restaurante do lobby do hotel (${h})${p}. Quem confirma o valor exato e a forma de pagamento é ${who}.\nQualquer dúvida, me chama! 🌴`;
+}
+function BREAKFAST_UNKNOWN(lang, isTorres) {
+  const who = _bfWho(lang, isTorres);
+  if (lang === 'en') return `☕ About breakfast: it depends on your rate plan, so I won't risk giving you the wrong answer. I'm checking with ${who} right now and I'll get back to you here in a moment. 🌴`;
+  if (lang === 'es') return `☕ Sobre el desayuno: depende del plan de tarifa de tu reserva, así que no quiero darte una información equivocada. Ya lo estoy confirmando con ${who} y te respondo aquí en instantes. 🌴`;
+  if (lang === 'fr') return `☕ À propos du petit-déjeuner : cela dépend du tarif de votre réservation, je ne veux pas vous donner une information erronée. Je vérifie avec ${who} et je reviens vers vous ici dans un instant. 🌴`;
+  return `☕ Sobre o café da manhã: a regra depende da tarifa da sua reserva, então não vou te passar uma informação que possa estar errada. Já estou confirmando com ${who} e te respondo aqui em instantes. 🌴`;
+}
+
 
 const POOL_RESPONSE = `\ud83c\udfca\u200d\u2640\ufe0f Piscina & Academia est\u00e3o dispon\u00edveis dentro da infraestrutura do hotel acess\u00edvel todos os dias, das 08h00 \u00e0s 21h00.\nAproveite a piscina para relaxar e a academia para manter a rotina! \ud83c\udf34`;
 
@@ -120,27 +157,41 @@ const PARKING_EARLY_RESPONSE = `\ud83d\ude97 A possibilidade de deixar o carro a
 // din\u00e2mica baseada nas configs do anfitri\u00e3o. Caso contr\u00e1rio fallback pra
 // resposta hardcoded da TorresGuest (compat).
 
-function buildBreakfastResponse(tenant, lang) {
-  const isTorres = !tenant || tenant.tenantId === 'torres' || !tenant.settings || !tenant.settings.breakfast;
-  if (isTorres) {
-    if (lang === 'en') return BREAKFAST_RESPONSE_EN;
-    if (lang === 'es') return BREAKFAST_RESPONSE_ES;
-    if (lang === 'fr') return BREAKFAST_RESPONSE_FR;
-    return BREAKFAST_RESPONSE;
+// ATENCAO: o cafe e FATO OPERACIONAL (R$31,50/hospede/diaria de custo). O bot so
+// afirma com veredito do CRM em maos (`status` = GET /admin/breakfast-status).
+// Sem veredito, NAO AFIRMA. Nunca reintroduzir texto fixo de "incluso" aqui.
+function buildBreakfastResponse(tenant, lang, status) {
+  const b = (tenant && tenant.settings && tenant.settings.breakfast) || null;
+  const isTorres = !tenant || tenant.tenantId === 'torres';
+  // 1) Config ESTATICA do anfitriao (tenant != torres que cadastrou cafe no ERP)
+  //    - comportamento IDENTICO ao de hoje. Nada muda pra esses tenants.
+  const staticCfg = !!b && b.type !== 'conditional_by_reservation' && !isTorres;
+  if (staticCfg) {
+    if (b.enabled === false || b.type === 'none') {
+      return `\u2615 A propriedade *n\u00e3o oferece caf\u00e9 da manh\u00e3*. Posso te indicar op\u00e7\u00f5es pr\u00f3ximas se quiser. \ud83c\udf34`;
+    }
+    const hours = b.hours || '06h30 \u00e0s 10h00';
+    const location = b.location ? `, no ${b.location}` : '';
+    if (b.type === 'included') {
+      return `\u2615 O caf\u00e9 da manh\u00e3 est\u00e1 *incluso na sua reserva*${location}.\n\ud83d\udd52 ${hours}.\nAproveite e bom dia! \ud83c\udf34`;
+    }
+    if (b.type === 'paid') {
+      return `\u2615 A propriedade oferece caf\u00e9 da manh\u00e3 *com cobran\u00e7a extra*${location}.\n\ud83d\udd52 ${hours}.${b.cost ? '\n\ud83d\udcb0 Valor: ' + b.cost : ''}\nQualquer d\u00favida, me avisa. \ud83c\udf34`;
+    }
+    return `\u2615 Caf\u00e9 da manh\u00e3 dispon\u00edvel${location}.\n\ud83d\udd52 ${hours}.${b.note ? '\n' + b.note : ''} \ud83c\udf34`;
   }
-  const b = tenant.settings.breakfast;
-  if (b.enabled === false || b.type === 'none') {
-    return `\u2615 A propriedade *n\u00e3o oferece caf\u00e9 da manh\u00e3*. Posso te indicar op\u00e7\u00f5es pr\u00f3ximas se quiser. \ud83c\udf34`;
+  // 2) VERDADE POR RESERVA (CRM /admin/breakfast-status -> regra canonica).
+  if (status && status.known === true) {
+    if (status.breakfast === 'not_included') return BREAKFAST_NOT_INCLUDED(lang, b, isTorres);
+    if (status.breakfast === 'included') {
+      if (lang === 'en') return BREAKFAST_RESPONSE_EN;
+      if (lang === 'es') return BREAKFAST_RESPONSE_ES;
+      if (lang === 'fr') return BREAKFAST_RESPONSE_FR;
+      return BREAKFAST_RESPONSE;
+    }
   }
-  const hours = b.hours || '06h30 \u00e0s 10h00';
-  const location = b.location ? `, no ${b.location}` : '';
-  if (b.type === 'included') {
-    return `\u2615 O caf\u00e9 da manh\u00e3 est\u00e1 *incluso na sua reserva*${location}.\n\ud83d\udd52 ${hours}.\nAproveite e bom dia! \ud83c\udf34`;
-  }
-  if (b.type === 'paid') {
-    return `\u2615 A propriedade oferece caf\u00e9 da manh\u00e3 *com cobran\u00e7a extra*${location}.\n\ud83d\udd52 ${hours}.${b.cost ? '\n\ud83d\udcb0 Valor: ' + b.cost : ''}\nQualquer d\u00favida, me avisa. \ud83c\udf34`;
-  }
-  return `\u2615 Caf\u00e9 da manh\u00e3 dispon\u00edvel${location}.\n\ud83d\udd52 ${hours}.${b.note ? '\n' + b.note : ''} \ud83c\udf34`;
+  // 3) NAO SEI -> NAO AFIRMA. Encaminha pro humano.
+  return BREAKFAST_UNKNOWN(lang, isTorres);
 }
 
 function buildParkingResponse(tenant, lang) {
@@ -689,6 +740,8 @@ module.exports = {
   BREAKFAST_COMPANION_RESPONSE,
   PARKING_EARLY_RESPONSE,
   buildBreakfastResponse,
+  BREAKFAST_NOT_INCLUDED,
+  BREAKFAST_UNKNOWN,
   buildParkingResponse,
   SECURITY_RESPONSE,
   RECEPTION_EXTENSION_RESPONSE,

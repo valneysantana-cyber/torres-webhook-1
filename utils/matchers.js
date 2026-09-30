@@ -45,7 +45,9 @@ function shouldSendBreakfast(text) {
   // Variações: "cafe da manha", "cafe manha" (sem da), "cafeda manha" (typo Ricardo
   // Airbnb 12/05/2026 "caféda manhã" grudado), "café-da-manhã" (com hífen),
   // "breakfast", "desjejum"
-  return /(cafe?\s*(da|de)?\s*manh[aã]|breakfast|desjejum)/.test(text);
+  // 30/09/2026: 'desayuno'/'petit-dejeuner' nao casavam -> es/fr escapavam do caminho
+  // deterministico de cafe e caiam no LLM (incidente QF04J).
+  return /(cafe?\s*(da|de)?\s*manh[aã]|breakfast|desjejum|desayuno|petit[- ]?d[eé]jeuner)/.test(text);
 }
 
 function shouldSendPool(text) {
@@ -73,7 +75,10 @@ function shouldSendRestaurant(text) {
   // não matchava → caía no AI fallback que devolveu "Agora são 21:50".
   if (/\brestaurante\b/.test(text) && /\b(aberto|abre|fechad|horario|hora|hrs|hr|que horas|ate que|funciona|funcionamento|servico|cardapio|menu|reserv)\b/.test(text)) return true;
   // 3) Refeições standalone (substantivo OU verbo: almoco/almocar, janta/jantar)
-  if (/(almoc[oa]r?|jant(a|ar)|refeic\w+|cafe da manha|brunch)\b/.test(text)) return true;
+  //    'cafe da manha' REMOVIDO em 30/09/2026: tem matcher proprio
+  //    (shouldSendBreakfast, l.48) e a duplicidade gerava 2 matches →
+  //    multi-intent no WhatsApp → pergunta de cafe ia pro LLM.
+  if (/(almoc[oa]r?|jant(a|ar)|refeic\w+|brunch)\b/.test(text)) return true;
   return false;
 }
 

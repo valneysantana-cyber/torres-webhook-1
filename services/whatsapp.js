@@ -346,6 +346,23 @@ async function sendWelcomeKit(phone, data = {}) {
   const valueLine  = data.totalValue ? `, no valor de ${data.totalValue}` : '';
   const { links: affLinks } = require('../utils/affiliateLinks');
 
+  // Cafe da manha: NAO afirmar por texto fixo (incidente QF04J 30/09/2026).
+  // Veredito vem da fonte de verdade (CRM /admin/breakfast-status). Sem veredito
+  // a linha e OMITIDA — o welcome kit nunca promete cafe que a tarifa nao tem.
+  let cafeLine = null;
+  try {
+    const { getBreakfastStatus } = require('./breakfastStatus');
+    const preset = (data.breakfast === 'included' || data.breakfast === 'not_included')
+      ? { known: true, breakfast: data.breakfast }
+      : null;
+    const bf = preset || await getBreakfastStatus({ phone });
+    if (bf && bf.known === true) {
+      cafeLine = bf.breakfast === 'included'
+        ? '✅ Café da manhã incluso: restaurante do hotel, 06h30–10h00.'
+        : '☕ Café da manhã NÃO incluso na sua tarifa: disponível no restaurante do hotel (06h30–10h00) — a Sofia confirma o valor por pessoa.';
+    }
+  } catch (e) { console.error('[welcome-kit] breakfast status err:', e.message); }
+
   const body = [
     `Olá, ${firstName}! 😊`,
     '',
@@ -357,7 +374,7 @@ async function sendWelcomeKit(phone, data = {}) {
     'Somos uma propriedade particular integrada ao Hotel Transamerica Executive Perdizes, mantendo os mesmos padrões de cuidado, conservação e manutenção.',
     '',
     '✅ Estacionamento gratuito (valet): ao chegar, informe "Flat Condomínio".',
-    '✅ Café da manhã incluso: restaurante do hotel, 06h30–10h00.',
+    ...(cafeLine ? [cafeLine] : []),
     '✅ Limpeza: realizada pela Governança do hotel.',
     '✅ Internet e TV a cabo: disponibilizadas pelo hotel e ativadas no check-in.',
     '',
