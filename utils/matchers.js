@@ -128,6 +128,11 @@ function shouldSendRestaurantMenuI18n(text) {
 function shouldSendCheckin(text) {
   if (isNumericSelection(text, '8')) return true;
 
+  // 02/10/2026 — "pré-check-in" NAO e pergunta de horario: tem intent propria
+  // (receber o link). Sem esta guarda, "preciso do precheckin" caia aqui e o
+  // hospede recebia horario de chegada em vez do link. Caso real no teste.
+  if (/\bpr[eé]\s*-?\s*check\s*-?\s*in\b|\bprecheck\s*-?\s*in\b|\bprecheckin\b/i.test(text)) return false;
+
   // Bug fix 18/05/2026 \u2014 caso LV01J (Booking):
   // H\u00f3spede em EN pediu "invoice... when I check out" e o matcher capturava
   // "check out" isolado, roubando a intent do shouldSendInvoice \u2192 respondia
@@ -156,6 +161,17 @@ function shouldSendCheckin(text) {
 // Caso real 13/05/2026: Sofia (Airbnb) perguntou "Ele pode realizar o checkin?"
 // referindo-se ao marido fazer pr\u00e9-checkin antes \u2014 bot respondeu sobre HOR\u00c1RIO
 // em vez de explicar quem pode fazer + processo online.
+// 02/10/2026 — hospede PEDINDO o link do pre-check-in (nao "quem pode fazer",
+// que e o shouldSendPreCheckinWhoCan). Exige verbo de pedido ou a palavra link,
+// pra nao roubar a intent de quem so pergunta como funciona.
+function shouldSendPrecheckinLink(text) {
+  const t = String(text || '');
+  if (!/\bpr[eé]\s*-?\s*check\s*-?\s*in\b|\bprecheck\s*-?\s*in\b|\bprecheckin\b|\bpre\s*cadastro\b/i.test(t)) return false;
+  if (/\bquem\s+(pode|precisa|deve|tem que)\b/i.test(t)) return false;   // e a intent WhoCan
+  return /\b(link|preciso|quero|queria|manda|mande|envia|envie|reenvia|reenvie|como\s+fa[çc]o|onde|receber|fazer|acesso|abrir)\b/i.test(t)
+      || t.trim().split(/\s+/).length <= 3;   // "precheckin" sozinho tambem vale
+}
+
 function shouldSendPreCheckinWhoCan(text) {
   // "Quem pode/quem realiza" \u2014 standalone (n\u00e3o precisa subject expl\u00edcito)
   if (/\bquem\s+(pode\s+)?(fazer|realizar|efetuar|providenciar|preencher|faz|realiza|efetua|preenche)\s+(o\s+)?(pre[\s-]?check|check)/.test(text)) return true;
@@ -765,6 +781,7 @@ function shouldSendNoise(t) {
 }
 
 module.exports = {
+  shouldSendPrecheckinLink,
   isNumericSelection,
   shouldSendNoise,
   shouldSendMenu,

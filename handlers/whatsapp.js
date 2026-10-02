@@ -98,6 +98,7 @@ const {
   shouldSendInternet,
   shouldSendLuggage,
   shouldSendGreeting,
+  shouldSendPrecheckinLink,
   shouldSendThanks,
   shouldSendGratitudeFarewell,
   detectGratitudeFarewell,
@@ -567,6 +568,43 @@ async function handleIncoming(payload) {
         const isTorresContext = !guestTenant || guestTenant.tenantId === 'torres';
         if (!isTorresContext) {
           console.log('[tenant-guest] from=' + from + ' → ' + guestTenant.tenantId + ' (skip torres-flavored matchers)');
+        }
+
+        // ── PEDIDO DE PRÉ-CHECK-IN SEM CÓDIGO ────────────────────────────────
+        // 02/10/2026: "preciso do precheckin" caia no matcher de HORARIO e o
+        // hospede recebia o horario de chegada em vez do link (visto no teste).
+        // Agora: se o telefone ja esta numa reserva, manda o link direto; se nao
+        // (caso de todo hospede Booking a partir de 29/09), pede o codigo.
+        if (isTorresContext && shouldSendPrecheckinLink && shouldSendPrecheckinLink(normalized)
+            && !/\b[A-Z]{2}\d{2}[A-Z]\b/i.test(body || '')) {
+          let _r = null;
+          try {
+            if (Reservation && Reservation.model) {
+              const _d = String(from || '').replace(/\D/g, '');
+              const _v = [_d];
+              if (_d.length === 13 && _d.startsWith('55') && _d[4] === '9') _v.push(_d.slice(0,4) + _d.slice(5));
+              else if (_d.length === 12 && _d.startsWith('55')) _v.push(_d.slice(0,4) + '9' + _d.slice(4));
+              const _hoje = new Date().toISOString().slice(0, 10);
+              _r = await Reservation.model.findOne(
+                { guestPhoneClean: { $in: _v }, checkOutDate: { $gte: _hoje } },
+                { staysId: 1, listingName: 1, guestName: 1 }
+              ).sort({ checkInDate: 1 }).lean();
+            }
+          } catch (e) { console.warn('[precheckin-pedido] lookup falhou:', e.message); }
+
+          if (_r && _r.staysId) {
+            const _flat = String(_r.listingName || '').replace(/^FLAT/i, '');
+            await replyAndSave(from,
+              'Claro! Aqui está o seu pré-check-in' + (_flat ? ' — Flat ' + _flat : '') + ':\n' +
+              'https://conciergecloud.com.br/checkin/' + _r.staysId +
+              '\n\nLeva 2 minutos: é só conferir os dados e enviar uma foto do documento. 🌴');
+            console.log('[precheckin-pedido] ' + from + ' -> link por telefone (' + _r.staysId + ')');
+          } else {
+            await replyAndSave(from,
+              'Posso te mandar agora! 😊\n\nPra eu achar a sua reserva com segurança, me envia o *código de 5 caracteres* dela (no formato QF01J). Ele está na mensagem que te enviamos pela Booking.\n\nSe não encontrar, me diz seu *nome completo* e a *data da chegada* que eu procuro por aqui. 🌴');
+            console.log('[precheckin-pedido] ' + from + ' -> telefone sem reserva, pedi o codigo');
+          }
+          return;
         }
 
         // ── LOCALIZADOR DE RESERVA (AA99A) → PRÉ-CHECK-IN ────────────────────
