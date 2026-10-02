@@ -569,6 +569,52 @@ async function handleIncoming(payload) {
           console.log('[tenant-guest] from=' + from + ' → ' + guestTenant.tenantId + ' (skip torres-flavored matchers)');
         }
 
+        // ── LOCALIZADOR DE RESERVA (AA99A) → PRÉ-CHECK-IN ────────────────────
+        // 02/10/2026. Em 29/09 a Booking parou de mandar o telefone do hóspede E
+        // remove URL das mensagens dela (confirmado: 32 de 79 capadas, e o e-mail
+        // @guest.booking.com é a MESMA mensageria, não um encaminhador). Telefone
+        // passa; link não. Então a saída é: o hóspede nos chama no WhatsApp e manda
+        // o localizador de 5 caracteres que vai no texto enviado pelo SMM.
+        // A rota /crm/checkin/:code/data resolve o localizador e, o que importa,
+        // RECUSA código ambíguo com 409 em vez de chutar — colisão multi-tenant já
+        // causou vazamento em 18/06/2026.
+        const _resCode = /\b([A-Z]{2}\d{2}[A-Z])\b/i.exec(body || '');
+        if (isTorresContext && _resCode) {
+          const _code = _resCode[1].toUpperCase();
+          try {
+            const _base = (process.env.CRM_API_URL || 'https://conciergecloud.com.br').replace(/\/+$/, '');
+            const _r = await fetch(_base + '/crm/checkin/' + encodeURIComponent(_code) + '/data',
+              { signal: AbortSignal.timeout(7000) });
+            if (_r.status === 409) {
+              await replyAndSave(from, 'Encontrei mais de uma reserva com o código ' + _code + '. Pra não te mandar a de outra pessoa, já pedi pra *Sofia* confirmar e te respondo aqui em instantes. 🌴');
+              console.warn('[precheckin-code] ' + _code + ' AMBIGUO');
+              return;
+            }
+            if (_r.ok) {
+              const _d = await _r.json();
+              const _nome = String(_d.guestName || '').trim().split(/\s+/)[0] || '';
+              const _flat = String(_d.listingName || '').replace(/^FLAT/i, '');
+              if (_d.alreadySubmitted) {
+                await replyAndSave(from, 'Oi' + (_nome ? ', ' + _nome : '') + '! Seu pré-check-in já está preenchido — não precisa fazer de novo. 😊\n\nQualquer dúvida até a chegada, é só me chamar por aqui. 🌴');
+                return;
+              }
+              await replyAndSave(from,
+                'Achei sua reserva' + (_nome ? ', ' + _nome : '') + '!' + (_flat ? ' Flat ' + _flat + '.' : '') +
+                '\n\nAqui está o seu pré-check-in — leva 2 minutos:\n' +
+                'https://conciergecloud.com.br/checkin/' + _d.staysId +
+                '\n\nÉ só conferir os dados e enviar uma foto do documento. Qualquer dúvida, me chama por aqui. 🌴');
+              console.log('[precheckin-code] ' + from + ' -> ' + _code + ' OK staysId=' + _d.staysId);
+              return;
+            }
+            await replyAndSave(from, 'Não achei reserva com o código ' + _code + '. Confere se digitou certinho? São 5 caracteres, no formato QF01J. Se preferir, me diz seu nome completo e a data da chegada que eu procuro aqui. 🌴');
+            console.log('[precheckin-code] ' + _code + ' nao encontrado (HTTP ' + _r.status + ')');
+            return;
+          } catch (e) {
+            console.error('[precheckin-code] erro em ' + _code + ': ' + e.message);
+            // cai no fluxo normal — nunca deixa o hóspede sem resposta
+          }
+        }
+
         // ── STALE RESERVATION ESCALATION ──
         // Caso 29/05/2026 — Patrícia HA09J: Stays.net reenviou emails antigos
         // após sync manual, 20 welcome-kits saíram pra reservas passadas. Quando
@@ -672,7 +718,15 @@ async function handleIncoming(payload) {
           } catch (e) { console.warn('[greeting cooldown] err:', e.message); }
         }
         if (isJustGreeting) {
-          const greet = getGreetingResponse ? getGreetingResponse(language, contactName) : GREETING_RESPONSE(contactName);
+          let greet = getGreetingResponse ? getGreetingResponse(language, contactName) : GREETING_RESPONSE(contactName);
+          // 02/10/2026: hóspede da Booking chega aqui como número DESCONHECIDO — a
+          // Booking parou de mandar o telefone (29/09) e remove URL das mensagens
+          // dela, então ele não recebeu o link e nós não sabemos quem é. O
+          // localizador de 5 caracteres vai no texto que mandamos pelo SMM; pedir
+          // já na saudação evita uma ida e volta.
+          if (isTorresContext) {
+            greet += '\n\n🗝️ Se você já tem reserva com a gente e recebeu nossa mensagem pela Booking, me envia o *código de 5 caracteres* que está lá (no formato QF01J) que eu te mando o pré-check-in na hora.';
+          }
           await replyAndSave(from, greet, { alsoSendAudio: camFromAudio });
           continue;
         }
