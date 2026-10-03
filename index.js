@@ -244,7 +244,7 @@ app.post('/internal/smm-classify', async (req, res) => {
   try {
     const { classifyAndRespond } = require('./services/smmClassifier');
     const { text, channel, guestName, tenant, history, lang, allowAi, bookingConfirmed,
-            reservationCode, partnerCode } = req.body || {};
+            reservationCode, partnerCode, reservation, reservationLookup } = req.body || {};
     if (!text || typeof text !== 'string') {
       return res.status(400).json({ error: 'text obrigatorio' });
     }
@@ -280,6 +280,11 @@ app.post('/internal/smm-classify', async (req, res) => {
       // Identificacao da reserva p/ a fonte de verdade do cafe (QF04J 30/09/2026).
       reservationCode: reservationCode ? String(reservationCode).trim() : null,
       partnerCode: partnerCode ? String(partnerCode).replace(/\D/g, '') : null,
+      // Reserva REAL localizada pelo chamador (torres-wa, WhatsApp da Sofia, 03/10/2026) e o
+      // resultado da busca ('found'|'not_found'|'ambiguous'|...). Vai para o prompt como fonte
+      // de verdade: sem reserva a IA e PROIBIDA de confirmar/corrigir reserva, data ou unidade.
+      reservation: (reservation && typeof reservation === 'object') ? reservation : null,
+      reservationLookup: reservationLookup ? String(reservationLookup) : null,
     });
 
     // Se classifier marcou pra dispatch — manda alerta WhatsApp pra Sofia

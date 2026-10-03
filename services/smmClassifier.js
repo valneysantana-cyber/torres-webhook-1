@@ -212,8 +212,30 @@ function getDispatchTable() {
 // classifier não tem visibilidade confiável do status (smm_sync ainda não passa
 // bookingConfirmed), defaultamos para o modo strict (pré-confirmação).
 // Booking/Expedia/Direct: aceitam sempre.
+// Canal que E o proprio WhatsApp da Sofia (adaptador torres-wa/Baileys manda channel:'whatsapp').
+// O hospede JA esta falando no 13 99615-5505: mandar "fale com a Sofia no +55 13..." e absurdo.
+// Filtro deterministico: vale para matcher, classifier, guard de endereco e escorregao da IA.
+const SOFIA_OWN_WA_CHANNELS = new Set(['whatsapp', 'sofia-wa']);
+const SOFIA_NUMBER_RE = /(?:https?:\/\/)?wa\.me\/5513996155505\S*|\+?55\s?\(?13\)?\s?9?9615[-\s]?5505|\(13\)\s?9?9615[-\s]?5505|\b5513996155505\b|\b13\s?9?9615[-\s]?5505\b/gi;
+const SELF_HANDOFF_LINE = 'A Sofia vai assumir aqui nesta conversa. 🌴';
+function stripSofiaOwnNumber(text) {
+  const s = String(text);
+  SOFIA_NUMBER_RE.lastIndex = 0;
+  const tem = SOFIA_NUMBER_RE.test(s);
+  SOFIA_NUMBER_RE.lastIndex = 0;
+  if (!tem) return s;
+  let out = s.replace(SOFIA_NUMBER_RE, '')
+    .replace(/\*\s*\*/g, '').replace(/\(\s*\)/g, '')
+    .replace(/\bWhatsApp(?:\s+(?:dela|da\s+Sofia))?\s*[:：]?\s*(?=\n|$|[).,])/gim, '')
+    .replace(/(?:fale|falar|chame|chamar|entre em contato)\s+com\s+a\s+\*?Sofia\*?[^.\n]*[:：]\s*(?:\u{1F4DE}\s*)?(?=\s*(?:ou|\n|$|\.))/gimu, 'a Sofia vai assumir aqui nesta conversa ')
+    .replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+([.,;!?)])/g, '$1').replace(/\n{3,}/g, '\n\n').trim();
+  if (!/Sofia vai assumir aqui/i.test(out)) out += '\n\n' + SELF_HANDOFF_LINE;
+  return out;
+}
+
 function sanitizeForChannel(text, channel, bookingConfirmed = false) {
   if (!text) return text;
+  if (SOFIA_OWN_WA_CHANNELS.has(channel)) return stripSofiaOwnNumber(text);
   if (channel !== 'airbnb') return text;
   // 1) Remove URLs (https/http e wa.me/...)
   let out = String(text).replace(/https?:\/\/\S+/gi, '').replace(/\bwa\.me\/\S+/gi, '');
@@ -274,6 +296,7 @@ async function classifyAndRespond(args) {
     history = [], lang: callerLang, allowAi = false,
     bookingConfirmed = false, // padrão strict: assume pré-confirmação
     reservationCode = null, partnerCode = null, // identificam a reserva (café/quarto/data)
+    reservation = null, reservationLookup = null, // reserva REAL localizada pelo chamador + resultado da busca (03/10/2026)
   } = args || {};
   if (!text || !String(text).trim()) {
     return { reply: null, source: 'noop:empty', channel };
@@ -563,7 +586,7 @@ async function classifyAndRespond(args) {
   // Só roda se allowAi + tenant (com KB) presente; senão cai nos matchers determinísticos abaixo.
   if (allowAi && tenant && tenant.settings && tenant.settings.knowledgeBase) {
     try {
-      const ai = await getChatGptFallbackReply(text, '', history, null, tenant, { reservationCode, guestName });
+      const ai = await getChatGptFallbackReply(text, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup });
       if (ai && String(ai).trim()) {
         return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai-first', channel };
       }
@@ -589,7 +612,7 @@ async function classifyAndRespond(args) {
   // (4) AI fallback (opcional — só se allowAi=true)
   if (allowAi) {
     try {
-      const ai = await getChatGptFallbackReply(text, '', history, null, tenant, { reservationCode, guestName });
+      const ai = await getChatGptFallbackReply(text, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup });
       if (ai) {
         return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai', channel };
       }
