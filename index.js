@@ -42,6 +42,41 @@ const { connectDB } = require('./services/db');
 const app = express();
 // A8 fix audit 16/05/2026 — captura raw body pra validar X-Hub-Signature-256.
 // Meta assina os bytes EXATOS recebidos; json.stringify(req.body) não bate.
+// ---- Voz para o WhatsApp da Sofia (torres-wa/Baileys) — 03/10/2026 ----------------
+// O adaptador nao tem chave de IA: transcricao (Whisper) e voz (TTS) ficam aqui, com as
+// mesmas funcoes do canal Meta. Registradas ANTES do bodyParser global (limite 100kb) e
+// com parser proprio de 15mb, porque audio em base64 nao cabe no limite padrao.
+app.post('/internal/transcribe', bodyParser.json({ limit: '15mb' }), async (req, res) => {
+  if (!checkSecret(req, res)) return;
+  try {
+    const { audio_b64, mime } = req.body || {};
+    if (!audio_b64) return res.status(400).json({ error: 'audio_b64 obrigatorio' });
+    const { transcribeAudioBuffer } = require('./services/openai');
+    const text = await transcribeAudioBuffer(Buffer.from(String(audio_b64), 'base64'), mime || 'audio/ogg');
+    res.json({ ok: true, text: text || '' });
+  } catch (err) {
+    console.error('[transcribe]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+app.post('/internal/tts', bodyParser.json({ limit: '1mb' }), async (req, res) => {
+  if (!checkSecret(req, res)) return;
+  try {
+    const { text } = req.body || {};
+    if (!text || typeof text !== 'string') return res.status(400).json({ error: 'text obrigatorio' });
+    const { synthesizeSpeechBuffer } = require('./services/openai');
+    const { shortenForAudio } = require('./utils/formatters');
+    let falado = text;
+    try { falado = shortenForAudio(text) || text; } catch (_) { /* usa o texto cru */ }
+    if (falado.length > 600) return res.json({ ok: false, reason: 'too_long', length: falado.length }); // mesma regra do canal Meta
+    const buf = await synthesizeSpeechBuffer(falado);
+    res.json({ ok: true, audio_b64: buf.toString('base64'), mime: 'audio/mpeg', spoken: falado });
+  } catch (err) {
+    console.error('[tts]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.use(bodyParser.json({
   verify: (req, _res, buf) => { req.rawBody = buf; },
 }));
