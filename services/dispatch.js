@@ -47,8 +47,9 @@ function resolveApartmentName(r, listingsMap) {
   return 'Apto desconhecido';
 }
 
-async function dailyCheckinDispatch() {
-  try {
+// Monta o texto do relatório diário (sem enviar). Usado pelo dispatch das 8h e pela rota
+// interna GET /internal/daily-report (grupo do WhatsApp da Sofia, sem janela 24h — 04/10/2026).
+async function buildDailyReportText() {
     const today = getCurrentDateBRT();
     const {
       arrivals: checkinsHojeRaw,
@@ -98,8 +99,6 @@ async function dailyCheckinDispatch() {
     const checkinsAtivos = checkinsHoje.filter((r) => !departureIds.has(String(r._id || r.id)));
     const totalAtivos = checkinsAtivos.length + emEstadia.length + (extraUnits.active || 0);
 
-    const numbers = DISPATCH_NUMBER.split(',').map(n => n.trim()).filter(Boolean);
-
     // Free-text formatado — usado tanto no path híbrido (após template) quanto no legado.
     // Cada hóspede em sua própria linha; só passa pra quem tem janela 24h aberta com o bot.
     const freeTextMessage = [
@@ -118,6 +117,13 @@ async function dailyCheckinDispatch() {
       `📊 *Total de hóspedes ativos hoje: ${totalAtivos}*`,
       `✅ Relatório gerado automaticamente.`,
     ].join('\n');
+    return { today, freeTextMessage, fmtCheckins, fmtEstadia, fmtCheckouts, totalAtivos, checkinsCount, estadiaCount, checkoutsCount };
+}
+
+async function dailyCheckinDispatch() {
+  try {
+    const { today, freeTextMessage, fmtCheckins, fmtEstadia, fmtCheckouts, totalAtivos } = await buildDailyReportText();
+    const numbers = DISPATCH_NUMBER.split(',').map(n => n.trim()).filter(Boolean);
 
     // EMAIL BACKUP — disparado em paralelo (não bloqueia WhatsApp).
     // Cobre o gap da janela 24h Meta: anfitrião sem janela aberta no WhatsApp
@@ -326,6 +332,7 @@ async function sendCancellationReasonToHost({ guestName, staysId, ota, reason, p
 }
 
 module.exports = {
+  buildDailyReportText,
   dailyCheckinDispatch,
   sendEscalationAlert,
   sendFrigobarRestockNotification,

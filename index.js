@@ -59,6 +59,16 @@ app.post('/internal/transcribe', bodyParser.json({ limit: '15mb' }), async (req,
     res.status(500).json({ error: err.message });
   }
 });
+// Texto do relatório diário das 8h, para o cron do VPS postar no grupo pelo WhatsApp da Sofia
+// (Baileys: sem janela 24h, sem template). O dispatch pela Meta continua como está. 04/10/2026.
+app.get('/internal/daily-report', async (req, res) => {
+  if (!checkSecret(req, res)) return;
+  try {
+    const { buildDailyReportText } = require('./services/dispatch');
+    const r = await buildDailyReportText();
+    res.json({ ok: true, date: r.today, text: r.freeTextMessage, checkins: r.checkinsCount, emEstadia: r.estadiaCount, checkouts: r.checkoutsCount, ativos: r.totalAtivos });
+  } catch (err) { console.error('[daily-report]', err.message); res.status(500).json({ error: err.message }); }
+});
 app.post('/internal/tts', bodyParser.json({ limit: '1mb' }), async (req, res) => {
   if (!checkSecret(req, res)) return;
   try {
