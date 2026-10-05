@@ -115,7 +115,7 @@ const HOSTING_COURSE_RESPONSE = `🏠 Tem interesse em ser anfitrião de Airbnb?
 
 Se quiser trocar uma ideia primeiro, posso te conectar com a Sofia no ${HUMAN_NUMBER_SECONDARY}. 🌴`;
 
-const CHECKIN_RESPONSE = `\ud83d\udd50 Check-in & Check-out possuem limites de hor\u00e1rio, sobretudo o check-out, pois o time de governan\u00e7a do hotel pede uma hora para limpeza e higieniza\u00e7\u00e3o.\nCheck-in: a partir das 14h\nCheck-out: at\u00e9 12h\nA recep\u00e7\u00e3o funciona 24h com equipe de seguran\u00e7a para te receber em qualquer hor\u00e1rio. \ud83c\udf34`;
+const CHECKIN_RESPONSE = `\ud83d\udd50 Check-in & Check-out possuem limites de hor\u00e1rio, sobretudo o check-out, pois o time de governan\u00e7a do hotel pede uma hora para limpeza e higieniza\u00e7\u00e3o.\nCheck-in: a partir das 15h \u2014 se o flat ficar pronto antes, a gente avisa\nCheck-out: at\u00e9 12h\nA recep\u00e7\u00e3o funciona 24h com equipe de seguran\u00e7a para te receber em qualquer hor\u00e1rio. \ud83c\udf34`;
 
 // Resposta pra pergunta "Ele/ela pode fazer o checkin?" \u2014 adicionada 13/05/2026
 // ap\u00f3s caso real Sofia (Airbnb) que perguntou se marido pode fazer pr\u00e9-checkin.
@@ -469,9 +469,9 @@ const I18N_RESPONSES = {
   },
   CHECKIN: {
     pt: CHECKIN_RESPONSE,
-    en: `🕐 Check-in & Check-out have time limits, especially check-out, since the hotel housekeeping team needs one hour for cleaning.\nCheck-in: from 2:00 PM\nCheck-out: until 12:00 PM\nThe reception runs 24h with security team to welcome you any time. 🌴`,
-    es: `🕐 Check-in y Check-out tienen límites de horario, sobre todo el check-out, ya que el equipo de limpieza necesita una hora.\nCheck-in: a partir de las 14h\nCheck-out: hasta las 12h\nLa recepción funciona 24h con equipo de seguridad para recibirte a cualquier hora. 🌴`,
-    fr: `🕐 Check-in et Check-out ont des limites d'horaires, surtout le check-out, car l'équipe de ménage de l'hôtel a besoin d'une heure.\nCheck-in: à partir de 14h\nCheck-out: jusqu'à 12h\nLa réception fonctionne 24h avec équipe de sécurité pour vous accueillir à tout moment. 🌴`,
+    en: `🕐 Check-in & Check-out have time limits, especially check-out, since the hotel housekeeping team needs one hour for cleaning.\nCheck-in: from 3:00 PM \u2014 if the flat is ready earlier, we'll let you know\nCheck-out: until 12:00 PM\nThe reception runs 24h with security team to welcome you any time. 🌴`,
+    es: `🕐 Check-in y Check-out tienen límites de horario, sobre todo el check-out, ya que el equipo de limpieza necesita una hora.\nCheck-in: a partir de las 15h \u2014 si el flat est\u00e1 listo antes, te avisamos\nCheck-out: hasta las 12h\nLa recepción funciona 24h con equipo de seguridad para recibirte a cualquier hora. 🌴`,
+    fr: `🕐 Check-in et Check-out ont des limites d'horaires, surtout le check-out, car l'équipe de ménage de l'hôtel a besoin d'une heure.\nCheck-in: à partir de 15h \u2014 si le flat est pr\u00eat plus t\u00f4t, nous vous pr\u00e9venons\nCheck-out: jusqu'à 12h\nLa réception fonctionne 24h avec équipe de sécurité pour vous accueillir à tout moment. 🌴`,
   },
   DOCUMENTS: {
     pt: DOCUMENTS_RESPONSE,

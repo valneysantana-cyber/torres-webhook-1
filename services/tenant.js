@@ -22,7 +22,7 @@ const TORRES_DEFAULT = {
     systemPrompt: null, // null => usa SYSTEM_PROMPT hardcoded em openai.js
     welcomeMessage: null,
     humanEscalationNumber: '5513996155505',
-    checkInTime: '14:00',
+    checkInTime: '15:00', // 05/10/2026: padrao TorresGuest = 15h (se ficar pronto antes, avisamos)
     checkOutTime: '12:00',
     brandName: 'TorresGuest',
   },
