@@ -97,6 +97,22 @@ for (const ep of ['/listing', '/listing?limit=100', '/listing/listingSearch']) {
   }
   console.log(`[stays] listings cache: ${map.size} entries`);
   if(map.size===0&&process.env.LISTING_NAMES_JSON){try{const n=JSON.parse(process.env.LISTING_NAMES_JSON);for(const[id,name]of Object.entries(n))map.set(String(id),String(name));console.log('[stays] listings from env: '+map.size+' entries');}catch(e){console.error('[stays] LISTING_NAMES_JSON error:',e.message);}}
+  // 13/10/2026 — o Flat 405 entrou no Stays e nao estava no env LISTING_NAMES_JSON → "Apto desconhecido"
+  // no relatorio das 8h. Completa o mapa com o do tenant no CRM (credentials.listingNamesJson), a mesma
+  // fonte que o stays_sync usa para batizar as reservas. Flat novo passa a precisar so do CRM, nao do Render.
+  // O env continua mandando nos ids que ja tinha; o CRM so preenche os que faltam. "FLAT405" → "405".
+  try {
+    const { fetchTenantById } = require('./tenant');
+    const t = await fetchTenantById(process.env.DAILY_REPORT_TENANT_ID || 'torres');
+    let m = t && t.credentials && t.credentials.listingNamesJson;
+    if (typeof m === 'string') m = JSON.parse(m);
+    let add = 0;
+    for (const [id, name] of Object.entries(m || {})) {
+      const k = String(id), v = String(name || '').replace(/^FLAT\s*/i, '').trim();
+      if (k && v && !map.has(k)) { map.set(k, v); add++; }
+    }
+    if (add) console.log(`[stays] listings do CRM (tenant): +${add} → ${map.size} entries`);
+  } catch (e) { console.error('[stays] listingNamesJson do CRM falhou:', e.message); }
   return map;
 }
 
