@@ -26,7 +26,9 @@ async function getBreakfastStatus(opts = {}) {
   else if (phone) qs.set('phone', String(phone));
   else if (guestName) qs.set('guestName', String(guestName));
   else return unknown('no-identifier');
-  if (tenantId) qs.set('tenantId', String(tenantId));
+  // 24/10/2026 — o codigo da Stays se repete entre CONTAS (QF04J = torres e glauco-vaz): sem tenant a consulta cai em
+  // 'ambiguous' e escala. Este bot e o da Torres (mesma convencao de isTorres/bfIsTorres): sem tenant explicito, assume 'torres'.
+  qs.set('tenantId', String(tenantId || process.env.DEFAULT_TENANT_ID || 'torres'));
 
   const key = qs.toString();
   const hit = cache.get(key);
