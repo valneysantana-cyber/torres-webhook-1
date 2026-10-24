@@ -113,6 +113,7 @@ const {
 } = require('../utils/matchers');
 const { fetchReservationByCode } = require('../services/stays');
 const { getChatGptFallbackReply, transcribeAudioBuffer } = require('../services/openai');
+const jevShadow = require('../services/jevShadow'); // Jev (TypeSafe) em MODO SOMBRA — só observa, TYPESAFE_MODE=shadow
 const { getTenantByPhoneId, resolveTenantByGuestPhone } = require('../services/tenant');
 const { downloadWhatsAppMedia, replyToGuest, markReadAndTyping, sendWelcomeKit, sendWhatsAppText } = require('../services/whatsapp');
 const windowGuard = require('../services/windowGuard');
@@ -688,6 +689,22 @@ async function handleIncoming(payload) {
             // fall-through pro fluxo normal
           }
         }
+
+        // ---- Jev (TypeSafe) — MODO SOMBRA (24/10/2026) ---------------------
+        // Só OBSERVA: classifica em paralelo e grava junto com o que o regex atual decide.
+        // Fire-and-forget, nunca altera resposta/escalonamento. Off por padrão (TYPESAFE_MODE).
+        try {
+          if (jevShadow.enabled()) {
+            jevShadow.observe({
+              channel: 'whatsapp', tenantId: guestTenant ? guestTenant.tenantId : 'torres', text: body,
+              regex: {
+                escalation: isTorresContext ? ((classifyMessage(body) || {}).name || null) : null,
+                cancel: !!shouldHandleCancellationRequest(normalized),
+                human: !!shouldSendHuman(normalized),
+              },
+            });
+          }
+        } catch (_) { /* nunca quebra o atendimento */ }
 
         // ---- escalation classifier (prioridade máxima p/ fluxo normal) --
         // Categorias do classifier (Reserva, Recepção, etc.) usam guestReply

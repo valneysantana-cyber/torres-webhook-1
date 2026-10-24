@@ -12,7 +12,8 @@
 const { normalizeText } = require('../utils/formatters');
 const { classifyMessage } = require('./classifier');
 const { getChatGptFallbackReply } = require('./openai');
-const { detectLanguage } = require('../utils/matchers');
+const { detectLanguage, shouldHandleCancellationRequest } = require('../utils/matchers'); // shouldSendHuman já é importado mais abaixo
+const jevShadow = require('./jevShadow'); // Jev (TypeSafe) em MODO SOMBRA — só observa, TYPESAFE_MODE=shadow
 const { getResponseForTenant } = require('../responses/strings');
 
 // Todos os matchers torres-flavored (mesmos usados no PT_DISPATCH do WA).
@@ -319,6 +320,20 @@ async function classifyAndRespond(args) {
 
   const normalized = normalizeText(text);
   const isAirbnbPrebooking = channel === 'airbnb' && !bookingConfirmed;
+
+  // Jev (TypeSafe) — MODO SOMBRA (24/10/2026): só observa e grava ao lado do regex atual; nunca altera o fluxo.
+  try {
+    if (jevShadow.enabled()) {
+      jevShadow.observe({
+        channel, tenantId: (tenant && tenant.tenantId) || 'torres', text,
+        regex: {
+          escalation: (classifyMessage(text) || {}).name || null,
+          cancel: !!shouldHandleCancellationRequest(normalized),
+          human: !!shouldSendHuman(normalized),
+        },
+      });
+    }
+  } catch (_) { /* nunca quebra o atendimento */ }
 
   // (0.4) AIRBNB pré-confirmação: PIX/pagamento/CNPJ é HARD-BLOCK pela plataforma.
   // Airbnb não libera dados de contato externo (PIX, CNPJ, site, telefone)
