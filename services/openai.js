@@ -319,6 +319,26 @@ function guardArrivalHallucination(text, tenant) {
   return text;
 }
 
+// FIX 26/10/2026 (Vladimir): a IA não recebia os preços do frigobar e chutou
+// "água R$ 5, refrigerante R$ 7" (oficial: 7,50 / 8,90 / 5,50). Agora o cardápio
+// oficial do tenant (mesma fonte da resposta FRIGOBAR_PIX) entra no prompt como
+// FONTE DE VERDADE. Tenant sem frigobar (settings.frigobar.enabled === false) fica de fora.
+function frigobarPriceBlock(tenant) {
+  const isTorres = !tenant || !tenant.tenantId || tenant.tenantId === 'torres';
+  const enabled = tenant && tenant.settings && tenant.settings.frigobar && tenant.settings.frigobar.enabled;
+  if (!isTorres && !enabled) return '';
+  let cardapio = '';
+  try {
+    const { getResponseForTenant, FRIGOBAR_PIX_RESPONSE } = require('../responses/strings');
+    cardapio = getResponseForTenant('FRIGOBAR_PIX', 'pt', tenant) || FRIGOBAR_PIX_RESPONSE || '';
+  } catch (_) { return ''; }
+  if (!cardapio) return '';
+  return '\n\nFRIGOBAR E SNACKS — PREÇOS OFICIAIS (FONTE DE VERDADE):\n' + cardapio +
+    '\n\n⚠️ REGRA CRÍTICA — PREÇOS: ao falar de qualquer item do frigobar/snacks use EXATAMENTE os valores acima. ' +
+    'NUNCA estime, arredonde ou use "geralmente". NUNCA diga que vai confirmar o preço com a equipe: o preço é este. ' +
+    'Se o item não estiver na lista, diga que vai verificar com a equipe, sem citar valor.';
+}
+
 async function getChatGptFallbackReply(userMessage, phone, context = [], profile = null, tenant = null, opts = {}) {
   if (!OPENAI_API_KEY && !(LLM_PROVIDER === 'anthropic' && ANTHROPIC_API_KEY)) { console.error('[LLM] sem chave (OPENAI/ANTHROPIC) — IA indisponível'); return null; }
 
@@ -336,6 +356,7 @@ async function getChatGptFallbackReply(userMessage, phone, context = [], profile
   } else {
     basePrompt = SYSTEM_PROMPT;
   }
+  basePrompt += frigobarPriceBlock(tenant);
   // Append landmarks REAIS do tenant.settings (vale para QUALQUER tenant incluindo torres
   // hardcoded). Sem isso, LLM hallucina distancias quando hospede pergunta.
   if (tenant && tenant.settings && tenant.settings.landmarks && typeof tenant.settings.landmarks === 'object') {
@@ -540,4 +561,4 @@ async function synthesizeSpeechBuffer(text) {
   return Buffer.from(await response.arrayBuffer());
 }
 
-module.exports = { getChatGptFallbackReply, transcribeAudioBuffer, synthesizeSpeechBuffer, guardArrivalHallucination, maskPII };
+module.exports = { getChatGptFallbackReply, transcribeAudioBuffer, synthesizeSpeechBuffer, guardArrivalHallucination, maskPII, frigobarPriceBlock };
