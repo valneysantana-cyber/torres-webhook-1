@@ -301,7 +301,24 @@ function shouldRedirectToReservationSite(text) {
 }
 
 function shouldSendSecurity(text) {
+  // FIX 26/10/2026 (Helio, 405): "Peço por aqui ou direto na recepção?" é pergunta
+  // de ONDE PEDIR algo, não de segurança — segue para a IA, que tem o contexto.
+  if (/\b(peco|pedir|pedido|pedimos|peca|encomend\w*|compro|comprar)\b/.test(text)) return false;
   return /(seguranca|recepcao|portaria|24h|24 horas)/.test(text);
+}
+
+// ─── Pedido especial (vinho, espumante, flores, bolo, decoração...) ────────────
+// FIX 26/10/2026 (Helio, 405): "Gostaria de um vinhozinho para a chegada ... deixar
+// o carro" casava SÓ shouldSendParking (por "carro") e o pedido de vinho era
+// ignorado. Item fora do frigobar e do cardápio do restaurante → o bot NÃO afirma
+// disponibilidade: avisa a equipe e diz ao hóspede que passou o pedido.
+const SPECIAL_ITEMS_REGEX = /\b(vinh(o|os|ozinho|inho|ozinhos)|espumante|champanhe|champagne|prosecco|wine|flores|buque|bouquet|bolo|decoracao|cesta de presente|surpresa)\b/;
+function shouldSendSpecialRequest(text) {
+  const t = stripAccents(String(text || '').toLowerCase());
+  if (!SPECIAL_ITEMS_REGEX.test(t)) return false;
+  // relato de consumo ("bebi um vinho") segue o fluxo de pagamento do frigobar
+  if (/\b(tomei|tomamos|bebi|bebemos|consumi|consumimos|peguei|pegamos|abri|abrimos)\b/.test(t)) return false;
+  return true;
 }
 
 /**
@@ -661,6 +678,8 @@ function detectLanguage(text) {
   // ── PT (verbos/artigos/saudações exclusivos) ──
   if (/\b(é|está|tem|vou|preciso|quero|posso|tenho|sou|qual|como|onde|por favor|obrigad[oa]|olá|bom dia|boa tarde|boa noite|você|aqui|aí|também|não|sim|muito|pra|pro)\b/.test(t)) scores.pt += 3;
   if (/[ãõçáéíóúâêô]/.test(t)) scores.pt += 1;
+  // FIX 26/10/2026: PT digitado sem acento ("Nao ha vinhos no cardapio") caía em EN.
+  if (/\b(nao|voce|voces|vc|vcs|tambem|cardapio|entao|obrigad[oa]|ola|aqui|pra|pro|tem|quero|gostaria)\b/.test(t)) scores.pt += 2;
   if (/(ção|ções|nh[aoeiu])/.test(t)) scores.pt += 1;
 
   // ── EN (function words exclusivas) ──
@@ -794,6 +813,7 @@ module.exports = {
   shouldSendRestaurant,
   shouldSendFoodOrder,
   shouldSendRestaurantMenuI18n,
+  shouldSendSpecialRequest,
   shouldSendCheckin,
   shouldSendPreCheckinWhoCan,
   shouldSendHostingCourse,
