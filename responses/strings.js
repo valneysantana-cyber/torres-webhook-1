@@ -100,6 +100,17 @@ const FOOD_ORDER_RESPONSE_I18N = {
   fr: `\ud83c\udf7d\ufe0f Pour commander au restaurant Don Maitre (dans le b\u00e2timent m\u00eame):\n\n\ud83d\udcf2 Carte compl\u00e8te: ${affLinks.donMaitre('food_order')}\n\ud83c\udf9f\ufe0f Coupon 10% de r\u00e9duction: *CONCIERGECLOUD10*\n\nValable en salle, room service et \u00e0 emporter. Dites-moi si vous avez besoin d'aide pour la commande! \ud83c\udf34`,
   es: `\ud83c\udf7d\ufe0f Para pedir en el restaurante Don Maitre (dentro del propio edificio):\n\n\ud83d\udcf2 Carta completa: ${affLinks.donMaitre('food_order')}\n\ud83c\udf9f\ufe0f Cup\u00f3n 10% de descuento: *CONCIERGECLOUD10*\n\nV\u00e1lido para sal\u00f3n, room service y para llevar. Av\u00edsame si necesitas ayuda con el pedido! \ud83c\udf34`,
 };
+// Pedido especial (vinho, flores, bolo...) — 26/10/2026. O bot NÃO afirma
+// disponibilidade: só confirma que a equipe foi avisada (e o aviso É enviado).
+const SPECIAL_REQUEST_RESPONSE_I18N = {
+  pt: 'Anotado! 🙌 Já passei o seu pedido para a nossa equipe, que vai ver as opções e te responde por aqui em seguida. 🌴',
+  en: 'Noted! 🙌 I have passed your request on to our team — they will check the options and get back to you here shortly. 🌴',
+  es: '¡Anotado! 🙌 Ya pasé tu pedido a nuestro equipo, que verá las opciones y te responderá por aquí en breve. 🌴',
+  fr: 'C\'est noté ! 🙌 J\'ai transmis votre demande à notre équipe, qui va vérifier les options et vous répondre ici très vite. 🌴',
+};
+function getSpecialRequestResponse(language) {
+  return SPECIAL_REQUEST_RESPONSE_I18N[language] || SPECIAL_REQUEST_RESPONSE_I18N.pt;
+}
 function getFoodOrderResponse(language) {
   return FOOD_ORDER_RESPONSE_I18N[language] || FOOD_ORDER_RESPONSE_I18N.pt;
 }
@@ -725,6 +736,7 @@ module.exports = {
   FOOD_ORDER_RESPONSE,
   FOOD_ORDER_RESPONSE_I18N,
   getFoodOrderResponse,
+  getSpecialRequestResponse,
   HOSTING_COURSE_RESPONSE,
   CHECKIN_RESPONSE,
   PRE_CHECKIN_WHO_CAN_RESPONSE,

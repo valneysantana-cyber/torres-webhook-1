@@ -14,6 +14,7 @@ const {
   RESTAURANT_RESPONSE,
   FOOD_ORDER_RESPONSE,
   getFoodOrderResponse,
+  getSpecialRequestResponse,
   HOSTING_COURSE_RESPONSE,
   CHECKIN_RESPONSE,
   DOCUMENTS_RESPONSE,
@@ -69,6 +70,7 @@ const {
   shouldSendRestaurant,
   shouldSendFoodOrder,
   shouldSendRestaurantMenuI18n,
+  shouldSendSpecialRequest,
   shouldSendCheckin,
   shouldEscalateLateCheckout,
   shouldEscalateThirdPartyReservation,
@@ -876,6 +878,16 @@ async function handleIncoming(payload) {
         // restaurant" / "menu del restaurante" e envia link Don Maitre +
         // cupom CONCIERGECLOUD10 em qualquer idioma. Adicionado 04/05 —
         // antes caia em FRIGOBAR_PIX (cardápio do frigobar, errado).
+        // ---- pedido especial (vinho, flores, bolo...) -> avisa a equipe -----
+        // FIX 26/10/2026 (Helio, 405): vem ANTES do cardápio e do PT_DISPATCH —
+        // "vinho ... deixar o carro" respondia estacionamento e "não há vinhos no
+        // cardápio" respondia o cardápio. Nunca afirma disponibilidade.
+        if (shouldSendSpecialRequest(normalized)) {
+          await replyAndSave(from, getSpecialRequestResponse(language), { alsoSendAudio: camFromAudio });
+          sendRoomRequestNotification(from, body, '🍷 PEDIDO ESPECIAL (vinho/flores/bolo) — ver opções e responder o hóspede').catch(() => {});
+          continue;
+        }
+
         if (shouldSendRestaurantMenuI18n(normalized)) {
           await replyAndSave(from, getFoodOrderResponse(language), { alsoSendAudio: camFromAudio });
           continue;
