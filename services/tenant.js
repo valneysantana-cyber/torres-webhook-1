@@ -23,7 +23,7 @@ const TORRES_DEFAULT = {
     welcomeMessage: null,
     humanEscalationNumber: '5513996155505',
     checkInTime: '15:00', // 05/10/2026: padrao TorresGuest = 15h (se ficar pronto antes, avisamos)
-    checkOutTime: '12:00',
+    checkOutTime: '11:00', // 09/11/2026: Valney confirmou checkout 11h (flexivel conforme governanca do hotel)
     brandName: 'TorresGuest',
   },
   active: true,
