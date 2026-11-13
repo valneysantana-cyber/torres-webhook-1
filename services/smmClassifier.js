@@ -318,6 +318,32 @@ async function classifyAndRespond(args) {
     }
   } catch (_) { /* manter callerLang/pt */ }
 
+  // 13/11/2026 (Valney): o pedido de HORARIO do Booking/Airbnb chega como formulario padrao em INGLES
+  // ("I'd like to request check-in at 03:00 - 04:00. Is this ok?") mesmo para hospede brasileiro, e o
+  // bot respondia em ingles. Para esse formulario o idioma vem da ultima mensagem ESCRITA pelo hospede
+  // (historico); sem historico = portugues. Em PT, a IA recebe o pedido ja traduzido.
+  const OTA_HORARIO_TPL = /^\s*i'?d like to request (?:a |an )?(check-?in|check-?out)(?: time)? (?:at|between|from)\s*([0-9]{1,2}(?::[0-9]{2})?)\s*(?:-|to|and)?\s*([0-9]{1,2}(?::[0-9]{2})?)?/i;
+  let aiText = text;
+  const tplHorario = String(text).match(OTA_HORARIO_TPL);
+  if (tplHorario) {
+    let langHist = null;
+    for (let i = (history || []).length - 1; i >= 0; i--) {
+      const h = history[i];
+      if (h && h.role === 'user' && h.content && !OTA_HORARIO_TPL.test(h.content)) {
+        try { langHist = detectLanguage(h.content); } catch (_) { /* ignora */ }
+        break;
+      }
+    }
+    lang = langHist || (callerLang && callerLang !== 'pt' ? callerLang : 'pt');
+    if (lang === 'pt') {
+      const tipo = /out/i.test(tplHorario[1]) ? 'check-out' : 'check-in';
+      const faixa = tplHorario[3] ? tplHorario[2] + ' - ' + tplHorario[3] : tplHorario[2];
+      aiText = 'Gostaria de solicitar que meu ' + tipo + ' seja às ' + faixa + '. Pode ser? '
+        + '[Pedido automático da plataforma. Responda em português do Brasil. O horário pedido é no dia do ' + tipo
+        + ' da reserva; siga as regras de horário da base de conhecimento e nunca prometa horário fora do padrão.]';
+    }
+  }
+
   const normalized = normalizeText(text);
   const isAirbnbPrebooking = channel === 'airbnb' && !bookingConfirmed;
 
@@ -601,7 +627,7 @@ async function classifyAndRespond(args) {
   // Só roda se allowAi + tenant (com KB) presente; senão cai nos matchers determinísticos abaixo.
   if (allowAi && tenant && tenant.settings && tenant.settings.knowledgeBase) {
     try {
-      const ai = await getChatGptFallbackReply(text, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup });
+      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup });
       if (ai && String(ai).trim()) {
         return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai-first', channel };
       }
@@ -627,7 +653,7 @@ async function classifyAndRespond(args) {
   // (4) AI fallback (opcional — só se allowAi=true)
   if (allowAi) {
     try {
-      const ai = await getChatGptFallbackReply(text, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup });
+      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup });
       if (ai) {
         return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai', channel };
       }
