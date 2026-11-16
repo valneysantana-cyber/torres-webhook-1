@@ -560,7 +560,15 @@ async function classifyAndRespond(args) {
   // é chamado direto em handlers/whatsapp.js:502. Aqui replicamos o mesmo formato,
   // pulando categorias com noAlert: true (Contato Recepção / Reserva = só INFO).
   try {
-    const escalation = classifyMessage(text);
+    let escalation = classifyMessage(text);
+    // FIX 16/11/2026 (auditoria): no chat da plataforma o hóspede JÁ tem reserva (ou está consultando por lá).
+    // A categoria 'Reserva' (texto de venda "Para fazer sua reserva, fale com a Sofia + telefone + site") respondia
+    // cancelamento por doença (05/11), pergunta de check-out (05/11) e pedido de reembolso (09/10) só porque a
+    // mensagem tinha "disponibilidade"/"reserva". Em OTA esses casos vão para a IA (que agora avisa a equipe).
+    if (escalation && escalation.name === 'Reserva' && channel && channel !== 'unknown' && channel !== 'direct' && channel !== 'whatsapp') escalation = null;
+    // Pedido de INFORMAÇÃO sobre Wi-Fi ("preciso de dados sobre Wi-Fi", "como conecto") não é chamado de manutenção.
+    if (escalation && escalation.name === 'Manutenção' && /wi-?fi|internet|senha/i.test(text)
+      && !/(n[aã]o (funciona|conecta|est[aá]|liga|pega)|parou|caiu|quebr|sem sinal|sem internet|lent[oa]|inst[aá]vel)/i.test(text)) escalation = null;
     if (escalation && escalation.guestReply) {
       const ret = {
         reply: sanitizeForChannel(escalation.guestReply, channel, bookingConfirmed),
