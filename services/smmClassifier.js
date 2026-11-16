@@ -12,7 +12,7 @@
 const { normalizeText } = require('../utils/formatters');
 const { classifyMessage } = require('./classifier');
 const { getChatGptFallbackReply } = require('./openai');
-const { detectLanguage, shouldHandleCancellationRequest } = require('../utils/matchers'); // shouldSendHuman já é importado mais abaixo
+const { detectLanguage, isConfidentPortuguese, shouldHandleCancellationRequest } = require('../utils/matchers'); // shouldSendHuman já é importado mais abaixo
 const jevShadow = require('./jevShadow'); // Jev (TypeSafe) em MODO SOMBRA — só observa, TYPESAFE_MODE=shadow
 const { getResponseForTenant } = require('../responses/strings');
 
@@ -291,6 +291,25 @@ function isAirbnbContactRequest(text) {
   return /\b(qual\s+(e|o|a)\s+(o\s+)?(numero|telefone|contato|whats|wa|zap)|qual\s+o\s+whats|como\s+(eu\s+)?(falo|chamo|converso|contato)|telefone|n[uú]mero\s+(da|do|de)|whats\s*a?p?p?|\bwpp\b|fale\s+com\s+(a\s+)?(sofia|valney|atendimento|recep[cç][aã]o)|conversar\s+(com|por))\b/.test(t);
 }
 
+// FIX 16/11/2026 (auditoria): 12% das respostas da IA diziam "vou encaminhar pra Sofia / já estou acionando a equipe"
+// e NENHUM aviso saía (só os matchers tinham dispatchAlert). Agora, se a resposta da IA promete repasse, verificação
+// ou retorno, a equipe é avisada de verdade; `handoff:true` volta ao chamador (smm_sync avisa também pelo Telegram).
+const HANDOFF_RE = /acionando|acionei|vou acionar|encaminh(ei|ar|ando|o)\b|repass(ei|ar|ando)|passei (pra|para)|j[aá] (pedi|solicitei|avisei)|a (sofia|equipe|nossa equipe)[^.!?\n]{0,60}(respond|retorn|confirm|entra em contato|assume|cuida|organiza|emite)|vou (verificar|confirmar|checar|monitorar|consultar)|te (aviso|retorno|confirmo)|forward(ed|ing)? (your|this|it)|i'?ll (forward|pass|check|get back|confirm|let)|checking with|let (sofia|the team|our team) know|connect you with|our team will|sofia will/i;
+function withHandoff(ret, ctx) {
+  try {
+    if (ret && ret.reply && HANDOFF_RE.test(String(ret.reply))) {
+      ret.handoff = true;
+      ret.dispatchAlert = true;
+      ret.dispatchBody = '🙋 *Hóspede aguardando a equipe (resposta da IA prometeu retorno)*\n📡 ' + (ret.channel || '?')
+        + '\n👤 ' + ((ctx && ctx.guestName) || 'sem nome') + ((ctx && ctx.reservationCode) ? ' · ' + ctx.reservationCode : '')
+        + '\n💬 "' + String((ctx && ctx.text) || '').slice(0, 300) + '"'
+        + '\n🤖 "' + String(ret.reply).slice(0, 300) + '"'
+        + '\n\nResponder em https://conciergecloud.com.br/admin/mensagens.html';
+    }
+  } catch (_) { /* nunca quebra o atendimento */ }
+  return ret;
+}
+
 async function classifyAndRespond(args) {
   const {
     text, channel = 'unknown', guestName = '', tenant = null,
@@ -343,6 +362,18 @@ async function classifyAndRespond(args) {
         + ' da reserva; siga as regras de horário da base de conhecimento e nunca prometa horário fora do padrão.]';
     }
   }
+
+  // FIX 16/11/2026 (caso Vania QZ05J): o smm_sync junta a rajada de mensagens com ' · '. Se uma parte é só
+  // "menu"/saudação/agradecimento e as outras trazem o pedido de verdade, a parte trivial NÃO pode sequestrar a
+  // resposta (ela recebeu o menu — e em inglês — em vez do valor do frigobar). O pedido real segue para a IA.
+  const _parts = String(text).split(' · ').map((x) => x.trim()).filter(Boolean);
+  const _trivial = (pt) => {
+    const nn = normalizeText(pt); const ww = nn.trim().split(/\s+/).filter(Boolean).length;
+    try { return (ww <= 2 && shouldSendMenu(nn)) || (ww <= 5 && !pt.includes('?') && shouldSendGreeting(nn)) || shouldSendThanks(nn); } catch (_) { return false; }
+  };
+  const _subst = _parts.filter((pt) => !_trivial(pt));
+  const burstHasSubstance = _parts.length > 1 && _subst.length > 0 && _subst.length < _parts.length;
+  if (burstHasSubstance && aiText === text) aiText = _subst.join(' · ');
 
   const normalized = normalizeText(text);
   const isAirbnbPrebooking = channel === 'airbnb' && !bookingConfirmed;
@@ -561,17 +592,18 @@ async function classifyAndRespond(args) {
   // (2) Greeting / Thanks / Menu — só se faz sentido (msg curta)
   // i18n: usa helpers/getResponseForTenant pra responder no idioma do hóspede.
   const words = normalized.trim().split(/\s+/);
-  if (shouldSendGreeting(normalized) && !text.includes('?') && words.length <= 5) {
+  if (!burstHasSubstance && shouldSendGreeting(normalized) && !text.includes('?') && words.length <= 5) {
     const greet = getGreetingResponse
       ? getGreetingResponse(lang, guestName)
       : (typeof GREETING_RESPONSE === 'function' ? GREETING_RESPONSE(guestName) : GREETING_RESPONSE);
     return { reply: sanitizeForChannel(greet, channel, bookingConfirmed), source: 'greeting', channel };
   }
-  if (shouldSendThanks(normalized)) {
+  if (!burstHasSubstance && shouldSendThanks(normalized)) {
     const thanks = getResponseForTenant('THANKS', lang, tenant) || THANKS_RESPONSE;
     return { reply: sanitizeForChannel(thanks, channel, bookingConfirmed), source: 'thanks', channel };
   }
-  if (shouldSendMenu(normalized)) {
+  // menu só para mensagem curta, isolada e sem pergunta ("menu", "ajuda", "ver opções"): "Vocês têm outras opções de flat?" recebia o menu (04/11)
+  if (!burstHasSubstance && words.length <= 6 && !text.includes('?') && shouldSendMenu(normalized)) {
     const menu = getResponseForTenant('MENU', lang, tenant) || MENU_RESPONSE;
     return { reply: sanitizeForChannel(menu, channel, bookingConfirmed), source: 'menu', channel };
   }
@@ -627,9 +659,9 @@ async function classifyAndRespond(args) {
   // Só roda se allowAi + tenant (com KB) presente; senão cai nos matchers determinísticos abaixo.
   if (allowAi && tenant && tenant.settings && tenant.settings.knowledgeBase) {
     try {
-      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup });
+      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup, replyLang: (tplHorario || isConfidentPortuguese(aiText)) ? lang : null });
       if (ai && String(ai).trim()) {
-        return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai-first', channel };
+        return withHandoff({ reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai-first', channel }, { text, guestName, reservationCode });
       }
     } catch (e) { console.error('[smmClassifier] AI-first err:', e.message); }
   }
@@ -653,9 +685,9 @@ async function classifyAndRespond(args) {
   // (4) AI fallback (opcional — só se allowAi=true)
   if (allowAi) {
     try {
-      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup });
+      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup, replyLang: (tplHorario || isConfidentPortuguese(aiText)) ? lang : null });
       if (ai) {
-        return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai', channel };
+        return withHandoff({ reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai', channel }, { text, guestName, reservationCode });
       }
     } catch (e) {
       console.error('[smmClassifier] AI fallback err:', e.message);

@@ -676,14 +676,22 @@ function detectLanguage(text) {
   const scores = { pt: 0, en: 0, es: 0, fr: 0 };
 
   // ── PT (verbos/artigos/saudações exclusivos) ──
-  if (/\b(é|está|tem|vou|preciso|quero|posso|tenho|sou|qual|como|onde|por favor|obrigad[oa]|olá|bom dia|boa tarde|boa noite|você|aqui|aí|também|não|sim|muito|pra|pro)\b/.test(t)) scores.pt += 3;
+  if (/(?<![a-zà-ÿ])(é|está|tem|vou|preciso|quero|posso|tenho|sou|qual|como|onde|por favor|obrigad[oa]|olá|bom dia|boa tarde|boa noite|você|aqui|aí|também|não|sim|muito|pra|pro)(?![a-zà-ÿ])/.test(t)) scores.pt += 3;
   if (/[ãõçáéíóúâêô]/.test(t)) scores.pt += 1;
   // FIX 26/10/2026: PT digitado sem acento ("Nao ha vinhos no cardapio") caía em EN.
   if (/\b(nao|voce|voces|vc|vcs|tambem|cardapio|entao|obrigad[oa]|ola|aqui|pra|pro|tem|quero|gostaria)\b/.test(t)) scores.pt += 2;
   if (/(ção|ções|nh[aoeiu])/.test(t)) scores.pt += 1;
+  // FIX 16/11/2026: palavras funcionais do português contadas (não só 1 ponto fixo). Frase como
+  // "Estou precisando do valor de dois itens que consumimos na hospedagem" não tinha nenhuma palavra da lista acima.
+  const ptFunc = (t.match(/\b(com|uma|um|dos|das|do|da|na|nas|pelo|pela|estou|estamos|precisando|precisamos|gostaria|gostariamos|tenho|temos|vou|vamos|voces?|nao|obrigad[oa]|oi|hoje|amanha|quarto|hospedagem|sair|ficar|posso|podemos|meu|minha|isso|esse|essa|aqui|tambem|ja|ainda|agora|entao|depois|onde|ao|foi|fazer|sao|tem|ate|so|dois|duas|valor|consumi|consumimos|envie|enviar|pagar|pagamento|sem|agradeco|fico|aguardo|avisar|retorno|abri|ola|problemas|esta|estou|obrigado|obrigada|bom dia|boa tarde|boa noite)\b/g) || []).length
+    + (t.match(/\b(você|vocês|não|também|já|então|amanhã|até|são|só|agradeço|olá|está)(?![a-zà-ÿ])/g) || []).length;
+  if (ptFunc >= 2) scores.pt += Math.min(ptFunc, 6);
 
   // ── EN (function words exclusivas) ──
-  if (/\b(the|is|are|have|has|do|does|did|can|could|would|should|will|want|need|please|thank you|thanks|hello|hi|hey|where|when|how|what|which|i'm|i am|i need|i want|can you|could you|how much|excuse me|sorry|good morning|good afternoon|good evening|good night|yes|no)\b/.test(t)) scores.en += 3;
+  if (/\b(the|is|are|have|has|does|did|can|could|would|should|will|want|need|please|thank you|thanks|hello|hi|hey|where|when|how|what|which|i'm|i am|i need|i want|can you|could you|how much|excuse me|sorry|good morning|good afternoon|good evening|good night|yes)\b/.test(t)) scores.en += 3;
+  // FIX 16/11/2026 (caso Vania QZ05J): 'do' e 'no' saíram da lista EN — são preposições comuns do português
+  // ('do valor', 'no hotel') e jogavam mensagem 100% em português para inglês (menu em inglês).
+  if (/\b(do you|do i|do we|don't|no problem|no worries|no thanks)\b/.test(t)) scores.en += 3;
   if (/'[a-z]/i.test(t) && !/[àáâãéêíóôõúç]/.test(t)) scores.en += 1; // contractions sem accents
 
   // ── ES (function words exclusivas) ──
@@ -700,7 +708,7 @@ function detectLanguage(text) {
 
   // ── FR (function words exclusivas) ──
   if (/\b(est|sont|ai|veux|besoin|peux|où|comment|combien|quel|quelle|s'il vous plaît|merci|bonjour|bonsoir|bonne|salut|oui|aussi|maintenant|aujourd'hui|demain)\b/.test(t)) scores.fr += 3;
-  if (/[œçâêîôûëïü]/.test(t) && !/[ãõ]/.test(t)) scores.fr += 2;
+  if (/[œçâêîôûëïü]/.test(t) && !/[ãõ]/.test(t) && ptFunc === 0) scores.fr += 2; // 16/11: 'agradeço'/'você' não são francês
   if (/(qu'|c'|n'|l'|j'|s'|d')/.test(t)) scores.fr += 2; // elisions
   if (/\b(le|la|les|un|une|des|du|de la)\b/.test(t)) scores.fr += 1;
   // Boost por palavras FR DIAGNÓSTICAS (raras/inexistentes em PT) — desempate
@@ -715,6 +723,14 @@ function detectLanguage(text) {
     if (sc > bestScore) { best = lang; bestScore = sc; }
   }
   return bestScore > 0 ? best : 'pt';
+}
+
+// 16/11/2026: só força resposta em português quando há evidência real (não é "pt por falta de sinal").
+function isConfidentPortuguese(text) {
+  const t = String(text || '').toLowerCase();
+  if (!t.trim() || /[\u0400-\u04FF\u0590-\u06FF\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/.test(t)) return false; // cirílico, árabe/hebraico, CJK
+  if (detectLanguage(t) !== 'pt') return false;
+  return /[ãõ]|ção|ções|\b(nao|voce|obrigad[oa]|ola|bom dia|boa tarde|boa noite|quero|preciso|gostaria|tenho|estou|tem|com|uma|do|da|na|no|que|para|pra|como|onde|qual|quarto|reserva|hoje|amanha|por favor|sim|ok obrigad[oa])\b/.test(t);
 }
 
 function extractReservationCode(rawText) {
@@ -852,6 +868,7 @@ module.exports = {
   shouldHandleReservationConfirmation,
   shouldHandleEarlyCompanionArrival,
   detectLanguage,
+  isConfidentPortuguese,
   extractReservationCode,
   shouldSendFrigobarPix,
   shouldRequestFrigobarRestock,
