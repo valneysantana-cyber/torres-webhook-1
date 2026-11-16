@@ -310,10 +310,25 @@ function isCleaningPraise(tn) {
   return /\b(limp\w+)\b/.test(t) && /\b(impecavel|excelente|otim[ao]|perfeit[ao]|parabens|maravilhos[ao]|adorei|adoramos|gostei|gostamos|muito bo[am]|nota 10|elogi\w+)\b/.test(t)
     && !/\b(preciso|precisa|pode|poderia|gostaria|quero|solicit\w+|falt\w+|suj[oa]|nao (foi|fizeram|limparam)|sem limpeza)\b/.test(t);
 }
-const HANDOFF_RE = /acionando|acionei|vou acionar|encaminh(ei|ar|ando|o)\b|repass(ei|ar|ando)|passei (pra|para)|j[aá] (pedi|solicitei|avisei)|a (sofia|equipe|nossa equipe)[^.!?\n]{0,60}(respond|retorn|confirm|entra em contato|assume|cuida|organiza|emite)|vou (verificar|confirmar|checar|monitorar|consultar)|te (aviso|retorno|confirmo)|forward(ed|ing)? (your|this|it)|i'?ll (forward|pass|check|get back|confirm|let)|checking with|let (sofia|the team|our team) know|connect you with|our team will|sofia will/i;
+const HANDOFF_RE = /acionando|acionei|vou acionar|encaminh(ei|ar|ando|o)\b|repass(ei|ar|ando)|passei (pra|para)|j[aá] (pedi|solicitei|avisei)|a (sofia|equipe|nossa equipe)[^.!?\n]{0,60}(respond|retorn|confirm|entra em contato|assume|cuida|organiza|emite)|vou (verificar|confirmar|checar|monitorar|consultar)|te (aviso|retorno|confirmo)|forward(ed|ing)? (your|this|it)|i'?ll (forward|pass|check|get back|confirm|let)|checking with|let (sofia|the team|our team) know|connect you with|our team will|sofia will|(pra|para) eu (registrar|anotar|lan[cç]ar)|vou (registrar|anotar|lan[cç]ar)|j[aá] (registrei|anotei|lancei)|i'?ll (note|register|record)/i;
+// Oferta condicional ("se precisar, me avisa que eu aciono a equipe" / "if you need..., I'll
+// connect you with our team") NÃO é promessa: ninguém foi acionado ainda, então não gera aviso.
+// Só conta a frase que promete de fato (16/11/2026 — smoke em produção gerou aviso falso).
+const HANDOFF_COND_RE = /\b(if you|if needed|if necessary|if that|should you|se (voc[eê] )?(precisar|quiser|preferir|desejar|necessitar)|se (for|houver|tiver)|caso (precise|queira|prefira|deseje|necessite|voc[eê])|qualquer (coisa|d[uú]vida))\b/i;
+function promisesHandoff(reply) {
+  const frases = String(reply || '').split(/(?<=[.!?])\s+|\n+/);
+  for (const f of frases) {
+    const m = HANDOFF_RE.exec(f);
+    if (!m) continue;
+    const antes = f.slice(0, m.index);
+    if (HANDOFF_COND_RE.test(antes)) continue;
+    return true;
+  }
+  return false;
+}
 function withHandoff(ret, ctx) {
   try {
-    if (ret && ret.reply && HANDOFF_RE.test(String(ret.reply))) {
+    if (ret && ret.reply && promisesHandoff(ret.reply)) {
       ret.handoff = true;
       ret.dispatchAlert = true;
       ret.dispatchBody = '🙋 *Hóspede aguardando a equipe (resposta da IA prometeu retorno)*\n📡 ' + (ret.channel || '?')
@@ -735,4 +750,4 @@ async function classifyAndRespond(args) {
   return { reply: null, source: 'noop:nomatch', channel };
 }
 
-module.exports = { classifyAndRespond, sanitizeForChannel };
+module.exports = { classifyAndRespond, sanitizeForChannel, promisesHandoff };
