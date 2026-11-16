@@ -12,7 +12,7 @@
 const { normalizeText } = require('../utils/formatters');
 const { classifyMessage } = require('./classifier');
 const { getChatGptFallbackReply } = require('./openai');
-const { detectLanguage, shouldHandleCancellationRequest } = require('../utils/matchers'); // shouldSendHuman já é importado mais abaixo
+const { detectLanguage, isConfidentPortuguese, shouldHandleCancellationRequest } = require('../utils/matchers'); // shouldSendHuman já é importado mais abaixo
 const jevShadow = require('./jevShadow'); // Jev (TypeSafe) em MODO SOMBRA — só observa, TYPESAFE_MODE=shadow
 const { getResponseForTenant } = require('../responses/strings');
 
@@ -234,9 +234,14 @@ function stripSofiaOwnNumber(text) {
   return out;
 }
 
+const OTA_PLAIN_TEXT = new Set(['bookingcom', 'booking', 'airbnb', 'expedia', 'vrbo', 'decolar', 'website']);
 function sanitizeForChannel(text, channel, bookingConfirmed = false) {
   if (!text) return text;
   if (SOFIA_OWN_WA_CHANNELS.has(channel)) return stripSofiaOwnNumber(text);
+  // 16/11/2026 (auditoria): Booking/Airbnb/Expedia mostram os asteriscos de formatação ("**1204**", "*Sofia*").
+  if (OTA_PLAIN_TEXT.has(channel)) {
+    text = String(text).replace(/\*\*([^*\n]+)\*\*/g, '$1').replace(/(^|[\s(])\*([^*\n]{1,60})\*(?=[\s.,;:!?)]|$)/gm, '$1$2');
+  }
   if (channel !== 'airbnb') return text;
   // 1) Remove URLs (https/http e wa.me/...)
   let out = String(text).replace(/https?:\/\/\S+/gi, '').replace(/\bwa\.me\/\S+/gi, '');
@@ -291,6 +296,36 @@ function isAirbnbContactRequest(text) {
   return /\b(qual\s+(e|o|a)\s+(o\s+)?(numero|telefone|contato|whats|wa|zap)|qual\s+o\s+whats|como\s+(eu\s+)?(falo|chamo|converso|contato)|telefone|n[uú]mero\s+(da|do|de)|whats\s*a?p?p?|\bwpp\b|fale\s+com\s+(a\s+)?(sofia|valney|atendimento|recep[cç][aã]o)|conversar\s+(com|por))\b/.test(t);
 }
 
+// FIX 16/11/2026 (auditoria): 12% das respostas da IA diziam "vou encaminhar pra Sofia / já estou acionando a equipe"
+// e NENHUM aviso saía (só os matchers tinham dispatchAlert). Agora, se a resposta da IA promete repasse, verificação
+// ou retorno, a equipe é avisada de verdade; `handoff:true` volta ao chamador (smm_sync avisa também pelo Telegram).
+function isAmenityInfoQuestion(tn) {
+  const t = String(tn || '');
+  return /\b(oferec\w+|disponibiliz\w+|fornec\w+|possu\w+|inclu\w+|vem com|(preciso|precisa|devo|tem que|tenho que) levar|o (quarto|flat|apartamento|apto) (tem|ja tem)|voces tem|la tem|ai tem)\b/.test(t)
+    && !/\b(acabou|acabaram|terminou|falta|faltando|faltou|repor|reposicao|trocar|troca|trazer|mais (uma?|duas?|um|dois)|sem (toalha|papel|sabonete|shampoo|agua|lencol))\b/.test(t);
+}
+// elogio à limpeza ("limpeza impecável, parabéns") não é pedido de limpeza
+function isCleaningPraise(tn) {
+  const t = String(tn || '');
+  return /\b(limp\w+)\b/.test(t) && /\b(impecavel|excelente|otim[ao]|perfeit[ao]|parabens|maravilhos[ao]|adorei|adoramos|gostei|gostamos|muito bo[am]|nota 10|elogi\w+)\b/.test(t)
+    && !/\b(preciso|precisa|pode|poderia|gostaria|quero|solicit\w+|falt\w+|suj[oa]|nao (foi|fizeram|limparam)|sem limpeza)\b/.test(t);
+}
+const HANDOFF_RE = /acionando|acionei|vou acionar|encaminh(ei|ar|ando|o)\b|repass(ei|ar|ando)|passei (pra|para)|j[aá] (pedi|solicitei|avisei)|a (sofia|equipe|nossa equipe)[^.!?\n]{0,60}(respond|retorn|confirm|entra em contato|assume|cuida|organiza|emite)|vou (verificar|confirmar|checar|monitorar|consultar)|te (aviso|retorno|confirmo)|forward(ed|ing)? (your|this|it)|i'?ll (forward|pass|check|get back|confirm|let)|checking with|let (sofia|the team|our team) know|connect you with|our team will|sofia will/i;
+function withHandoff(ret, ctx) {
+  try {
+    if (ret && ret.reply && HANDOFF_RE.test(String(ret.reply))) {
+      ret.handoff = true;
+      ret.dispatchAlert = true;
+      ret.dispatchBody = '🙋 *Hóspede aguardando a equipe (resposta da IA prometeu retorno)*\n📡 ' + (ret.channel || '?')
+        + '\n👤 ' + ((ctx && ctx.guestName) || 'sem nome') + ((ctx && ctx.reservationCode) ? ' · ' + ctx.reservationCode : '')
+        + '\n💬 "' + String((ctx && ctx.text) || '').slice(0, 300) + '"'
+        + '\n🤖 "' + String(ret.reply).slice(0, 300) + '"'
+        + '\n\nResponder em https://conciergecloud.com.br/admin/mensagens.html';
+    }
+  } catch (_) { /* nunca quebra o atendimento */ }
+  return ret;
+}
+
 async function classifyAndRespond(args) {
   const {
     text, channel = 'unknown', guestName = '', tenant = null,
@@ -317,6 +352,49 @@ async function classifyAndRespond(args) {
       lang = auto;
     }
   } catch (_) { /* manter callerLang/pt */ }
+
+  // 13/11/2026 (Valney): o pedido de HORARIO do Booking/Airbnb chega como formulario padrao em INGLES
+  // ("I'd like to request check-in at 03:00 - 04:00. Is this ok?") mesmo para hospede brasileiro, e o
+  // bot respondia em ingles. Para esse formulario o idioma vem da ultima mensagem ESCRITA pelo hospede
+  // (historico); sem historico = portugues. Em PT, a IA recebe o pedido ja traduzido.
+  const OTA_HORARIO_TPL = /^\s*i'?d like to request (?:a |an )?(check-?in|check-?out)(?: time)? (?:at|between|from)\s*([0-9]{1,2}(?::[0-9]{2})?)\s*(?:-|to|and)?\s*([0-9]{1,2}(?::[0-9]{2})?)?/i;
+  let aiText = text;
+  const tplHorario = String(text).match(OTA_HORARIO_TPL);
+  if (tplHorario) {
+    let langHist = null;
+    for (let i = (history || []).length - 1; i >= 0; i--) {
+      const h = history[i];
+      if (h && h.role === 'user' && h.content && !OTA_HORARIO_TPL.test(h.content)) {
+        try { langHist = detectLanguage(h.content); } catch (_) { /* ignora */ }
+        break;
+      }
+    }
+    lang = langHist || (callerLang && callerLang !== 'pt' ? callerLang : 'pt');
+    if (lang === 'pt') {
+      const tipo = /out/i.test(tplHorario[1]) ? 'check-out' : 'check-in';
+      const faixa = tplHorario[3] ? tplHorario[2] + ' - ' + tplHorario[3] : tplHorario[2];
+      aiText = 'Gostaria de solicitar que meu ' + tipo + ' seja às ' + faixa + '. Pode ser? '
+        + '[Pedido automático da plataforma. Responda em português do Brasil. O horário pedido é no dia do ' + tipo
+        + ' da reserva; siga as regras de horário da base de conhecimento e nunca prometa horário fora do padrão.]';
+    }
+  }
+
+  // FIX 16/11/2026 (caso Vania QZ05J): o smm_sync junta a rajada de mensagens com ' · '. Se uma parte é só
+  // "menu"/saudação/agradecimento e as outras trazem o pedido de verdade, a parte trivial NÃO pode sequestrar a
+  // resposta (ela recebeu o menu — e em inglês — em vez do valor do frigobar). O pedido real segue para a IA.
+  const _parts = String(text).split(' · ').map((x) => x.trim()).filter(Boolean);
+  const _trivial = (pt) => {
+    const nn = normalizeText(pt); const ww = nn.trim().split(/\s+/).filter(Boolean).length;
+    try { return (ww <= 2 && shouldSendMenu(nn)) || (ww <= 5 && !pt.includes('?') && shouldSendGreeting(nn)) || shouldSendThanks(nn); } catch (_) { return false; }
+  };
+  const _subst = _parts.filter((pt) => !_trivial(pt));
+  const burstHasSubstance = _parts.length > 1 && _subst.length > 0 && _subst.length < _parts.length;
+  if (burstHasSubstance && aiText === text) aiText = _subst.join(' · ');
+
+  // Idioma que a IA deve usar: português só com evidência (ou formulário padrão); en/es/fr quando detectado;
+  // outro alfabeto (russo, etc.) = "o mesmo da mensagem". Sem evidência = a IA decide como antes.
+  const _nonLatin = /[\u0400-\u04FF\u0590-\u06FF\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/.test(String(aiText));
+  const _replyLang = _nonLatin ? 'same' : ((tplHorario || isConfidentPortuguese(aiText)) ? lang : (lang !== 'pt' ? lang : null));
 
   const normalized = normalizeText(text);
   const isAirbnbPrebooking = channel === 'airbnb' && !bookingConfirmed;
@@ -415,7 +493,11 @@ async function classifyAndRespond(args) {
     const isPaymentIntent = /\b(pix|pagar|pagamento|pagaria|consumo|cardapio|cardápio|quanto\s+(custa|vale|e)|qual\s+(o\s+)?(valor|preco|preço)|valor\s+(da|do)|preco\s+(da|do)|preço\s+(da|do))\b/.test(tn);
     // Pra item match + intent OU pergunta direta com "?" no item ("Tem shampoo?")
     const isQuestion = text.includes('?');
-    if (matchedItem && !isLocationLike && !isPaymentIntent && (intent.test(tn) || isQuestion)) {
+    // FIX 16/11/2026 (auditoria): pergunta de INFORMAÇÃO antes da estadia ("o quarto tem toalha e secador?",
+    // "vocês oferecem shampoo?", "preciso levar roupa de cama?") recebia "já estou solicitando a reposição".
+    // Sem sinal de falta/troca, não é pedido de reposição: segue para a IA responder o que o flat oferece.
+    const isInfoQuestion = isAmenityInfoQuestion(tn);
+    if (matchedItem && !isLocationLike && !isPaymentIntent && !isInfoQuestion && (intent.test(tn) || isQuestion)) {
       const labels = {
         agua: 'água', shampoo: 'shampoo', sabonete: 'sabonete', condicionador: 'condicionador',
         papel_higienico: 'papel higiênico', toalha: 'toalha', lencol: 'lençol', fronha: 'fronha',
@@ -447,7 +529,11 @@ async function classifyAndRespond(args) {
   // bloqueamos ANTES de shouldSendCheckin e despachamos pra Sofia.
   if (shouldEscalateLateCheckout(normalized)) {
     return {
-      reply: 'Combinado! Já estou repassando seu pedido pra Sofia agora — ela responde aqui em instantes confirmando o horário estendido. 🙌',
+      // 16/11/2026 (auditoria): "Combinado!... confirmando o horário estendido" soava como aprovação; sem idioma, ia em PT pra estrangeiro.
+      reply: ({ en: 'Our standard check-out is until 11am. A later check-out depends on the next guest and on the hotel housekeeping, so I cannot confirm it myself. I have passed your request to our team, who will reply here in this chat.',
+        es: 'El check-out estándar es hasta las 11h. Salir más tarde depende del próximo huésped y de la limpieza del hotel, así que no puedo confirmarlo yo. Ya pasé tu pedido a nuestro equipo, que te responde aquí en este chat.',
+        fr: 'Le check-out standard est jusqu\'à 11h. Un départ plus tardif dépend du prochain client et du ménage de l\'hôtel : je ne peux pas le confirmer moi-même. J\'ai transmis votre demande à notre équipe, qui vous répondra ici.' })[lang]
+        || 'O check-out padrão é até as 11h. Sair mais tarde depende do próximo hóspede e da governança do hotel, então eu não consigo confirmar. Já passei seu pedido pra nossa equipe, que te responde aqui nesta conversa. 🙌',
       source: 'dispatch:late_checkout_request',
       channel,
       dispatchAlert: true,
@@ -503,7 +589,16 @@ async function classifyAndRespond(args) {
   // é chamado direto em handlers/whatsapp.js:502. Aqui replicamos o mesmo formato,
   // pulando categorias com noAlert: true (Contato Recepção / Reserva = só INFO).
   try {
-    const escalation = classifyMessage(text);
+    let escalation = classifyMessage(text);
+    // FIX 16/11/2026 (auditoria): no chat da plataforma o hóspede JÁ tem reserva (ou está consultando por lá).
+    // A categoria 'Reserva' (texto de venda "Para fazer sua reserva, fale com a Sofia + telefone + site") respondia
+    // cancelamento por doença (05/11), pergunta de check-out (05/11) e pedido de reembolso (09/10) só porque a
+    // mensagem tinha "disponibilidade"/"reserva". Em OTA esses casos vão para a IA (que agora avisa a equipe).
+    if (escalation && escalation.name === 'Reserva' && channel && channel !== 'unknown' && channel !== 'direct' && channel !== 'whatsapp') escalation = null;
+    // Pedido de INFORMAÇÃO sobre Wi-Fi ("preciso de dados sobre Wi-Fi", "como conecto") não é chamado de manutenção.
+    if (escalation && escalation.name === 'Manutenção' && /wi-?fi|internet|senha/i.test(text)
+      && !/(n[aã]o (funciona|conecta|est[aá]|liga|pega)|parou|caiu|quebr|sem sinal|sem internet|lent[oa]|inst[aá]vel)/i.test(text)) escalation = null;
+    if (escalation && escalation.name === 'Limpeza' && (isAmenityInfoQuestion(normalizeText(text)) || isCleaningPraise(normalizeText(text)))) escalation = null;
     if (escalation && escalation.guestReply) {
       const ret = {
         reply: sanitizeForChannel(escalation.guestReply, channel, bookingConfirmed),
@@ -535,17 +630,18 @@ async function classifyAndRespond(args) {
   // (2) Greeting / Thanks / Menu — só se faz sentido (msg curta)
   // i18n: usa helpers/getResponseForTenant pra responder no idioma do hóspede.
   const words = normalized.trim().split(/\s+/);
-  if (shouldSendGreeting(normalized) && !text.includes('?') && words.length <= 5) {
+  if (!burstHasSubstance && shouldSendGreeting(normalized) && !text.includes('?') && words.length <= 5) {
     const greet = getGreetingResponse
       ? getGreetingResponse(lang, guestName)
       : (typeof GREETING_RESPONSE === 'function' ? GREETING_RESPONSE(guestName) : GREETING_RESPONSE);
     return { reply: sanitizeForChannel(greet, channel, bookingConfirmed), source: 'greeting', channel };
   }
-  if (shouldSendThanks(normalized)) {
+  if (!burstHasSubstance && shouldSendThanks(normalized)) {
     const thanks = getResponseForTenant('THANKS', lang, tenant) || THANKS_RESPONSE;
     return { reply: sanitizeForChannel(thanks, channel, bookingConfirmed), source: 'thanks', channel };
   }
-  if (shouldSendMenu(normalized)) {
+  // menu só para mensagem curta, isolada e sem pergunta ("menu", "ajuda", "ver opções"): "Vocês têm outras opções de flat?" recebia o menu (04/11)
+  if (!burstHasSubstance && words.length <= 6 && !text.includes('?') && shouldSendMenu(normalized)) {
     const menu = getResponseForTenant('MENU', lang, tenant) || MENU_RESPONSE;
     return { reply: sanitizeForChannel(menu, channel, bookingConfirmed), source: 'menu', channel };
   }
@@ -601,9 +697,9 @@ async function classifyAndRespond(args) {
   // Só roda se allowAi + tenant (com KB) presente; senão cai nos matchers determinísticos abaixo.
   if (allowAi && tenant && tenant.settings && tenant.settings.knowledgeBase) {
     try {
-      const ai = await getChatGptFallbackReply(text, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup });
+      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup, replyLang: _replyLang });
       if (ai && String(ai).trim()) {
-        return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai-first', channel };
+        return withHandoff({ reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai-first', channel }, { text, guestName, reservationCode });
       }
     } catch (e) { console.error('[smmClassifier] AI-first err:', e.message); }
   }
@@ -627,9 +723,9 @@ async function classifyAndRespond(args) {
   // (4) AI fallback (opcional — só se allowAi=true)
   if (allowAi) {
     try {
-      const ai = await getChatGptFallbackReply(text, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup });
+      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup, replyLang: _replyLang });
       if (ai) {
-        return { reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai', channel };
+        return withHandoff({ reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai', channel }, { text, guestName, reservationCode });
       }
     } catch (e) {
       console.error('[smmClassifier] AI fallback err:', e.message);
