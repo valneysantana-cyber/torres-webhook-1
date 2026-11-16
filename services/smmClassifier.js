@@ -504,7 +504,11 @@ async function classifyAndRespond(args) {
   // bloqueamos ANTES de shouldSendCheckin e despachamos pra Sofia.
   if (shouldEscalateLateCheckout(normalized)) {
     return {
-      reply: 'Combinado! Já estou repassando seu pedido pra Sofia agora — ela responde aqui em instantes confirmando o horário estendido. 🙌',
+      // 16/11/2026 (auditoria): "Combinado!... confirmando o horário estendido" soava como aprovação; sem idioma, ia em PT pra estrangeiro.
+      reply: ({ en: 'Our standard check-out is until 11am. A later check-out depends on the next guest and on the hotel housekeeping, so I cannot confirm it myself. I have passed your request to our team, who will reply here in this chat.',
+        es: 'El check-out estándar es hasta las 11h. Salir más tarde depende del próximo huésped y de la limpieza del hotel, así que no puedo confirmarlo yo. Ya pasé tu pedido a nuestro equipo, que te responde aquí en este chat.',
+        fr: 'Le check-out standard est jusqu\'à 11h. Un départ plus tardif dépend du prochain client et du ménage de l\'hôtel : je ne peux pas le confirmer moi-même. J\'ai transmis votre demande à notre équipe, qui vous répondra ici.' })[lang]
+        || 'O check-out padrão é até as 11h. Sair mais tarde depende do próximo hóspede e da governança do hotel, então eu não consigo confirmar. Já passei seu pedido pra nossa equipe, que te responde aqui nesta conversa. 🙌',
       source: 'dispatch:late_checkout_request',
       channel,
       dispatchAlert: true,
