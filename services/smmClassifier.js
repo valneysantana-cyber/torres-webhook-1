@@ -294,6 +294,17 @@ function isAirbnbContactRequest(text) {
 // FIX 16/11/2026 (auditoria): 12% das respostas da IA diziam "vou encaminhar pra Sofia / já estou acionando a equipe"
 // e NENHUM aviso saía (só os matchers tinham dispatchAlert). Agora, se a resposta da IA promete repasse, verificação
 // ou retorno, a equipe é avisada de verdade; `handoff:true` volta ao chamador (smm_sync avisa também pelo Telegram).
+function isAmenityInfoQuestion(tn) {
+  const t = String(tn || '');
+  return /\b(oferec\w+|disponibiliz\w+|fornec\w+|possu\w+|inclu\w+|vem com|(preciso|precisa|devo|tem que|tenho que) levar|o (quarto|flat|apartamento|apto) (tem|ja tem)|voces tem|la tem|ai tem)\b/.test(t)
+    && !/\b(acabou|acabaram|terminou|falta|faltando|faltou|repor|reposicao|trocar|troca|trazer|mais (uma?|duas?|um|dois)|sem (toalha|papel|sabonete|shampoo|agua|lencol))\b/.test(t);
+}
+// elogio à limpeza ("limpeza impecável, parabéns") não é pedido de limpeza
+function isCleaningPraise(tn) {
+  const t = String(tn || '');
+  return /\b(limp\w+)\b/.test(t) && /\b(impecavel|excelente|otim[ao]|perfeit[ao]|parabens|maravilhos[ao]|adorei|adoramos|gostei|gostamos|muito bo[am]|nota 10|elogi\w+)\b/.test(t)
+    && !/\b(preciso|precisa|pode|poderia|gostaria|quero|solicit\w+|falt\w+|suj[oa]|nao (foi|fizeram|limparam)|sem limpeza)\b/.test(t);
+}
 const HANDOFF_RE = /acionando|acionei|vou acionar|encaminh(ei|ar|ando|o)\b|repass(ei|ar|ando)|passei (pra|para)|j[aá] (pedi|solicitei|avisei)|a (sofia|equipe|nossa equipe)[^.!?\n]{0,60}(respond|retorn|confirm|entra em contato|assume|cuida|organiza|emite)|vou (verificar|confirmar|checar|monitorar|consultar)|te (aviso|retorno|confirmo)|forward(ed|ing)? (your|this|it)|i'?ll (forward|pass|check|get back|confirm|let)|checking with|let (sofia|the team|our team) know|connect you with|our team will|sofia will/i;
 function withHandoff(ret, ctx) {
   try {
@@ -472,7 +483,11 @@ async function classifyAndRespond(args) {
     const isPaymentIntent = /\b(pix|pagar|pagamento|pagaria|consumo|cardapio|cardápio|quanto\s+(custa|vale|e)|qual\s+(o\s+)?(valor|preco|preço)|valor\s+(da|do)|preco\s+(da|do)|preço\s+(da|do))\b/.test(tn);
     // Pra item match + intent OU pergunta direta com "?" no item ("Tem shampoo?")
     const isQuestion = text.includes('?');
-    if (matchedItem && !isLocationLike && !isPaymentIntent && (intent.test(tn) || isQuestion)) {
+    // FIX 16/11/2026 (auditoria): pergunta de INFORMAÇÃO antes da estadia ("o quarto tem toalha e secador?",
+    // "vocês oferecem shampoo?", "preciso levar roupa de cama?") recebia "já estou solicitando a reposição".
+    // Sem sinal de falta/troca, não é pedido de reposição: segue para a IA responder o que o flat oferece.
+    const isInfoQuestion = isAmenityInfoQuestion(tn);
+    if (matchedItem && !isLocationLike && !isPaymentIntent && !isInfoQuestion && (intent.test(tn) || isQuestion)) {
       const labels = {
         agua: 'água', shampoo: 'shampoo', sabonete: 'sabonete', condicionador: 'condicionador',
         papel_higienico: 'papel higiênico', toalha: 'toalha', lencol: 'lençol', fronha: 'fronha',
@@ -573,6 +588,7 @@ async function classifyAndRespond(args) {
     // Pedido de INFORMAÇÃO sobre Wi-Fi ("preciso de dados sobre Wi-Fi", "como conecto") não é chamado de manutenção.
     if (escalation && escalation.name === 'Manutenção' && /wi-?fi|internet|senha/i.test(text)
       && !/(n[aã]o (funciona|conecta|est[aá]|liga|pega)|parou|caiu|quebr|sem sinal|sem internet|lent[oa]|inst[aá]vel)/i.test(text)) escalation = null;
+    if (escalation && escalation.name === 'Limpeza' && (isAmenityInfoQuestion(normalizeText(text)) || isCleaningPraise(normalizeText(text)))) escalation = null;
     if (escalation && escalation.guestReply) {
       const ret = {
         reply: sanitizeForChannel(escalation.guestReply, channel, bookingConfirmed),
