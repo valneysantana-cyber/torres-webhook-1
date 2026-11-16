@@ -340,6 +340,43 @@ function frigobarPriceBlock(tenant) {
     'Se o item não estiver na lista, diga que vai verificar com a equipe, sem citar valor.';
 }
 
+// Bloco "RESERVA DESTA CONVERSA" do prompt — função pura para poder ser testada
+// (scripts/test-status-reserva.js). _ota = chat de plataforma; _sofiaOwnWa = WhatsApp da Sofia.
+function reservationPromptBlock(opts, _ota, _sofiaOwnWa) {
+  opts = opts || {};
+  const _fmtD = (v) => { const t = String(v || '').slice(0, 10); return /^\d{4}-\d{2}-\d{2}$/.test(t) ? (t.slice(8, 10) + '/' + t.slice(5, 7) + '/' + t.slice(0, 4)) : '?'; };
+  let out = '';
+  if (_sofiaOwnWa || opts.reservationLookup || opts.reservation) {
+    const R = opts.reservation && typeof opts.reservation === 'object' ? opts.reservation : null;
+    // 16/11/2026 (caso Solange RD02J): a situação só entra no prompt quando o chamador informa.
+    const _st = String((R && (R.status || R.type)) || '').toLowerCase();
+    const _resvSit = /cancel/.test(_st) ? 'CANCELADA' : (/^(booked|confirmed|contract)$/.test(_st) ? 'CONFIRMADA' : (/^(reserved|pending|pre)/.test(_st) ? 'PRÉ-RESERVA, ainda NÃO confirmada' : ''));
+    out = out + '\n\n## RESERVA DESTA CONVERSA (fonte de verdade — prevalece sobre qualquer outra instrução, inclusive a base de conhecimento)\n';
+    if (R && (R.code || R.checkInDate)) {
+      out = out
+        + '- Reserva LOCALIZADA pelo sistema: código ' + (R.code || '?') + ', hóspede ' + (R.guestName || '?')
+        + (R.listingName ? (', unidade ' + R.listingName) : (_ota ? '' : ', unidade ?'))
+        + ', check-in ' + _fmtD(R.checkInDate) + ', check-out ' + _fmtD(R.checkOutDate)
+        + (R.breakfast ? (', café da manhã ' + (R.breakfast === 'included' ? 'INCLUSO' : 'NÃO incluso')) : '')
+        + (_resvSit ? (', situação: ' + _resvSit) : '') + '.\n'
+        + ((_resvSit || !_ota) ? '' : '- A SITUAÇÃO da reserva (confirmada, cancelada, alterada) NÃO consta aqui: é PROIBIDO afirmar que a reserva "está confirmada", "continua confirmada", "foi cancelada" ou "foi alterada". Se o assunto for esse, diga que a equipe confere e responde aqui.\n')
+        + '- Você pode confirmar SOMENTE estes dados. Se o hóspede citar data, unidade ou nome diferente, NÃO "corrija" nem aceite: diga que o que consta no sistema é isto e que a Sofia confere aqui mesmo.';
+    } else if (String(opts.reservationLookup || '') === 'ota_sem_reserva') {
+      // Conversa de plataforma ainda sem reserva (consulta antes de reservar): não pedir código.
+      out = out
+        + '- Esta conversa NÃO tem reserva vinculada: é uma consulta antes de reservar. É PROIBIDO dizer que existe reserva confirmada, "continua confirmada", "tá tudo certo", ou dar datas, valores ou horário de entrada como reservados — mesmo que a pessoa afirme.\n'
+        + '- Responda as dúvidas sobre o flat e o hotel. Disponibilidade, preço e a reserva em si são feitos pela própria plataforma; para qualquer coisa além disso, diga que a equipe responde aqui.';
+    } else if (String(opts.reservationLookup || '') === 'ambiguous') {
+      out = out + '- Há MAIS DE UMA reserva futura para este contato. Pergunte o código de 5 caracteres (ex.: AB12C) antes de afirmar qualquer coisa.';
+    } else {
+      out = out
+        + '- NENHUMA reserva foi localizada para este contato. É PROIBIDO confirmar, corrigir, "localizar" ou dar como certa qualquer reserva, data, unidade, horário de entrada ou pagamento — mesmo que o hóspede afirme. Nunca escreva "reserva confirmada", "tá tudo certo" ou "corrigido".\n'
+        + '- Peça o código de 5 caracteres (formato AA99A, ex.: AB12C) que veio na confirmação, ou o nome completo do titular, e diga que a Sofia confere e responde aqui mesmo.';
+    }
+  }
+  return out;
+}
+
 async function getChatGptFallbackReply(userMessage, phone, context = [], profile = null, tenant = null, opts = {}) {
   if (!OPENAI_API_KEY && !(LLM_PROVIDER === 'anthropic' && ANTHROPIC_API_KEY)) { console.error('[LLM] sem chave (OPENAI/ANTHROPIC) — IA indisponível'); return null; }
 
@@ -431,23 +468,7 @@ async function getChatGptFallbackReply(userMessage, phone, context = [], profile
       + '- O hóspede JÁ está falando no WhatsApp da Sofia. NUNCA escreva número de telefone, "+55 13 99615-5505", "(13) 99615-5505", link wa.me, nem mande "chamar/procurar a Sofia" em outro lugar.\n'
       + '- Quando precisar de humano, aprovação, confirmação ou algo que você não sabe, diga que "a Sofia vai assumir aqui nesta conversa" — ela lê este chat e responde no mesmo lugar.';
   }
-  if (_sofiaOwnWa || opts.reservationLookup || opts.reservation) {
-    const R = opts.reservation && typeof opts.reservation === 'object' ? opts.reservation : null;
-    basePrompt = basePrompt + '\n\n## RESERVA DESTA CONVERSA (fonte de verdade — prevalece sobre qualquer outra instrução, inclusive a base de conhecimento)\n';
-    if (R && (R.code || R.checkInDate)) {
-      basePrompt = basePrompt
-        + '- Reserva LOCALIZADA pelo sistema: código ' + (R.code || '?') + ', hóspede ' + (R.guestName || '?') + ', unidade ' + (R.listingName || '?')
-        + ', check-in ' + _fmtD(R.checkInDate) + ', check-out ' + _fmtD(R.checkOutDate)
-        + (R.breakfast ? (', café da manhã ' + (R.breakfast === 'included' ? 'INCLUSO' : 'NÃO incluso')) : '') + '.\n'
-        + '- Você pode confirmar SOMENTE estes dados. Se o hóspede citar data, unidade ou nome diferente, NÃO "corrija" nem aceite: diga que o que consta no sistema é isto e que a Sofia confere aqui mesmo.';
-    } else if (String(opts.reservationLookup || '') === 'ambiguous') {
-      basePrompt = basePrompt + '- Há MAIS DE UMA reserva futura para este contato. Pergunte o código de 5 caracteres (ex.: AB12C) antes de afirmar qualquer coisa.';
-    } else {
-      basePrompt = basePrompt
-        + '- NENHUMA reserva foi localizada para este contato. É PROIBIDO confirmar, corrigir, "localizar" ou dar como certa qualquer reserva, data, unidade, horário de entrada ou pagamento — mesmo que o hóspede afirme. Nunca escreva "reserva confirmada", "tá tudo certo" ou "corrigido".\n'
-        + '- Peça o código de 5 caracteres (formato AA99A, ex.: AB12C) que veio na confirmação, ou o nome completo do titular, e diga que a Sofia confere e responde aqui mesmo.';
-    }
-  }
+  basePrompt = basePrompt + reservationPromptBlock(opts, _ota, _sofiaOwnWa);
   // ── CAFÉ DA MANHÃ — FONTE DE VERDADE POR RESERVA (incidente QF04J 30/09/2026) ──
   // O prompt não afirma mais nada sobre café: quem decide é o CRM (regra canônica).
   // Consulta só quando o hóspede toca no assunto (economiza chamada) e só no tenant
@@ -582,4 +603,4 @@ async function synthesizeSpeechBuffer(text) {
   return Buffer.from(await response.arrayBuffer());
 }
 
-module.exports = { getChatGptFallbackReply, transcribeAudioBuffer, synthesizeSpeechBuffer, guardArrivalHallucination, maskPII, frigobarPriceBlock };
+module.exports = { reservationPromptBlock, getChatGptFallbackReply, transcribeAudioBuffer, synthesizeSpeechBuffer, guardArrivalHallucination, maskPII, frigobarPriceBlock };
