@@ -234,9 +234,14 @@ function stripSofiaOwnNumber(text) {
   return out;
 }
 
+const OTA_PLAIN_TEXT = new Set(['bookingcom', 'booking', 'airbnb', 'expedia', 'vrbo', 'decolar', 'website']);
 function sanitizeForChannel(text, channel, bookingConfirmed = false) {
   if (!text) return text;
   if (SOFIA_OWN_WA_CHANNELS.has(channel)) return stripSofiaOwnNumber(text);
+  // 16/11/2026 (auditoria): Booking/Airbnb/Expedia mostram os asteriscos de formatação ("**1204**", "*Sofia*").
+  if (OTA_PLAIN_TEXT.has(channel)) {
+    text = String(text).replace(/\*\*([^*\n]+)\*\*/g, '$1').replace(/(^|[\s(])\*([^*\n]{1,60})\*(?=[\s.,;:!?)]|$)/gm, '$1$2');
+  }
   if (channel !== 'airbnb') return text;
   // 1) Remove URLs (https/http e wa.me/...)
   let out = String(text).replace(/https?:\/\/\S+/gi, '').replace(/\bwa\.me\/\S+/gi, '');
@@ -385,6 +390,11 @@ async function classifyAndRespond(args) {
   const _subst = _parts.filter((pt) => !_trivial(pt));
   const burstHasSubstance = _parts.length > 1 && _subst.length > 0 && _subst.length < _parts.length;
   if (burstHasSubstance && aiText === text) aiText = _subst.join(' · ');
+
+  // Idioma que a IA deve usar: português só com evidência (ou formulário padrão); en/es/fr quando detectado;
+  // outro alfabeto (russo, etc.) = "o mesmo da mensagem". Sem evidência = a IA decide como antes.
+  const _nonLatin = /[\u0400-\u04FF\u0590-\u06FF\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/.test(String(aiText));
+  const _replyLang = _nonLatin ? 'same' : ((tplHorario || isConfidentPortuguese(aiText)) ? lang : (lang !== 'pt' ? lang : null));
 
   const normalized = normalizeText(text);
   const isAirbnbPrebooking = channel === 'airbnb' && !bookingConfirmed;
@@ -687,7 +697,7 @@ async function classifyAndRespond(args) {
   // Só roda se allowAi + tenant (com KB) presente; senão cai nos matchers determinísticos abaixo.
   if (allowAi && tenant && tenant.settings && tenant.settings.knowledgeBase) {
     try {
-      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup, replyLang: (tplHorario || isConfidentPortuguese(aiText)) ? lang : null });
+      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup, replyLang: _replyLang });
       if (ai && String(ai).trim()) {
         return withHandoff({ reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai-first', channel }, { text, guestName, reservationCode });
       }
@@ -713,7 +723,7 @@ async function classifyAndRespond(args) {
   // (4) AI fallback (opcional — só se allowAi=true)
   if (allowAi) {
     try {
-      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup, replyLang: (tplHorario || isConfidentPortuguese(aiText)) ? lang : null });
+      const ai = await getChatGptFallbackReply(aiText, '', history, null, tenant, { reservationCode, guestName, channel, bookingConfirmed, reservation, reservationLookup, replyLang: _replyLang });
       if (ai) {
         return withHandoff({ reply: sanitizeForChannel(ai, channel, bookingConfirmed), source: 'ai', channel }, { text, guestName, reservationCode });
       }

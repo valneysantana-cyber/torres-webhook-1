@@ -38,6 +38,9 @@ const srv = http.createServer((req, res) => {
     let ok = afirmaIncluso === esperaIncluso && !!r.reply;
     if (/cafeteira/.test(args.text)) ok = !/^breakfast:/.test(String(r.source));
     if (/CRM FORA DO AR/.test(nome)) ok = /n\u00e3o vou te passar/.test(txt) && r.dispatchAlert === true;
+    // 16/11/2026: tenant com café ESTÁTICO 'included' responde pela própria config (afirma incluso, sem alerta).
+    // O caso só passava porque os asteriscos (*incluso*) escondiam a frase do regex; em OTA eles agora são removidos.
+    if (/OUTRO tenant/.test(nome)) ok = afirmaIncluso && r.dispatchAlert !== true;
     if (!ok) fail++;
     console.log((ok ? '  ✅ ' : '  ❌ ') + nome);
     console.log('       source=' + r.source + '  alerta=' + (r.dispatchAlert ? 'SIM' : 'não'));

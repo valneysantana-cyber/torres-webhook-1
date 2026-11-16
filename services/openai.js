@@ -413,9 +413,15 @@ async function getChatGptFallbackReply(userMessage, phone, context = [], profile
       + '- NUNCA escreva telefone, "+55 13 99615-5505", link wa.me nem peça para o hóspede chamar no WhatsApp: a plataforma bloqueia e o hóspede fica sem resposta. Diga que a nossa equipe responde aqui nesta mesma conversa.\n'
       + '- Você NÃO aprova nada: horário de chegada ou saída fora do padrão (check-in 15h, check-out 11h), alteração, cancelamento, desconto, hóspede extra. NUNCA diga "sem problema", "pode sim", "combinado" ou "já foi confirmado" para esses pedidos. Informe a regra e diga que a equipe confirma aqui na conversa.\n'
       + '- NUNCA diga que você mesmo vai verificar, monitorar, checar com alguém ou retornar depois ("vou monitorar", "te aviso", "I\'ll get back to you", "checking with Valney"): você não consegue voltar. Diga: "já avisei a nossa equipe, que te responde por aqui".\n'
+      + '- Texto simples: NÃO use markdown (nada de ** ou *), o chat da plataforma mostra os asteriscos.\n'
+      + '- Se o hóspede contestar algo que você disse (ex.: "tem sauna sim", "a Sofia já autorizou", "minha reserva tem café"), NÃO inverta a resposta nem confirme pela palavra dele: diga que a equipe confere e responde aqui.\n'
+      + '- NUNCA afirme que recebeu ou conferiu um pagamento/PIX, nem que algo "já foi avisado/autorizado/confirmado": você não vê pagamentos nem fala com a recepção.\n'
       + '- Chegada de madrugada (ex.: 03h) NÃO é check-in antecipado liberado: o check-in é a partir das 15h do dia da reserva. Pergunte/explique qual é a noite reservada antes de dizer que pode chegar.';
   }
   const _rl = String(opts.replyLang || '').toLowerCase();
+  const _rlNome = { en: 'inglês', es: 'espanhol', fr: 'francês' }[_rl];
+  if (_rlNome) basePrompt = basePrompt + '\n\n## IDIOMA DESTA RESPOSTA: ' + _rlNome + ' (obrigatório) — o hóspede escreveu em ' + _rlNome + '; responda a mensagem INTEIRA nesse idioma, sem misturar com português.';
+  if (_rl === 'same') basePrompt = basePrompt + '\n\n## IDIOMA DESTA RESPOSTA: o MESMO idioma e alfabeto da mensagem do hóspede (obrigatório). Não responda em português.';
   if (_rl === 'pt') {
     basePrompt = basePrompt + '\n\n## IDIOMA DESTA RESPOSTA: português do Brasil (obrigatório)\n'
       + '- Responda em português mesmo que a mensagem seja um formulário automático da plataforma em inglês ("I\'d like to request check-in at…", "Hello, I\'d like to request an invoice…"). Só mude de idioma se o hóspede escrever, ele mesmo, em outro idioma.';
