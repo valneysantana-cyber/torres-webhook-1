@@ -341,6 +341,11 @@ function withHandoff(ret, ctx) {
   return ret;
 }
 
+// Situação da reserva informada pelo chamador (Stays: type booked|canceled; outros: status).
+function isCanceledReservation(reservation) {
+  return !!(reservation && typeof reservation === 'object' && /cancel/i.test(String(reservation.status || reservation.type || '')));
+}
+
 async function classifyAndRespond(args) {
   const {
     text, channel = 'unknown', guestName = '', tenant = null,
@@ -351,6 +356,20 @@ async function classifyAndRespond(args) {
   } = args || {};
   if (!text || !String(text).trim()) {
     return { reply: null, source: 'noop:empty', channel };
+  }
+
+  // 16/11/2026 (caso Solange RD02J): reserva CANCELADA e a IA respondeu "sua reserva continua
+  // confirmada". Hóspede escrevendo em reserva cancelada precisa de gente: nenhuma resposta
+  // automática (nem matcher, nem IA) — só o aviso à equipe.
+  if (isCanceledReservation(reservation)) {
+    return {
+      reply: null, source: 'noop:reserva-cancelada', channel, handoff: true,
+      dispatchAlert: true,
+      dispatchBody: '🚨 *Reserva CANCELADA — hóspede escreveu e o robô NÃO respondeu*\n📡 ' + channel
+        + '\n👤 ' + (guestName || 'sem nome') + (reservationCode ? ' · ' + reservationCode : '')
+        + '\n💬 "' + String(text).slice(0, 300) + '"'
+        + '\n\nResponder em https://conciergecloud.com.br/admin/mensagens.html',
+    };
   }
 
   // Bug fix 18/05/2026 — caso LV01J (Booking):
@@ -750,4 +769,4 @@ async function classifyAndRespond(args) {
   return { reply: null, source: 'noop:nomatch', channel };
 }
 
-module.exports = { classifyAndRespond, sanitizeForChannel, promisesHandoff };
+module.exports = { classifyAndRespond, sanitizeForChannel, promisesHandoff, isCanceledReservation };
