@@ -44,6 +44,14 @@ function nameFromMessage(body) {
   return t;
 }
 
+// "estou no 508", "flat 1204", "apto 1402", "quarto 404", "hospedada no 1204" → número do flat (3 ou 4 dígitos).
+// Exige uma palavra de contexto antes do número para não confundir com horário, valor ou código.
+function flatFromMessage(body) {
+  const t = String(body || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const m = /\b(?:flat|apto?|ap\.|apartamento|quarto|unidade|suite|(?:estou|to|tou|estamos|hospedad[oa]s?|fiquei|ficando)\s+n[oa])\s*(?:n[ºo°.]?\s*)?(\d{3,4})\b/.exec(t);
+  return m ? m[1] : null;
+}
+
 function brtDate(offsetDays) {
   const d = new Date(Date.now() - 3 * 3600000 + (offsetDays || 0) * 86400000);
   return d.toISOString().slice(0, 10);
@@ -71,7 +79,8 @@ function matchStrong(name, reservations) {
 
 /**
  * Tenta vincular o número à reserva pelo nome. Nunca lança erro (falha = segue o fluxo normal).
- * @returns {Promise<null|{reservation:object, via:string, name:string}>}
+ * @returns {Promise<null|{reservation:object, via:string, name:string}|{ask:true, flat:string}>}
+ *   ask=true: citou um flat com reserva sem telefone, mas o perfil não confirma → perguntar o nome do titular.
  */
 async function tryLinkByName({ Reservation, from, tenantId, contactName, body }) {
   try {
@@ -88,7 +97,8 @@ async function tryLinkByName({ Reservation, from, tenantId, contactName, body })
     const doTexto = nameFromMessage(body);
     if (doTexto) nomes.push({ name: doTexto, via: 'mensagem' });
     if (contactName) nomes.push({ name: contactName, via: 'perfil' });
-    if (!nomes.length) return null;
+    const flatCitado = flatFromMessage(body);
+    if (!nomes.length && !flatCitado) return null;
 
     const janela = await col.find({
       tenantId: tenantId || 'torres',
@@ -113,6 +123,30 @@ async function tryLinkByName({ Reservation, from, tenantId, contactName, body })
       console.log('[name-link] ' + from + ' → ' + r.confirmationCode + ' (' + r.guestName + ' · ' + r.listingName + ') via ' + n.via + ' "' + n.name + '"');
       return { reservation: Object.assign({}, r, set), via: n.via, name: n.name };
     }
+
+    // 24/11/2026: hóspede diz o flat ("estou no 508", "flat 1204"). Vincula só se: a reserva é daquele flat e está
+    // hospedada hoje ou chega amanhã; o 1º nome do PERFIL é compatível com o 1º nome do titular (prefixo: "Ca"→Carolina,
+    // "Rafa"→Rafael; "Rafa"≠Breno); e há UMA só reserva compatível. Sem nome de perfil compatível não vincula —
+    // dizer o número do flat sozinho não pode dar acesso aos dados da reserva de outra pessoa.
+    if (flatCitado) {
+      const p = tokens(contactName)[0];
+      const noFlat = janela.filter((r) => String(r.listingName || '').replace(/\D/g, '') === flatCitado
+        && r.checkInDate <= brtDate(1));
+      const compat = noFlat.filter((r) => { const g = tokens(r.guestName)[0] || ''; return p && g && (g.startsWith(p) || p.startsWith(g)); });
+      if (compat.length === 1 && livres.includes(compat[0])) {
+        const r = compat[0];
+        const set = { waLinkedPhone: phones[0], guestPhoneClean: phones[0], waLinkedAt: new Date(), waLinkedBy: 'robo-flat' };
+        const up = await col.updateOne({ _id: r._id, waLinkedPhone: { $exists: false } }, { $set: set });
+        if (!(up && up.matchedCount === 0)) {
+          console.log('[name-link] ' + from + ' → ' + r.confirmationCode + ' (' + r.guestName + ' · ' + r.listingName + ') via flat ' + flatCitado + ' + perfil "' + contactName + '"');
+          return { reservation: Object.assign({}, r, set), via: 'flat', name: contactName };
+        }
+      } else if (noFlat.length) {
+        console.log('[name-link] ' + from + ' citou o flat ' + flatCitado + ' mas sem vínculo seguro (perfil "' + contactName + '", ' + noFlat.length + ' reserva(s) no flat, ' + compat.length + ' compatível(is))');
+        // há reserva sem telefone naquele flat → vale perguntar o nome do titular antes (Valney 24/11)
+        if (noFlat.some((r) => livres.includes(r))) return { ask: true, flat: flatCitado };
+      }
+    }
     return null;
   } catch (e) {
     console.warn('[name-link] falhou (segue fluxo normal):', e.message);
@@ -120,4 +154,4 @@ async function tryLinkByName({ Reservation, from, tenantId, contactName, body })
   }
 }
 
-module.exports = { tryLinkByName, matchStrong, nameFromMessage, tokens };
+module.exports = { tryLinkByName, matchStrong, nameFromMessage, flatFromMessage, tokens };
