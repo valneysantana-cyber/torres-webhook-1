@@ -2,6 +2,9 @@
 
 const { CONFIRMATION_TTL_MS } = require('../config');
 const { tryLinkByName } = require('../services/nameLink');
+// 24/11/2026: quem citou o flat sem o perfil confirmar → pedimos o nome do titular e guardamos a pergunta original
+const _askedTitular = new Map();
+const ASK_TITULAR_TTL_MS = 6 * 3600 * 1000;
 const {
   MENU_RESPONSE,
   HUMAN_ESCALATION_RESPONSE,
@@ -577,10 +580,34 @@ async function handleIncoming(payload) {
           const _pn = String(_r.guestName || '').trim().split(/\s+/)[0] || '';
           const _fl = String(_r.listingName || '').replace(/^FLAT\s*/i, '');
           const _dm = (d) => (d ? String(d).slice(8, 10) + '/' + String(d).slice(5, 7) : '');
+          const _pend = _askedTitular.get(from);
+          _askedTitular.delete(from);
+          const _temPergunta = _pend && _pend.question && (Date.now() - _pend.at) < ASK_TITULAR_TTL_MS;
           await replyAndSave(from, 'Achei sua reserva' + (_pn ? ', ' + _pn : '') + '! 😊' + (_fl ? ' Flat ' + _fl : '') +
             (_r.checkInDate ? ', de ' + _dm(_r.checkInDate) + ' a ' + _dm(_r.checkOutDate) : '') +
-            '.\n\nAgora já te reconheço por aqui. Em que posso ajudar?', { alsoSendAudio: camFromAudio });
+            '.\n\n' + (_temPergunta ? 'Agora já te reconheço por aqui.' : 'Agora já te reconheço por aqui. Em que posso ajudar?'),
+            { alsoSendAudio: camFromAudio });
+          if (_temPergunta) {
+            // responde a pergunta que ficou guardada enquanto pedíamos o nome do titular
+            try {
+              const _gt = await resolveTenantByGuestPhone(from, tenant, _pend.question);
+              const [_ctx, _prof] = await Promise.all([getContext(from), getProfile(from)]);
+              const _ai = await getChatGptFallbackReply(_pend.question, from, _ctx, _prof, _gt);
+              if (_ai) await replyAndSave(from, _ai, { alsoSendAudio: camFromAudio });
+            } catch (e) { console.warn('[name-link] resposta da pergunta guardada falhou:', e.message); }
+          }
           continue;
+        }
+        if (_nl && _nl.ask) {
+          // citou um flat com reserva sem telefone, mas o perfil não confirma quem é → pergunta o titular antes (1x a cada 6 h)
+          const _prev = _askedTitular.get(from);
+          if (!_prev || (Date.now() - _prev.at) > ASK_TITULAR_TTL_MS) {
+            _askedTitular.set(from, { flat: _nl.flat, question: body, at: Date.now() });
+            await replyAndSave(from, 'Oi! 😊 Pra eu te atender certinho no flat ' + _nl.flat + ', me confirma o *nome completo do titular da reserva*? ' +
+              'Assim que eu achar, já respondo a sua mensagem.', { alsoSendAudio: camFromAudio });
+            console.log('[name-link] ' + from + ' citou o flat ' + _nl.flat + ' → pedi o nome do titular');
+            continue;
+          }
         }
 
         const guestTenant = await resolveTenantByGuestPhone(from, tenant, body);
