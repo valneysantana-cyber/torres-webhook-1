@@ -651,17 +651,25 @@ function shouldHandleEarlyCompanionArrival(rawText) {
   return false;
 }
 
+// 24/11/2026 (caso Milena): "...A minha reserva tem estacionamento? Posso deixar o carro antes do check-in?"
+// casava em "minha reserva" e o robô só pedia o código, sem responder sobre o carro. "Tenho/minha reserva"
+// agora só dispara o pedido de código em mensagem CURTA (o hóspede só se apresentando); mensagem com
+// pergunta de verdade segue para os matchers/IA, que já sabem responder e pedem o código depois.
+const _CONFIRM_SHORT_MAX = 60;
+
 function shouldHandleReservationConfirmation(text) {
+  const t = String(text || '');
+  const curta = t.trim().length <= _CONFIRM_SHORT_MAX;
   return (
-    isNumericSelection(text, '11') ||
+    isNumericSelection(t, '11') ||
     // pedido explícito de confirmação
-    /(confirmar|confirmacao|status|codigo).*reserva/.test(text) ||
-    // hóspede diz que JÁ TEM uma reserva
-    /\b(tenho|ja tenho|ja fiz|fiz a|temos)\b.{0,20}\breserva\b/.test(text) ||
-    // "minha reserva" / "nossa reserva"
-    /\b(minha|nossa)\b.{0,10}\breserva\b/.test(text) ||
+    /\b(confirmar|confirmacao|status|codigo)\b.{0,30}\breserva/.test(t) ||
     // "como confirmo" / "quero confirmar"
-    /\b(como|quero|preciso).{0,15}\bconfirm/.test(text)
+    /\b(como|quero|preciso).{0,15}\bconfirm/.test(t) ||
+    // hóspede diz que JÁ TEM uma reserva — só quando é isso que a mensagem diz
+    (curta && /\b(tenho|ja tenho|ja fiz|fiz a|fiz uma|temos)\b.{0,20}\breserva\b/.test(t)) ||
+    // "minha reserva" / "nossa reserva"
+    (curta && /\b(minha|nossa)\b.{0,10}\breserva\b/.test(t))
   );
 }
 
