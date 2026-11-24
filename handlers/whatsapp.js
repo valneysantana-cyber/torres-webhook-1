@@ -1,6 +1,7 @@
 'use strict';
 
 const { CONFIRMATION_TTL_MS } = require('../config');
+const { tryLinkByName } = require('../services/nameLink');
 const {
   MENU_RESPONSE,
   HUMAN_ESCALATION_RESPONSE,
@@ -567,6 +568,21 @@ async function handleIncoming(payload) {
         // sobre torresguest.com.br/Sofia. Resolver o guestTenant aqui permite
         // gatear matchers torres-only (`isTorresContext`) e deixar non-torres
         // cair direto no AI fallback (que recebe o systemPrompt do tenant).
+        // ---- 24/11/2026: telefone sem reserva → tenta achar pelo NOME (perfil do WhatsApp ou mensagem) ----
+        // Vincula só com nome + sobrenome iguais e pessoa única na janela (hoje até +3 dias). Ver services/nameLink.js.
+        const _nl = await tryLinkByName({ Reservation, from, tenantId: (tenant && tenant.tenantId) || 'torres', contactName, body });
+        if (_nl && _nl.via === 'mensagem') {
+          // a mensagem era só o nome → confirma a reserva em vez de mandar o nome para a IA
+          const _r = _nl.reservation;
+          const _pn = String(_r.guestName || '').trim().split(/\s+/)[0] || '';
+          const _fl = String(_r.listingName || '').replace(/^FLAT\s*/i, '');
+          const _dm = (d) => (d ? String(d).slice(8, 10) + '/' + String(d).slice(5, 7) : '');
+          await replyAndSave(from, 'Achei sua reserva' + (_pn ? ', ' + _pn : '') + '! 😊' + (_fl ? ' Flat ' + _fl : '') +
+            (_r.checkInDate ? ', de ' + _dm(_r.checkInDate) + ' a ' + _dm(_r.checkOutDate) : '') +
+            '.\n\nAgora já te reconheço por aqui. Em que posso ajudar?', { alsoSendAudio: camFromAudio });
+          continue;
+        }
+
         const guestTenant = await resolveTenantByGuestPhone(from, tenant, body);
         const isTorresContext = !guestTenant || guestTenant.tenantId === 'torres';
         if (!isTorresContext) {
